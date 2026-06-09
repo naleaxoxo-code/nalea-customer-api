@@ -1,103 +1,66 @@
 const express = require('express');
 const crypto  = require('crypto');
-const fetch   = (...args) => import('node-fetch').then(({ default: f }) => f(...args));
+const fetch   = (...args) => import('node-fetch').then(({ default: f }) => f({...args}));
 
 const app  = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ── ENV VARS (set in Railway dashboard) ──────────────────────────────────────
-const SHOPIFY_STORE          = process.env.SHOPIFY_STORE;          // e.g. nalea-xoxo.myshopify.com
-const SHOPIFY_ADMIN_TOKEN    = process.env.SHOPIFY_ADMIN_TOKEN;    // Admin API access token
-const SHOPIFY_PROXY_SECRET   = process.env.SHOPIFY_PROXY_SECRET;   // App proxy shared secret
+const SHOPIFY_STORE         = process.env.SHOPIFY_STORE;
+const SHOPIFY_ADMIN_TOKEN   = process.env.SHOPIFY_ADMIN_TOKEN;
+const SHOPIFY_PROXY_SECRET  = process.env.SHOPIFY_PROXY_SECRET;
+const SHOPIFY_CLIENT_ID     = process.env.SHOPIFY_CLIENT_ID;
+const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET;
 
-// ── VERIFY SHOPIFY PROXY SIGNATURE ───────────────────────────────────────────
-function verifyProxySignature(query) {
-  const signature = query.signature;
-  if (!signature) return false;
-
-  const params = Object.keys(query)
-    .filter(k => k !== 'signature')
-    .sort()
-    .map(k => `${k}=${query[k]}`)
-    .join('');
-
-  const hmac = crypto
-    .createHmac('sha256', SHOPIFY_PROXY_SECRET)
-    .update(params)
-    .digest('hex');
-
-  return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(signature));
-}
-
-// ── HEALTH CHECK ─────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.json({ status: 'Nalea Customer API running ✅' });
 });
 
-// ── UPDATE CUSTOMER METAFIELDS ────────────────────────────────────────────────
-// Called from your Liquid JS via: POST /apps/nalea/customer
-app.post('/apps/nalea/customer', async (req, res) => {
-
-  // 1. Verify request is from Shopify
-  if (!verifyProxySignature(req.query)) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  const customerId = req.query.logged_in_customer_id;
-  if (!customerId) {
-    return res.status(400).json({ error: 'No customer ID' });
-  }
-
-  const { namespace = 'custom', metafields } = req.body;
-
-  if (!metafields || !Array.isArray(metafields)) {
-    return res.status(400).json({ error: 'metafields array required' });
-  }
-
-  // 2. Build metafield payload
-  // metafields should be: [{ key: 'gender', value: 'Female', type: 'single_line_text_field' }, ...]
-  const payload = {
-    customer: {
-      id: customerId,
-      metafields: metafields.map(mf => ({
-        namespace,
-        key:   mf.key,
-        value: mf.value,
-        type:  mf.type || 'single_line_text_field'
-      }))
-    }
-  };
-
-  // 3. Call Shopify Admin API
+app.get('/auth/callback', async (req, res) => {
+  const { code, shop } = req.query;
+  if (!code || !shop) return res.status(400).send('Missing code or shop');
   try {
-    const response = await fetch(
-      `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}.json`,
-      {
-        method:  'PUT',
-        headers: {
-          'Content-Type':              'application/json',
-          'X-Shopify-Access-Token':    SHOPIFY_ADMIN_TOKEN
-        },
-        body: JSON.stringify(payload)
-      }
-    );
-
+    const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: SHOPIFY_CLIENT_ID, client_secret: SHOPIFY_CLIENT_SECRET, code })
+    });
     const data = await response.json();
-
-    if (!response.ok) {
-      console.error('Shopify error:', data);
-      return res.status(response.status).json({ error: data });
-    }
-
-    return res.json({ success: true, customer: data.customer });
-
+    console.log('ACCESS TOKEN:', data.access_token);
+    res.send(`<h2>✅ Token:</h2><pre>${data.access_token}</pre><p>Copy this to Railway as SHOPIFY_ADMIN_TOKEN</p>`);
   } catch (err) {
-    console.error('Server error:', err);
+    res.status(500).send('Error: ' + err.message);
+  }
+});
+
+function verifyProxySignature(query) {
+  const signature = query.signature;
+  if (!signature) return false;
+  const params = Object.keys(query).filter(k => k !== 'signature').sort().map(k => `${k}=${query[k]}`).join('');
+  const hmac = crypto.createHmac('sha256', SHOPIFY_PROXY_SECRET).update(params).digest('hex');
+  try { return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(signature)); } catch { return false; }
+}
+
+app.post('/apps/nalea/customer', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+  const { namespace = 'custom', metafields } = req.body;
+  if (!metafields || !Array.isArray(metafields)) return res.status(400).json({ error: 'metafields array required' });
+  const payload = { customer: { id: customerId, metafields: metafields.map(mf => ({ namespace, key: mf.key, value: mf.value, type: mf.type || 'single_line_text_field' })) } };
+  try {
+    const response = await fetch(`https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (!response.ok) return res.status(response.status).json({ error: data });
+    return res.json({ success: true });
+  } catch (err) {
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// ── START ─────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nalea API listening on port ${PORT}`));
