@@ -1,21 +1,17 @@
 const express = require('express');
 const crypto  = require('crypto');
-const fetch   = (...args) => import('node-fetch').then(({ default: f }) => f({...args}));
-
+const fetch   = (...args) => import('node-fetch').then(({ default: f }) => f(...args));
 const app  = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 const SHOPIFY_STORE         = process.env.SHOPIFY_STORE;
 const SHOPIFY_ADMIN_TOKEN   = process.env.SHOPIFY_ADMIN_TOKEN;
 const SHOPIFY_PROXY_SECRET  = process.env.SHOPIFY_PROXY_SECRET;
 const SHOPIFY_CLIENT_ID     = process.env.SHOPIFY_CLIENT_ID;
 const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET;
-
 app.get('/', (req, res) => {
   res.json({ status: 'Nalea Customer API running ✅' });
 });
-
 app.get('/auth/callback', async (req, res) => {
   const { code, shop } = req.query;
   if (!code || !shop) return res.status(400).send('Missing code or shop');
@@ -32,7 +28,6 @@ app.get('/auth/callback', async (req, res) => {
     res.status(500).send('Error: ' + err.message);
   }
 });
-
 function verifyProxySignature(query) {
   const signature = query.signature;
   if (!signature) return false;
@@ -40,7 +35,6 @@ function verifyProxySignature(query) {
   const hmac = crypto.createHmac('sha256', SHOPIFY_PROXY_SECRET).update(params).digest('hex');
   try { return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(signature)); } catch { return false; }
 }
-
 app.post('/apps/nalea/customer', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
@@ -61,6 +55,5 @@ app.post('/apps/nalea/customer', async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
-
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nalea API listening on port ${PORT}`));
