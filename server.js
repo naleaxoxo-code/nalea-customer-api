@@ -21,9 +21,8 @@ app.get('/auth/callback', async (req, res) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ client_id: SHOPIFY_CLIENT_ID, client_secret: SHOPIFY_CLIENT_SECRET, code })
     });
-    const data = await response.json();
-    console.log('ACCESS TOKEN:', data.access_token);
-    res.send(`<h2>✅ Token:</h2><pre>${data.access_token}</pre><p>Copy this to Railway as SHOPIFY_ADMIN_TOKEN</p>`);
+    const text = await response.text();
+    res.send(`<pre>${text}</pre>`);
   } catch (err) {
     res.status(500).send('Error: ' + err.message);
   }
