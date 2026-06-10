@@ -16,13 +16,18 @@ app.get('/auth/callback', async (req, res) => {
   const { code, shop } = req.query;
   if (!code || !shop) return res.status(400).send('Missing code or shop');
   try {
-    const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    const url = `https://${shop}/admin/oauth/access_token`;
+    const body = JSON.stringify({ client_id: SHOPIFY_CLIENT_ID, client_secret: SHOPIFY_CLIENT_SECRET, code });
+    console.log('TOKEN URL:', url);
+    console.log('BODY:', body);
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: SHOPIFY_CLIENT_ID, client_secret: SHOPIFY_CLIENT_SECRET, code })
+      body
     });
     const text = await response.text();
-    res.send(`<pre>${text}</pre>`);
+    console.log('SHOPIFY RESPONSE:', text);
+    res.send(`<pre>Status: ${response.status}\n\n${text}</pre>`);
   } catch (err) {
     res.status(500).send('Error: ' + err.message);
   }
