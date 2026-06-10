@@ -16,18 +16,13 @@ app.get('/auth/callback', async (req, res) => {
   const { code } = req.query;
   if (!code) return res.status(400).send('Missing code');
   try {
-    const url = `https://baddie-accessories-3.myshopify.com/admin/oauth/access_token`;
-    const body = JSON.stringify({ client_id: SHOPIFY_CLIENT_ID, client_secret: SHOPIFY_CLIENT_SECRET, code });
-    console.log('TOKEN URL:', url);
-    console.log('BODY:', body);
-    const response = await fetch(url, {
+    const response = await fetch(`https://baddie-accessories-3.myshopify.com/admin/oauth/access_token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body
+      body: JSON.stringify({ client_id: SHOPIFY_CLIENT_ID, client_secret: SHOPIFY_CLIENT_SECRET, code })
     });
-    const text = await response.text();
-    console.log('SHOPIFY RESPONSE:', text);
-    res.send(`<pre>Status: ${response.status}\n\n${text}</pre>`);
+    const data = await response.json();
+    res.send(`<h2>✅ Token:</h2><pre>${data.access_token}</pre><p>Copy this to Railway as SHOPIFY_ADMIN_TOKEN</p>`);
   } catch (err) {
     res.status(500).send('Error: ' + err.message);
   }
