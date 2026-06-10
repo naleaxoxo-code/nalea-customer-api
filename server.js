@@ -13,10 +13,10 @@ app.get('/', (req, res) => {
   res.json({ status: 'Nalea Customer API running ✅' });
 });
 app.get('/auth/callback', async (req, res) => {
-  const { code, shop } = req.query;
-  if (!code || !shop) return res.status(400).send('Missing code or shop');
+  const { code } = req.query;
+  if (!code) return res.status(400).send('Missing code');
   try {
-    const url = `https://${shop}/admin/oauth/access_token`;
+    const url = `https://baddie-accessories-3.myshopify.com/admin/oauth/access_token`;
     const body = JSON.stringify({ client_id: SHOPIFY_CLIENT_ID, client_secret: SHOPIFY_CLIENT_SECRET, code });
     console.log('TOKEN URL:', url);
     console.log('BODY:', body);
