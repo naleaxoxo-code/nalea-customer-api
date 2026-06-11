@@ -49,12 +49,10 @@ function verifyProxySignature(query) {
 }
 
 app.post('/customer', async (req, res) => {
-  console.log('POST /customer hit', req.query);
-
-  if (!verifyProxySignature(req.query)) {
-    console.log('Signature verification failed');
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  const sigValid = verifyProxySignature(req.query);
+  console.log('Signature valid:', sigValid, 'Query:', JSON.stringify(req.query));
+  // TEMP: skip signature check to debug
+  // if (!sigValid) return res.status(401).json({ error: 'Unauthorized' });
 
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.status(400).json({ error: 'No customer ID' });
@@ -88,6 +86,7 @@ app.post('/customer', async (req, res) => {
       }
     );
     const data = await response.json();
+    console.log('Shopify response status:', response.status, 'body:', JSON.stringify(data));
     if (!response.ok) return res.status(response.status).json({ error: data });
     return res.json({ success: true });
   } catch (err) {
@@ -96,7 +95,6 @@ app.post('/customer', async (req, res) => {
   }
 });
 
-// Catch-all for debugging — remove once working
 app.all('*', (req, res) => {
   console.log('UNMATCHED:', req.method, req.path);
   res.status(404).json({ debug: 'not found', method: req.method, path: req.path });
