@@ -34,7 +34,7 @@ function verifyProxySignature(query) {
   const hmac = crypto.createHmac('sha256', SHOPIFY_PROXY_SECRET).update(params).digest('hex');
   try { return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(signature)); } catch { return false; }
 }
-app.post('/apps/nalea/customer', async (req, res) => {
+app.post('/customer', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.status(400).json({ error: 'No customer ID' });
