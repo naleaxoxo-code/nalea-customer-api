@@ -16,6 +16,31 @@ app.get('/', (req, res) => {
   res.json({ status: 'Nalea Customer API running ✅' });
 });
 
+app.get('/test-write', async (req, res) => {
+  try {
+    const response = await fetch(
+      `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/9379481780456.json`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN
+        },
+        body: JSON.stringify({
+          customer: {
+            id: 9379481780456,
+            metafields: [{ namespace: 'custom', key: 'gender', value: 'Female', type: 'single_line_text_field' }]
+          }
+        })
+      }
+    );
+    const data = await response.json();
+    res.json({ status: response.status, body: data });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
 app.get('/auth/callback', async (req, res) => {
   const { code } = req.query;
   if (!code) return res.status(400).send('Missing code');
@@ -52,14 +77,11 @@ app.post('/customer', async (req, res) => {
   if (!verifyProxySignature(req.query)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.status(400).json({ error: 'No customer ID' });
-
   const { namespace = 'custom', metafields } = req.body;
   if (!metafields || !Array.isArray(metafields))
     return res.status(400).json({ error: 'metafields array required' });
-
   const payload = {
     customer: {
       id: customerId,
@@ -71,7 +93,6 @@ app.post('/customer', async (req, res) => {
       }))
     }
   };
-
   try {
     const response = await fetch(
       `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}.json`,
@@ -85,11 +106,16 @@ app.post('/customer', async (req, res) => {
       }
     );
     const data = await response.json();
+    console.log('Shopify response:', response.status, JSON.stringify(data).slice(0, 200));
     if (!response.ok) return res.status(response.status).json({ error: data });
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+app.all('*', (req, res) => {
+  res.status(404).json({ debug: 'not found', method: req.method, path: req.path });
 });
 
 const PORT = process.env.PORT || 3000;
