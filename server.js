@@ -49,10 +49,9 @@ function verifyProxySignature(query) {
 }
 
 app.post('/customer', async (req, res) => {
-  const sigValid = verifyProxySignature(req.query);
-  console.log('Signature valid:', sigValid, 'Query:', JSON.stringify(req.query));
-  // TEMP: skip signature check to debug
-  // if (!sigValid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!verifyProxySignature(req.query)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.status(400).json({ error: 'No customer ID' });
@@ -86,18 +85,11 @@ app.post('/customer', async (req, res) => {
       }
     );
     const data = await response.json();
-    console.log('Shopify response status:', response.status, 'body:', JSON.stringify(data));
     if (!response.ok) return res.status(response.status).json({ error: data });
     return res.json({ success: true });
   } catch (err) {
-    console.error('Shopify API error:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
-});
-
-app.all('*', (req, res) => {
-  console.log('UNMATCHED:', req.method, req.path);
-  res.status(404).json({ debug: 'not found', method: req.method, path: req.path });
 });
 
 const PORT = process.env.PORT || 3000;
