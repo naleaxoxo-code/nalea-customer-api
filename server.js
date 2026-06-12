@@ -59,15 +59,29 @@ app.get('/auth/callback', async (req, res) => {
 
 function verifyProxySignature(query) {
   const signature = query.signature;
-  if (!signature) return false;
+  if (!signature) {
+    console.log('No signature in query');
+    return false;
+  }
   const params = Object.keys(query)
     .filter(k => k !== 'signature')
     .sort()
     .map(k => `${k}=${query[k]}`)
     .join('');
-  const hmac = crypto.createHmac('sha256', SHOPIFY_PROXY_SECRET).update(params).digest('hex');
+  
+  const hmacWithProxySecret  = crypto.createHmac('sha256', SHOPIFY_PROXY_SECRET).update(params).digest('hex');
+  const hmacWithClientSecret = crypto.createHmac('sha256', SHOPIFY_CLIENT_SECRET).update(params).digest('hex');
+  
+  console.log('Query params string:', params);
+  console.log('Signature from Shopify:', signature);
+  console.log('HMAC with PROXY_SECRET:', hmacWithProxySecret);
+  console.log('HMAC with CLIENT_SECRET:', hmacWithClientSecret);
+  console.log('Match with PROXY_SECRET:', hmacWithProxySecret === signature);
+  console.log('Match with CLIENT_SECRET:', hmacWithClientSecret === signature);
+
   try {
-    return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(signature));
+    return crypto.timingSafeEqual(Buffer.from(hmacWithProxySecret), Buffer.from(signature)) ||
+           crypto.timingSafeEqual(Buffer.from(hmacWithClientSecret), Buffer.from(signature));
   } catch {
     return false;
   }
@@ -77,11 +91,14 @@ app.post('/customer', async (req, res) => {
   if (!verifyProxySignature(req.query)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+
   const { namespace = 'custom', metafields } = req.body;
   if (!metafields || !Array.isArray(metafields))
     return res.status(400).json({ error: 'metafields array required' });
+
   const payload = {
     customer: {
       id: customerId,
@@ -93,6 +110,7 @@ app.post('/customer', async (req, res) => {
       }))
     }
   };
+
   try {
     const response = await fetch(
       `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}.json`,
