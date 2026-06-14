@@ -155,6 +155,31 @@ app.post('/address', async (req, res) => {
   }
 });
 
+// ===== PAYMENT CARDS — GET (read from Shopify) =====
+app.get('/cards', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.json({ success: true, cards: [] });
+
+  const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=payment_cards`, { headers });
+    const listData = await listRes.json();
+    if (listData.metafields && listData.metafields.length > 0) {
+      try {
+        const cards = JSON.parse(listData.metafields[0].value);
+        return res.json({ success: true, cards: Array.isArray(cards) ? cards : [] });
+      } catch(e) { return res.json({ success: true, cards: [] }); }
+    }
+    return res.json({ success: true, cards: [] });
+  } catch (err) {
+    console.error('Cards GET error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ===== PAYMENT CARDS (dedicated metafields endpoint) =====
 app.post('/cards', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
