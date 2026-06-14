@@ -6,10 +6,10 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const SHOPIFY_STORE        = process.env.SHOPIFY_STORE;
-const SHOPIFY_ADMIN_TOKEN  = process.env.SHOPIFY_ADMIN_TOKEN;
-const SHOPIFY_PROXY_SECRET = process.env.SHOPIFY_PROXY_SECRET;
-const SHOPIFY_CLIENT_ID    = process.env.SHOPIFY_CLIENT_ID;
+const SHOPIFY_STORE         = process.env.SHOPIFY_STORE;
+const SHOPIFY_ADMIN_TOKEN   = process.env.SHOPIFY_ADMIN_TOKEN;
+const SHOPIFY_PROXY_SECRET  = process.env.SHOPIFY_PROXY_SECRET;
+const SHOPIFY_CLIENT_ID     = process.env.SHOPIFY_CLIENT_ID;
 const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET;
 
 app.get('/', (req, res) => res.json({ status: 'Nalea Customer API running ✅' }));
@@ -44,23 +44,27 @@ app.post('/customer', async (req, res) => {
       id: customerId,
       metafields: metafields.map(mf => ({
         namespace,
-        key: mf.key,
+        key:   mf.key,
         value: mf.value,
-        type: mf.type || 'single_line_text_field'
+        type:  mf.type || 'single_line_text_field'
       }))
     }
   };
 
   try {
     const response = await fetch(`https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}.json`, {
-      method: 'PUT',
+      method:  'PUT',
       headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN },
-      body: JSON.stringify(payload)
+      body:    JSON.stringify(payload)
     });
     const data = await response.json();
-    if (!response.ok) return res.status(response.status).json({ error: data });
+    if (!response.ok) {
+      console.error('Customer metafield error:', response.status, JSON.stringify(data));
+      return res.status(response.status).json({ error: data });
+    }
     return res.json({ success: true });
   } catch (err) {
+    console.error('Customer metafield exception:', err.message);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -72,41 +76,81 @@ app.post('/address', async (req, res) => {
   if (!customerId) return res.status(400).json({ error: 'No customer ID' });
 
   const { action, address, addressId } = req.body;
-  const base = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/addresses`;
+  const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/addresses`;
   const headers = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
 
   try {
     let response, data;
 
     if (action === 'create') {
-      response = await fetch(`${base}.json`, { method: 'POST', headers, body: JSON.stringify({ address }) });
+      // Strip 'default' field — Shopify doesn't accept it in the address body
+      const { default: setDefault, ...addressPayload } = address;
+
+      console.log(`Creating address for customer ${customerId}:`, JSON.stringify(addressPayload));
+
+      response = await fetch(`${base}.json`, {
+        method:  'POST',
+        headers,
+        body:    JSON.stringify({ address: addressPayload })
+      });
       data = await response.json();
-      if (response.ok && address && address.default && data.customer_address) {
-        await fetch(`${base}/${data.customer_address.id}/default.json`, { method: 'PUT', headers });
+
+      if (!response.ok) {
+        console.error('Shopify address create error:', response.status, JSON.stringify(data));
+        return res.status(response.status).json({ error: data });
+      }
+
+      // Now set as default if requested
+      if (setDefault && data.customer_address && data.customer_address.id) {
+        const defRes = await fetch(`${base}/${data.customer_address.id}/default.json`, { method: 'PUT', headers });
+        console.log('Set default result:', defRes.status);
       }
 
     } else if (action === 'update') {
-      response = await fetch(`${base}/${addressId}.json`, { method: 'PUT', headers, body: JSON.stringify({ address }) });
+      // Strip 'default' field here too
+      const { default: setDefault, ...addressPayload } = address;
+
+      response = await fetch(`${base}/${addressId}.json`, {
+        method:  'PUT',
+        headers,
+        body:    JSON.stringify({ address: addressPayload })
+      });
       data = await response.json();
-      if (response.ok && address && address.default) {
+
+      if (!response.ok) {
+        console.error('Shopify address update error:', response.status, JSON.stringify(data));
+        return res.status(response.status).json({ error: data });
+      }
+
+      if (setDefault) {
         await fetch(`${base}/${addressId}/default.json`, { method: 'PUT', headers });
       }
 
     } else if (action === 'delete') {
       response = await fetch(`${base}/${addressId}.json`, { method: 'DELETE', headers });
-      data = response.ok ? { deleted: true } : await response.json();
+      data     = response.ok ? { deleted: true } : await response.json();
+
+      if (!response.ok) {
+        console.error('Shopify address delete error:', response.status, JSON.stringify(data));
+        return res.status(response.status).json({ error: data });
+      }
 
     } else if (action === 'default') {
       response = await fetch(`${base}/${addressId}/default.json`, { method: 'PUT', headers });
-      data = await response.json();
+      data     = await response.json();
+
+      if (!response.ok) {
+        console.error('Shopify set-default error:', response.status, JSON.stringify(data));
+        return res.status(response.status).json({ error: data });
+      }
 
     } else {
       return res.status(400).json({ error: 'Invalid action' });
     }
 
-    if (!response.ok) return res.status(response.status).json({ error: data });
     return res.json({ success: true, data });
   } catch (err) {
+    console.error('Address exception:', err.message);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
