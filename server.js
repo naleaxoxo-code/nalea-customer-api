@@ -244,11 +244,15 @@ app.get('/liked', async (req, res) => {
     const listData = await listRes.json();
     if (listData.metafields && listData.metafields.length > 0) {
       try {
-        const items = JSON.parse(listData.metafields[0].value);
-        return res.json({ success: true, items: Array.isArray(items) ? items : [] });
-      } catch(e) { return res.json({ success: true, items: [] }); }
+        const raw = JSON.parse(listData.metafields[0].value);
+        if (Array.isArray(raw)) {
+          return res.json({ success: true, items: raw, removed: [] });
+        } else {
+          return res.json({ success: true, items: raw.items || [], removed: raw.removed || [] });
+        }
+      } catch(e) { return res.json({ success: true, items: [], removed: [] }); }
     }
-    return res.json({ success: true, items: [] });
+    return res.json({ success: true, items: [], removed: [] });
   } catch (err) {
     console.error('Liked GET error:', err.message);
     return res.status(500).json({ error: 'Internal server error' });
@@ -261,10 +265,11 @@ app.post('/liked', async (req, res) => {
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.status(400).json({ error: 'No customer ID' });
 
-  const { items } = req.body;
+  const { items, removed } = req.body;
   if (typeof items === 'undefined') return res.status(400).json({ error: 'items required' });
 
-  const itemsValue = typeof items === 'string' ? items : JSON.stringify(items);
+  const data = { items: Array.isArray(items) ? items : [], removed: Array.isArray(removed) ? removed : [] };
+  const itemsValue = JSON.stringify(data);
   const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
   const headers = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
 
