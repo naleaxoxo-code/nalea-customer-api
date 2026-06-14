@@ -36,12 +36,13 @@ app.post('/customer', async (req, res) => {
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.status(400).json({ error: 'No customer ID' });
 
-  const { namespace = 'custom', metafields } = req.body;
+  const { namespace = 'custom', metafields, customer_fields } = req.body;
   if (!metafields || !Array.isArray(metafields)) return res.status(400).json({ error: 'metafields array required' });
 
   const payload = {
     customer: {
       id: customerId,
+      ...(customer_fields || {}),
       metafields: metafields.map(mf => ({
         namespace,
         key:   mf.key,
