@@ -232,9 +232,11 @@ app.post('/cards', async (req, res) => {
 
 // ===== LIKED ITEMS — GET =====
 app.get('/liked', async (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
-  if (!customerId) return res.json({ success: true, items: [] });
+  if (!customerId) return res.json({ success: true, items: [], removed: [] });
 
   const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
   const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
