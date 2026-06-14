@@ -230,5 +230,74 @@ app.post('/cards', async (req, res) => {
   }
 });
 
+// ===== LIKED ITEMS — GET =====
+app.get('/liked', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.json({ success: true, items: [] });
+
+  const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=liked_items`, { headers });
+    const listData = await listRes.json();
+    if (listData.metafields && listData.metafields.length > 0) {
+      try {
+        const items = JSON.parse(listData.metafields[0].value);
+        return res.json({ success: true, items: Array.isArray(items) ? items : [] });
+      } catch(e) { return res.json({ success: true, items: [] }); }
+    }
+    return res.json({ success: true, items: [] });
+  } catch (err) {
+    console.error('Liked GET error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ===== LIKED ITEMS — POST =====
+app.post('/liked', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+
+  const { items } = req.body;
+  if (typeof items === 'undefined') return res.status(400).json({ error: 'items required' });
+
+  const itemsValue = typeof items === 'string' ? items : JSON.stringify(items);
+  const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const headers = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=liked_items`, { headers: { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN } });
+    const listData = await listRes.json();
+
+    let response;
+    if (listData.metafields && listData.metafields.length > 0) {
+      const mfId = listData.metafields[0].id;
+      response = await fetch(`${base}/${mfId}.json`, {
+        method: 'PUT', headers,
+        body: JSON.stringify({ metafield: { id: mfId, value: itemsValue, type: 'multi_line_text_field' } })
+      });
+    } else {
+      response = await fetch(`${base}.json`, {
+        method: 'POST', headers,
+        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'liked_items', value: itemsValue, type: 'multi_line_text_field' } })
+      });
+    }
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.error('Liked save error:', response.status, JSON.stringify(data));
+      return res.status(response.status).json({ error: data });
+    }
+    console.log('Liked items saved for customer', customerId);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Liked POST error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nalea API listening on port ${PORT}`));
