@@ -1,6 +1,11 @@
+$ cat /home/user/nalea-customer-api/server.js
+
 const express = require('express');
 const crypto  = require('crypto');
 const fetch   = (...args) => import('node-fetch').then(({ default: f }) => f(...args));
+const multer  = require('multer');
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const app = express();
 app.use(express.json());
@@ -298,6 +303,190 @@ app.post('/liked', async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     console.error('Liked POST error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ===== PROFILE — GET photo URL + visibility setting =====
+app.get('/profile', async (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.json({ success: true, profile_photo: null, photo_public: false });
+
+  const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const [photoRes, publicRes] = await Promise.all([
+      fetch(`${base}.json?namespace=custom&key=profile_photo`, { headers }),
+      fetch(`${base}.json?namespace=custom&key=photo_public`,  { headers })
+    ]);
+    const [photoData, publicData] = await Promise.all([photoRes.json(), publicRes.json()]);
+
+    const profile_photo = photoData.metafields?.[0]?.value || null;
+    const photo_public  = publicData.metafields?.[0]?.value === 'true';
+
+    return res.json({ success: true, profile_photo, photo_public });
+  } catch (err) {
+    console.error('Profile GET error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ===== PROFILE PHOTO — upload to Shopify CDN and save URL as metafield =====
+app.post('/profile/photo', upload.single('photo'), async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+  if (!req.file)   return res.status(400).json({ error: 'No photo file provided' });
+
+  const { buffer, mimetype, originalname, size } = req.file;
+  const jsonHeaders  = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const adminHeaders = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const graphqlUrl   = `https://${SHOPIFY_STORE}/admin/api/2024-04/graphql.json`;
+
+  try {
+    // Step 1 — create a staged upload target on Shopify
+    const stagedRes = await fetch(graphqlUrl, {
+      method: 'POST',
+      headers: jsonHeaders,
+      body: JSON.stringify({
+        query: `mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
+          stagedUploadsCreate(input: $input) {
+            stagedTargets { url resourceUrl parameters { name value } }
+            userErrors { field message }
+          }
+        }`,
+        variables: {
+          input: [{
+            filename:   originalname || `profile_${customerId}.jpg`,
+            mimeType:   mimetype,
+            resource:   'FILE',
+            fileSize:   String(size),
+            httpMethod: 'POST'
+          }]
+        }
+      })
+    });
+
+    const stagedData = await stagedRes.json();
+    const target = stagedData?.data?.stagedUploadsCreate?.stagedTargets?.[0];
+    if (!target) {
+      console.error('Staged upload failed:', JSON.stringify(stagedData));
+      return res.status(500).json({ error: 'Failed to create staged upload' });
+    }
+
+    // Step 2 — upload the file bytes to the staged S3 URL
+    const form = new FormData();
+    for (const { name, value } of target.parameters) form.append(name, value);
+    form.append('file', new Blob([buffer], { type: mimetype }), originalname || 'photo.jpg');
+
+    const uploadRes = await fetch(target.url, { method: 'POST', body: form });
+    if (!uploadRes.ok) {
+      const text = await uploadRes.text();
+      console.error('S3 upload error:', uploadRes.status, text);
+      return res.status(500).json({ error: 'Photo upload to CDN failed' });
+    }
+
+    // Step 3 — register the file in Shopify Files
+    const fileRes = await fetch(graphqlUrl, {
+      method: 'POST',
+      headers: jsonHeaders,
+      body: JSON.stringify({
+        query: `mutation fileCreate($files: [FileCreateInput!]!) {
+          fileCreate(files: $files) {
+            files { ... on MediaImage { image { url } } ... on GenericFile { url } }
+            userErrors { field message }
+          }
+        }`,
+        variables: {
+          files: [{ originalSource: target.resourceUrl, contentType: 'IMAGE' }]
+        }
+      })
+    });
+
+    const fileData = await fileRes.json();
+    // resourceUrl is the permanent CDN URL — use it directly since fileCreate may still be processing
+    const cdnUrl = target.resourceUrl;
+
+    // Step 4 — save CDN URL as customer metafield
+    const mfBase    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+    const listRes   = await fetch(`${mfBase}.json?namespace=custom&key=profile_photo`, { headers: adminHeaders });
+    const listData  = await listRes.json();
+
+    let mfResponse;
+    if (listData.metafields?.length > 0) {
+      const mfId = listData.metafields[0].id;
+      mfResponse = await fetch(`${mfBase}/${mfId}.json`, {
+        method: 'PUT',
+        headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { id: mfId, value: cdnUrl, type: 'single_line_text_field' } })
+      });
+    } else {
+      mfResponse = await fetch(`${mfBase}.json`, {
+        method: 'POST',
+        headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'profile_photo', value: cdnUrl, type: 'single_line_text_field' } })
+      });
+    }
+
+    const mfData = await mfResponse.json();
+    if (!mfResponse.ok) {
+      console.error('Profile photo metafield error:', JSON.stringify(mfData));
+      return res.status(mfResponse.status).json({ error: mfData });
+    }
+
+    console.log('Profile photo saved for customer', customerId);
+    return res.json({ success: true, profile_photo: cdnUrl });
+  } catch (err) {
+    console.error('Profile photo exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ===== PROFILE VISIBILITY — set photo_public metafield (true/false) =====
+app.post('/profile/visibility', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+
+  const { photo_public } = req.body;
+  if (typeof photo_public === 'undefined') return res.status(400).json({ error: 'photo_public required' });
+
+  const value       = photo_public === true || photo_public === 'true' ? 'true' : 'false';
+  const base        = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const jsonHeaders = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const getHeaders  = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=photo_public`, { headers: getHeaders });
+    const listData = await listRes.json();
+
+    let response;
+    if (listData.metafields?.length > 0) {
+      const mfId = listData.metafields[0].id;
+      response = await fetch(`${base}/${mfId}.json`, {
+        method: 'PUT',
+        headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { id: mfId, value, type: 'single_line_text_field' } })
+      });
+    } else {
+      response = await fetch(`${base}.json`, {
+        method: 'POST',
+        headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'photo_public', value, type: 'single_line_text_field' } })
+      });
+    }
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.error('Visibility save error:', JSON.stringify(data));
+      return res.status(response.status).json({ error: data });
+    }
+    return res.json({ success: true, photo_public: value === 'true' });
+  } catch (err) {
+    console.error('Visibility exception:', err.message);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
