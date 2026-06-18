@@ -63,9 +63,13 @@ async function updatePublicRegistry(customerId, isPublic) {
     try { registry = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch {}
   }
 
-  // Update registry
+  // Store a small proxy URL (not raw base64) so registry stays small.
+  // Emoji avatars (short, no http/data prefix) are stored directly.
+  const isEmoji = photo && photo.length <= 10 && !photo.startsWith('http') && !photo.startsWith('data:');
+  const registryValue = isEmoji ? photo : `/apps/nalea/photo/${customerId}`;
+
   if (isPublic && photo) {
-    registry[fullName] = photo;
+    registry[fullName] = registryValue;
   } else {
     delete registry[fullName];
   }
@@ -529,7 +533,32 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
   }
 });
 
-// ===== PROFILE PHOTO BASE64 — upload base64 photo to Shopify CDN, save URL as metafield =====
+// ===== SERVE PROFILE PHOTO — reads base64 metafield and serves it as an image =====
+app.get('/photo/:customerId', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).send('Unauthorized');
+  const customerId = req.params.customerId;
+  const adminHeaders = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  try {
+    const mfRes  = await fetch(`https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields.json?namespace=custom&key=profile_photo`, { headers: adminHeaders });
+    const mfData = await mfRes.json();
+    const photo  = mfData.metafields?.[0]?.value || null;
+    if (!photo) return res.status(404).send('No photo');
+    if (photo.startsWith('http')) return res.redirect(photo);
+    const matches = photo.match(/^data:([^;]+);base64,(.+)$/);
+    if (matches) {
+      const buffer = Buffer.from(matches[2], 'base64');
+      res.set('Content-Type', matches[1]);
+      res.set('Cache-Control', 'public, max-age=3600');
+      return res.send(buffer);
+    }
+    return res.status(404).send('Unknown format');
+  } catch (err) {
+    console.error('Photo serve exception:', err.message);
+    return res.status(500).send('Error');
+  }
+});
+
+// ===== PROFILE PHOTO BASE64 — save compressed base64 directly as metafield =====
 app.post('/profile/photo-base64', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
@@ -540,54 +569,10 @@ app.post('/profile/photo-base64', async (req, res) => {
 
   const jsonHeaders  = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
   const adminHeaders = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
-  const graphqlUrl   = `https://${SHOPIFY_STORE}/admin/api/2024-04/graphql.json`;
   const mfBase       = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
 
   try {
-    // Decode base64 to buffer so we can upload to Shopify CDN
-    const matches = photo.match(/^data:([^;]+);base64,(.+)$/);
-    let buffer, mimetype;
-    if (matches) {
-      mimetype = matches[1];
-      buffer   = Buffer.from(matches[2], 'base64');
-    } else {
-      // plain base64 without data URI prefix — assume JPEG
-      buffer   = Buffer.from(photo, 'base64');
-      mimetype = 'image/jpeg';
-    }
-    const size     = buffer.length;
-    const filename = `profile_${customerId}.jpg`;
-
-    // Step 1 — staged upload (PUT avoids FormData/Blob issues)
-    const stagedRes = await fetch(graphqlUrl, {
-      method: 'POST', headers: jsonHeaders,
-      body: JSON.stringify({
-        query: `mutation stagedUploadsCreate($input:[StagedUploadInput!]!){stagedUploadsCreate(input:$input){stagedTargets{url resourceUrl parameters{name value}}userErrors{field message}}}`,
-        variables: { input: [{ filename, mimeType: mimetype, resource: 'FILE', fileSize: String(size), httpMethod: 'PUT' }] }
-      })
-    });
-    const stagedData = await stagedRes.json();
-    const target = stagedData?.data?.stagedUploadsCreate?.stagedTargets?.[0];
-    if (!target) {
-      console.error('Staged upload failed:', JSON.stringify(stagedData));
-      return res.status(500).json({ error: 'Failed to create staged upload' });
-    }
-
-    // Step 2 — PUT raw bytes to CDN target URL
-    const uploadRes = await fetch(target.url, {
-      method: 'PUT',
-      headers: { 'Content-Type': mimetype },
-      body: buffer
-    });
-    if (!uploadRes.ok) {
-      const text = await uploadRes.text();
-      console.error('CDN upload error:', uploadRes.status, text);
-      return res.status(500).json({ error: 'Photo upload to CDN failed' });
-    }
-
-    const cdnUrl = target.resourceUrl;
-
-    // Step 3 — save CDN URL as profile_photo metafield (short URL, not giant base64)
+    // Save base64 directly — client compresses to 150px JPEG (~10-20KB), well under 128KB metafield limit
     const listRes  = await fetch(`${mfBase}.json?namespace=custom&key=profile_photo`, { headers: adminHeaders });
     const listData = await listRes.json();
     let mfResponse;
@@ -595,12 +580,12 @@ app.post('/profile/photo-base64', async (req, res) => {
       const mfId = listData.metafields[0].id;
       mfResponse = await fetch(`${mfBase}/${mfId}.json`, {
         method: 'PUT', headers: jsonHeaders,
-        body: JSON.stringify({ metafield: { id: mfId, value: cdnUrl, type: 'single_line_text_field' } })
+        body: JSON.stringify({ metafield: { id: mfId, value: photo, type: 'multi_line_text_field' } })
       });
     } else {
       mfResponse = await fetch(`${mfBase}.json`, {
         method: 'POST', headers: jsonHeaders,
-        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'profile_photo', value: cdnUrl, type: 'single_line_text_field' } })
+        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'profile_photo', value: photo, type: 'multi_line_text_field' } })
       });
     }
     const mfData = await mfResponse.json();
@@ -609,13 +594,13 @@ app.post('/profile/photo-base64', async (req, res) => {
       return res.status(mfResponse.status).json({ error: mfData });
     }
 
-    console.log('Profile photo (CDN) saved for customer', customerId, cdnUrl.substring(0, 60));
+    console.log('Profile photo (base64) saved for customer', customerId, 'size:', photo.length);
     const pubCheck = await fetch(`${mfBase}.json?namespace=custom&key=photo_public`, { headers: adminHeaders });
     const pubData  = await pubCheck.json();
     const isPublic = pubData.metafields?.[0]?.value === 'true';
     updatePublicRegistry(customerId, isPublic).catch(e => console.error('Registry update error:', e.message));
 
-    return res.json({ success: true, profile_photo: cdnUrl });
+    return res.json({ success: true, profile_photo: photo });
   } catch (err) {
     console.error('Photo-base64 exception:', err.message);
     return res.status(500).json({ error: 'Internal server error' });
