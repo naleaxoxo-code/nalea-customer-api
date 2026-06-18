@@ -527,7 +527,7 @@ app.post('/profile/photo-base64', async (req, res) => {
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.status(400).json({ error: 'No customer ID' });
 
-  const { photo } = req.body;
+  const photo = req.body.photo_data || req.body.photo;
   if (!photo) return res.status(400).json({ error: 'photo required' });
 
   const base       = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
