@@ -521,6 +521,55 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
   }
 });
 
+// ===== PROFILE PHOTO BASE64 — save base64 photo as metafield and update registry =====
+app.post('/profile/photo-base64', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+
+  const { photo } = req.body;
+  if (!photo) return res.status(400).json({ error: 'photo required' });
+
+  const base       = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const jsonHeaders = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const getHeaders  = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=profile_photo`, { headers: getHeaders });
+    const listData = await listRes.json();
+
+    let mfResponse;
+    if (listData.metafields?.length > 0) {
+      const mfId = listData.metafields[0].id;
+      mfResponse = await fetch(`${base}/${mfId}.json`, {
+        method: 'PUT', headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { id: mfId, value: photo, type: 'single_line_text_field' } })
+      });
+    } else {
+      mfResponse = await fetch(`${base}.json`, {
+        method: 'POST', headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'profile_photo', value: photo, type: 'single_line_text_field' } })
+      });
+    }
+
+    const mfData = await mfResponse.json();
+    if (!mfResponse.ok) {
+      console.error('Photo-base64 metafield error:', JSON.stringify(mfData));
+      return res.status(mfResponse.status).json({ error: mfData });
+    }
+
+    const pubCheck = await fetch(`${base}.json?namespace=custom&key=photo_public`, { headers: getHeaders });
+    const pubData  = await pubCheck.json();
+    const isPublic = pubData.metafields?.[0]?.value === 'true';
+    updatePublicRegistry(customerId, isPublic).catch(e => console.error('Registry update error:', e.message));
+
+    return res.json({ success: true, profile_photo: photo });
+  } catch (err) {
+    console.error('Photo-base64 exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ===== PROFILE VISIBILITY — set photo_public metafield (true/false) =====
 app.post('/profile/visibility', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
