@@ -66,7 +66,7 @@ async function updatePublicRegistry(customerId, isPublic) {
   }
 
   const newValue = JSON.stringify(registry);
-  console.log(`Registry update for ${fullName}: isPublic=${isPublic}, photo=${photo ? photo.substring(0,30)+'...' : 'none'}, registrySize=${newValue.length}, keys=${Object.keys(registry).join(',')}`);
+  console.log(`Registry update for ${fullName}: isPublic=${isPublic}, photo=${photo ? photo.substring(0,60)+'...' : 'none'}, registrySize=${newValue.length}, keys=${Object.keys(registry).join(',')}`);
   let saveRes;
   if (regId) {
     saveRes = await fetch(`${shopBase}/metafields/${regId}.json`, {
@@ -141,11 +141,7 @@ app.post('/address', async (req, res) => {
     if (action === 'create') {
       const { default: setDefault, ...addressPayload } = address;
       console.log(`Creating address for customer ${customerId}:`, JSON.stringify(addressPayload));
-      response = await fetch(`${base}.json`, {
-        method:  'POST',
-        headers,
-        body:    JSON.stringify({ address: addressPayload })
-      });
+      response = await fetch(`${base}.json`, { method: 'POST', headers, body: JSON.stringify({ address: addressPayload }) });
       data = await response.json();
       if (!response.ok) {
         console.error('Shopify address create error:', response.status, JSON.stringify(data));
@@ -158,11 +154,7 @@ app.post('/address', async (req, res) => {
 
     } else if (action === 'update') {
       const { default: setDefault, ...addressPayload } = address;
-      response = await fetch(`${base}/${addressId}.json`, {
-        method:  'PUT',
-        headers,
-        body:    JSON.stringify({ address: addressPayload })
-      });
+      response = await fetch(`${base}/${addressId}.json`, { method: 'PUT', headers, body: JSON.stringify({ address: addressPayload }) });
       data = await response.json();
       if (!response.ok) {
         console.error('Shopify address update error:', response.status, JSON.stringify(data));
@@ -238,23 +230,13 @@ app.post('/cards', async (req, res) => {
   try {
     const listRes  = await fetch(`${base}.json?namespace=custom&key=payment_cards`, { headers });
     const listData = await listRes.json();
-
     let response, data;
     if (listData.metafields && listData.metafields.length > 0) {
       const mfId = listData.metafields[0].id;
-      response = await fetch(`${base}/${mfId}.json`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ metafield: { id: mfId, value: cardsValue, type: 'multi_line_text_field' } })
-      });
+      response = await fetch(`${base}/${mfId}.json`, { method: 'PUT', headers, body: JSON.stringify({ metafield: { id: mfId, value: cardsValue, type: 'multi_line_text_field' } }) });
     } else {
-      response = await fetch(`${base}.json`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'payment_cards', value: cardsValue, type: 'multi_line_text_field' } })
-      });
+      response = await fetch(`${base}.json`, { method: 'POST', headers, body: JSON.stringify({ metafield: { namespace: 'custom', key: 'payment_cards', value: cardsValue, type: 'multi_line_text_field' } }) });
     }
-
     data = await response.json();
     if (!response.ok) {
       console.error('Cards save error:', response.status, JSON.stringify(data));
@@ -310,21 +292,13 @@ app.post('/liked', async (req, res) => {
   try {
     const listRes  = await fetch(`${base}.json?namespace=custom&key=liked_items`, { headers: { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN } });
     const listData = await listRes.json();
-
     let response;
     if (listData.metafields && listData.metafields.length > 0) {
       const mfId = listData.metafields[0].id;
-      response = await fetch(`${base}/${mfId}.json`, {
-        method: 'PUT', headers,
-        body: JSON.stringify({ metafield: { id: mfId, value: itemsValue, type: 'multi_line_text_field' } })
-      });
+      response = await fetch(`${base}/${mfId}.json`, { method: 'PUT', headers, body: JSON.stringify({ metafield: { id: mfId, value: itemsValue, type: 'multi_line_text_field' } }) });
     } else {
-      response = await fetch(`${base}.json`, {
-        method: 'POST', headers,
-        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'liked_items', value: itemsValue, type: 'multi_line_text_field' } })
-      });
+      response = await fetch(`${base}.json`, { method: 'POST', headers, body: JSON.stringify({ metafield: { namespace: 'custom', key: 'liked_items', value: itemsValue, type: 'multi_line_text_field' } }) });
     }
-
     const data = await response.json();
     if (!response.ok) {
       console.error('Liked save error:', response.status, JSON.stringify(data));
@@ -398,27 +372,12 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
 
   try {
     const stagedRes = await fetch(graphqlUrl, {
-      method: 'POST',
-      headers: jsonHeaders,
+      method: 'POST', headers: jsonHeaders,
       body: JSON.stringify({
-        query: `mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
-          stagedUploadsCreate(input: $input) {
-            stagedTargets { url resourceUrl parameters { name value } }
-            userErrors { field message }
-          }
-        }`,
-        variables: {
-          input: [{
-            filename:   originalname || `profile_${customerId}.jpg`,
-            mimeType:   mimetype,
-            resource:   'FILE',
-            fileSize:   String(size),
-            httpMethod: 'POST'
-          }]
-        }
+        query: `mutation stagedUploadsCreate($input: [StagedUploadInput!]!) { stagedUploadsCreate(input: $input) { stagedTargets { url resourceUrl parameters { name value } } userErrors { field message } } }`,
+        variables: { input: [{ filename: originalname || `profile_${customerId}.jpg`, mimeType: mimetype, resource: 'FILE', fileSize: String(size), httpMethod: 'POST' }] }
       })
     });
-
     const stagedData = await stagedRes.json();
     const target = stagedData?.data?.stagedUploadsCreate?.stagedTargets?.[0];
     if (!target) {
@@ -429,7 +388,6 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
     const form = new FormData();
     for (const { name, value } of target.parameters) form.append(name, value);
     form.append('file', new Blob([buffer], { type: mimetype }), originalname || 'photo.jpg');
-
     const uploadRes = await fetch(target.url, { method: 'POST', body: form });
     if (!uploadRes.ok) {
       const text = await uploadRes.text();
@@ -437,45 +395,17 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
       return res.status(500).json({ error: 'Photo upload to CDN failed' });
     }
 
-    const fileRes = await fetch(graphqlUrl, {
-      method: 'POST',
-      headers: jsonHeaders,
-      body: JSON.stringify({
-        query: `mutation fileCreate($files: [FileCreateInput!]!) {
-          fileCreate(files: $files) {
-            files { ... on MediaImage { image { url } } ... on GenericFile { url } }
-            userErrors { field message }
-          }
-        }`,
-        variables: {
-          files: [{ originalSource: target.resourceUrl, contentType: 'IMAGE' }]
-        }
-      })
-    });
-
-    const fileData = await fileRes.json();
     const cdnUrl = target.resourceUrl;
-
-    const mfBase    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
-    const listRes   = await fetch(`${mfBase}.json?namespace=custom&key=profile_photo`, { headers: adminHeaders });
-    const listData  = await listRes.json();
-
+    const mfBase = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+    const listRes  = await fetch(`${mfBase}.json?namespace=custom&key=profile_photo`, { headers: adminHeaders });
+    const listData = await listRes.json();
     let mfResponse;
     if (listData.metafields?.length > 0) {
       const mfId = listData.metafields[0].id;
-      mfResponse = await fetch(`${mfBase}/${mfId}.json`, {
-        method: 'PUT',
-        headers: jsonHeaders,
-        body: JSON.stringify({ metafield: { id: mfId, value: cdnUrl, type: 'single_line_text_field' } })
-      });
+      mfResponse = await fetch(`${mfBase}/${mfId}.json`, { method: 'PUT', headers: jsonHeaders, body: JSON.stringify({ metafield: { id: mfId, value: cdnUrl, type: 'single_line_text_field' } }) });
     } else {
-      mfResponse = await fetch(`${mfBase}.json`, {
-        method: 'POST',
-        headers: jsonHeaders,
-        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'profile_photo', value: cdnUrl, type: 'single_line_text_field' } })
-      });
+      mfResponse = await fetch(`${mfBase}.json`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ metafield: { namespace: 'custom', key: 'profile_photo', value: cdnUrl, type: 'single_line_text_field' } }) });
     }
-
     const mfData = await mfResponse.json();
     if (!mfResponse.ok) {
       console.error('Profile photo metafield error:', JSON.stringify(mfData));
@@ -483,7 +413,7 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
     }
 
     console.log('Profile photo saved for customer', customerId);
-    const pubCheck = await fetch(`https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields.json?namespace=custom&key=photo_public`, { headers: adminHeaders });
+    const pubCheck = await fetch(`${mfBase}.json?namespace=custom&key=photo_public`, { headers: adminHeaders });
     const pubData  = await pubCheck.json();
     const isPublic = pubData.metafields?.[0]?.value === 'true';
     updatePublicRegistry(customerId, isPublic).catch(e => console.error('Registry update error:', e.message));
@@ -502,40 +432,72 @@ app.post('/profile/photo-base64', async (req, res) => {
   const photo = req.body.photo_data || req.body.photo;
   if (!photo) return res.status(400).json({ error: 'photo required' });
 
-  const base        = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
-  const jsonHeaders = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
-  const getHeaders  = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const jsonHeaders  = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const adminHeaders = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const graphqlUrl   = `https://${SHOPIFY_STORE}/admin/api/2024-04/graphql.json`;
+  const mfBase       = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
 
   try {
-    const listRes  = await fetch(`${base}.json?namespace=custom&key=profile_photo`, { headers: getHeaders });
-    const listData = await listRes.json();
+    const matches = photo.match(/^data:([^;]+);base64,(.+)$/);
+    let buffer, mimetype;
+    if (matches) {
+      mimetype = matches[1];
+      buffer   = Buffer.from(matches[2], 'base64');
+    } else {
+      buffer   = Buffer.from(photo, 'base64');
+      mimetype = 'image/jpeg';
+    }
+    const size     = buffer.length;
+    const filename = `profile_${customerId}.jpg`;
 
+    const stagedRes = await fetch(graphqlUrl, {
+      method: 'POST', headers: jsonHeaders,
+      body: JSON.stringify({
+        query: `mutation stagedUploadsCreate($input:[StagedUploadInput!]!){stagedUploadsCreate(input:$input){stagedTargets{url resourceUrl parameters{name value}}userErrors{field message}}}`,
+        variables: { input: [{ filename, mimeType: mimetype, resource: 'FILE', fileSize: String(size), httpMethod: 'POST' }] }
+      })
+    });
+    const stagedData = await stagedRes.json();
+    const target = stagedData?.data?.stagedUploadsCreate?.stagedTargets?.[0];
+    if (!target) {
+      console.error('Staged upload failed:', JSON.stringify(stagedData));
+      return res.status(500).json({ error: 'Failed to create staged upload' });
+    }
+
+    const form = new FormData();
+    for (const { name, value } of target.parameters) form.append(name, value);
+    form.append('file', new Blob([buffer], { type: mimetype }), filename);
+    const uploadRes = await fetch(target.url, { method: 'POST', body: form });
+    if (!uploadRes.ok) {
+      const text = await uploadRes.text();
+      console.error('S3 upload error:', uploadRes.status, text);
+      return res.status(500).json({ error: 'Photo upload to CDN failed' });
+    }
+
+    const cdnUrl = target.resourceUrl;
+
+    const listRes  = await fetch(`${mfBase}.json?namespace=custom&key=profile_photo`, { headers: adminHeaders });
+    const listData = await listRes.json();
     let mfResponse;
     if (listData.metafields?.length > 0) {
       const mfId = listData.metafields[0].id;
-      mfResponse = await fetch(`${base}/${mfId}.json`, {
-        method: 'PUT', headers: jsonHeaders,
-        body: JSON.stringify({ metafield: { id: mfId, value: photo, type: 'multi_line_text_field' } })
-      });
+      mfResponse = await fetch(`${mfBase}/${mfId}.json`, { method: 'PUT', headers: jsonHeaders, body: JSON.stringify({ metafield: { id: mfId, value: cdnUrl, type: 'single_line_text_field' } }) });
     } else {
-      mfResponse = await fetch(`${base}.json`, {
-        method: 'POST', headers: jsonHeaders,
-        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'profile_photo', value: photo, type: 'multi_line_text_field' } })
-      });
+      mfResponse = await fetch(`${mfBase}.json`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ metafield: { namespace: 'custom', key: 'profile_photo', value: cdnUrl, type: 'single_line_text_field' } }) });
     }
-
     const mfData = await mfResponse.json();
     if (!mfResponse.ok) {
       console.error('Photo-base64 metafield error:', JSON.stringify(mfData));
       return res.status(mfResponse.status).json({ error: mfData });
     }
 
-    const pubCheck = await fetch(`${base}.json?namespace=custom&key=photo_public`, { headers: getHeaders });
+    console.log('Profile photo (CDN) saved for customer', customerId, cdnUrl.substring(0, 60));
+    const pubCheck = await fetch(`${mfBase}.json?namespace=custom&key=photo_public`, { headers: adminHeaders });
     const pubData  = await pubCheck.json();
     const isPublic = pubData.metafields?.[0]?.value === 'true';
     updatePublicRegistry(customerId, isPublic).catch(e => console.error('Registry update error:', e.message));
 
-    return res.json({ success: true, profile_photo: photo });
+    return res.json({ success: true, profile_photo: cdnUrl });
   } catch (err) {
     console.error('Photo-base64 exception:', err.message);
     return res.status(500).json({ error: 'Internal server error' });
@@ -558,23 +520,13 @@ app.post('/profile/visibility', async (req, res) => {
   try {
     const listRes  = await fetch(`${base}.json?namespace=custom&key=photo_public`, { headers: getHeaders });
     const listData = await listRes.json();
-
     let response;
     if (listData.metafields?.length > 0) {
       const mfId = listData.metafields[0].id;
-      response = await fetch(`${base}/${mfId}.json`, {
-        method: 'PUT',
-        headers: jsonHeaders,
-        body: JSON.stringify({ metafield: { id: mfId, value, type: 'single_line_text_field' } })
-      });
+      response = await fetch(`${base}/${mfId}.json`, { method: 'PUT', headers: jsonHeaders, body: JSON.stringify({ metafield: { id: mfId, value, type: 'single_line_text_field' } }) });
     } else {
-      response = await fetch(`${base}.json`, {
-        method: 'POST',
-        headers: jsonHeaders,
-        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'photo_public', value, type: 'single_line_text_field' } })
-      });
+      response = await fetch(`${base}.json`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ metafield: { namespace: 'custom', key: 'photo_public', value, type: 'single_line_text_field' } }) });
     }
-
     const data = await response.json();
     if (!response.ok) {
       console.error('Visibility save error:', JSON.stringify(data));
@@ -604,21 +556,13 @@ app.post('/profile/review-avatar', async (req, res) => {
   try {
     const listRes  = await fetch(`${base}.json?namespace=custom&key=show_on_reviews`, { headers: getHeaders });
     const listData = await listRes.json();
-
     let response;
     if (listData.metafields?.length > 0) {
       const mfId = listData.metafields[0].id;
-      response = await fetch(`${base}/${mfId}.json`, {
-        method: 'PUT', headers: jsonHeaders,
-        body: JSON.stringify({ metafield: { id: mfId, value, type: 'single_line_text_field' } })
-      });
+      response = await fetch(`${base}/${mfId}.json`, { method: 'PUT', headers: jsonHeaders, body: JSON.stringify({ metafield: { id: mfId, value, type: 'single_line_text_field' } }) });
     } else {
-      response = await fetch(`${base}.json`, {
-        method: 'POST', headers: jsonHeaders,
-        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'show_on_reviews', value, type: 'single_line_text_field' } })
-      });
+      response = await fetch(`${base}.json`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ metafield: { namespace: 'custom', key: 'show_on_reviews', value, type: 'single_line_text_field' } }) });
     }
-
     const data = await response.json();
     if (!response.ok) return res.status(response.status).json({ error: data });
     return res.json({ success: true, show_on_reviews: value === 'true' });
