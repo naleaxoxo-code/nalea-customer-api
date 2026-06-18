@@ -1,5 +1,3 @@
-$ cat /home/user/nalea-customer-api/server.js
-
 const express = require('express');
 const crypto  = require('crypto');
 const fetch   = (...args) => import('node-fetch').then(({ default: f }) => f(...args));
