@@ -54,14 +54,15 @@ async function updatePublicRegistry(customerId, isPublic) {
   const mfData = await mfRes.json();
   const photo  = mfData.metafields?.[0]?.value || null;
 
-  // Read existing registry
-  const regRes  = await fetch(`${shopBase}/metafields.json?namespace=custom&key=public_avatars&owner_resource=shop`, { headers: adminHeaders });
+  // Read existing registry (shop metafields live at /metafields.json with no owner_resource filter)
+  const regRes  = await fetch(`${shopBase}/metafields.json?namespace=custom&key=public_avatars`, { headers: adminHeaders });
   const regData = await regRes.json();
   let registry  = {};
   let regId     = null;
   if (regData.metafields?.length > 0) {
     regId = regData.metafields[0].id;
-    try { registry = JSON.parse(regData.metafields[0].value); } catch {}
+    const raw = regData.metafields[0].value;
+    try { registry = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch {}
   }
 
   // Update registry
@@ -80,7 +81,7 @@ async function updatePublicRegistry(customerId, isPublic) {
   } else {
     await fetch(`${shopBase}/metafields.json`, {
       method: 'POST', headers: jsonHeaders,
-      body: JSON.stringify({ metafield: { namespace: 'custom', key: 'public_avatars', value: newValue, type: 'json', owner_resource: 'shop' } })
+      body: JSON.stringify({ metafield: { namespace: 'custom', key: 'public_avatars', value: newValue, type: 'json' } })
     });
   }
 }
