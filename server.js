@@ -356,6 +356,26 @@ app.post('/liked', async (req, res) => {
   }
 });
 
+// ===== PUBLIC AVATARS — returns shop registry for all visitors =====
+app.get('/public-avatars', async (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const headers  = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+    const regRes   = await fetch(`https://${SHOPIFY_STORE}/admin/api/2024-04/metafields.json?namespace=custom&key=public_avatars`, { headers });
+    const regData  = await regRes.json();
+    let registry   = {};
+    if (regData.metafields?.length > 0) {
+      const raw = regData.metafields[0].value;
+      try { registry = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch {}
+    }
+    return res.json(registry);
+  } catch (err) {
+    console.error('Public avatars error:', err.message);
+    return res.json({});
+  }
+});
+
 // ===== PROFILE — GET photo URL + visibility setting =====
 app.get('/profile', async (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
