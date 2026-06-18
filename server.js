@@ -543,12 +543,12 @@ app.post('/profile/photo-base64', async (req, res) => {
       const mfId = listData.metafields[0].id;
       mfResponse = await fetch(`${base}/${mfId}.json`, {
         method: 'PUT', headers: jsonHeaders,
-        body: JSON.stringify({ metafield: { id: mfId, value: photo, type: 'single_line_text_field' } })
+        body: JSON.stringify({ metafield: { id: mfId, value: photo, type: 'multi_line_text_field' } })
       });
     } else {
       mfResponse = await fetch(`${base}.json`, {
         method: 'POST', headers: jsonHeaders,
-        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'profile_photo', value: photo, type: 'single_line_text_field' } })
+        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'profile_photo', value: photo, type: 'multi_line_text_field' } })
       });
     }
 
