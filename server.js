@@ -33,13 +33,11 @@ function verifyProxySignature(query) {
   } catch { return false; }
 }
 
-// ===== PUBLIC AVATAR REGISTRY — keeps shop.metafields.custom.public_avatars in sync =====
 async function updatePublicRegistry(customerId, isPublic) {
   const adminHeaders = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
   const jsonHeaders  = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
   const shopBase     = `https://${SHOPIFY_STORE}/admin/api/2024-04`;
 
-  // Get customer name + profile_photo
   const custRes  = await fetch(`${shopBase}/customers/${customerId}.json`, { headers: adminHeaders });
   const custData = await custRes.json();
   const c        = custData.customer;
@@ -47,12 +45,10 @@ async function updatePublicRegistry(customerId, isPublic) {
   const fullName = `${c.first_name || ''} ${c.last_name || ''}`.trim();
   if (!fullName) return;
 
-  // Get profile_photo from customer metafields
   const mfRes  = await fetch(`${shopBase}/customers/${customerId}/metafields.json?namespace=custom&key=profile_photo`, { headers: adminHeaders });
   const mfData = await mfRes.json();
   const photo  = mfData.metafields?.[0]?.value || null;
 
-  // Read existing registry (shop metafields live at /metafields.json with no owner_resource filter)
   const regRes  = await fetch(`${shopBase}/metafields.json?namespace=custom&key=public_avatars`, { headers: adminHeaders });
   const regData = await regRes.json();
   let registry  = {};
@@ -63,7 +59,6 @@ async function updatePublicRegistry(customerId, isPublic) {
     try { registry = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch {}
   }
 
-  // Update registry
   if (isPublic && photo) {
     registry[fullName] = photo;
   } else {
@@ -71,20 +66,27 @@ async function updatePublicRegistry(customerId, isPublic) {
   }
 
   const newValue = JSON.stringify(registry);
+  console.log(`Registry update for ${fullName}: isPublic=${isPublic}, photo=${photo ? photo.substring(0,30)+'...' : 'none'}, registrySize=${newValue.length}, keys=${Object.keys(registry).join(',')}`);
+  let saveRes;
   if (regId) {
-    await fetch(`${shopBase}/metafields/${regId}.json`, {
+    saveRes = await fetch(`${shopBase}/metafields/${regId}.json`, {
       method: 'PUT', headers: jsonHeaders,
       body: JSON.stringify({ metafield: { id: regId, value: newValue, type: 'json' } })
     });
   } else {
-    await fetch(`${shopBase}/metafields.json`, {
+    saveRes = await fetch(`${shopBase}/metafields.json`, {
       method: 'POST', headers: jsonHeaders,
       body: JSON.stringify({ metafield: { namespace: 'custom', key: 'public_avatars', value: newValue, type: 'json' } })
     });
   }
+  if (!saveRes.ok) {
+    const errBody = await saveRes.text();
+    console.error(`Registry save FAILED: status=${saveRes.status}, body=${errBody.substring(0,500)}`);
+  } else {
+    console.log(`Registry saved OK for ${fullName}`);
+  }
 }
 
-// ===== METAFIELDS (personal info, contact, style) =====
 app.post('/customer', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
@@ -124,7 +126,6 @@ app.post('/customer', async (req, res) => {
   }
 });
 
-// ===== ADDRESSES (add / edit / delete / set default) =====
 app.post('/address', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
@@ -138,45 +139,35 @@ app.post('/address', async (req, res) => {
     let response, data;
 
     if (action === 'create') {
-      // Strip 'default' field — Shopify doesn't accept it in the address body
       const { default: setDefault, ...addressPayload } = address;
-
       console.log(`Creating address for customer ${customerId}:`, JSON.stringify(addressPayload));
-
       response = await fetch(`${base}.json`, {
         method:  'POST',
         headers,
         body:    JSON.stringify({ address: addressPayload })
       });
       data = await response.json();
-
       if (!response.ok) {
         console.error('Shopify address create error:', response.status, JSON.stringify(data));
         return res.status(response.status).json({ error: data });
       }
-
-      // Now set as default if requested
       if (setDefault && data.customer_address && data.customer_address.id) {
         const defRes = await fetch(`${base}/${data.customer_address.id}/default.json`, { method: 'PUT', headers });
         console.log('Set default result:', defRes.status);
       }
 
     } else if (action === 'update') {
-      // Strip 'default' field here too
       const { default: setDefault, ...addressPayload } = address;
-
       response = await fetch(`${base}/${addressId}.json`, {
         method:  'PUT',
         headers,
         body:    JSON.stringify({ address: addressPayload })
       });
       data = await response.json();
-
       if (!response.ok) {
         console.error('Shopify address update error:', response.status, JSON.stringify(data));
         return res.status(response.status).json({ error: data });
       }
-
       if (setDefault) {
         await fetch(`${base}/${addressId}/default.json`, { method: 'PUT', headers });
       }
@@ -184,7 +175,6 @@ app.post('/address', async (req, res) => {
     } else if (action === 'delete') {
       response = await fetch(`${base}/${addressId}.json`, { method: 'DELETE', headers });
       data     = response.ok ? { deleted: true } : await response.json();
-
       if (!response.ok) {
         console.error('Shopify address delete error:', response.status, JSON.stringify(data));
         return res.status(response.status).json({ error: data });
@@ -193,7 +183,6 @@ app.post('/address', async (req, res) => {
     } else if (action === 'default') {
       response = await fetch(`${base}/${addressId}/default.json`, { method: 'PUT', headers });
       data     = await response.json();
-
       if (!response.ok) {
         console.error('Shopify set-default error:', response.status, JSON.stringify(data));
         return res.status(response.status).json({ error: data });
@@ -210,7 +199,6 @@ app.post('/address', async (req, res) => {
   }
 });
 
-// ===== PAYMENT CARDS — GET (read from Shopify) =====
 app.get('/cards', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
@@ -235,7 +223,6 @@ app.get('/cards', async (req, res) => {
   }
 });
 
-// ===== PAYMENT CARDS (dedicated metafields endpoint) =====
 app.post('/cards', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
@@ -249,13 +236,11 @@ app.post('/cards', async (req, res) => {
   const headers = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
 
   try {
-    // Check if metafield already exists for this customer
     const listRes  = await fetch(`${base}.json?namespace=custom&key=payment_cards`, { headers });
     const listData = await listRes.json();
 
     let response, data;
     if (listData.metafields && listData.metafields.length > 0) {
-      // Update existing
       const mfId = listData.metafields[0].id;
       response = await fetch(`${base}/${mfId}.json`, {
         method: 'PUT',
@@ -263,7 +248,6 @@ app.post('/cards', async (req, res) => {
         body: JSON.stringify({ metafield: { id: mfId, value: cardsValue, type: 'multi_line_text_field' } })
       });
     } else {
-      // Create new
       response = await fetch(`${base}.json`, {
         method: 'POST',
         headers,
@@ -284,7 +268,6 @@ app.post('/cards', async (req, res) => {
   }
 });
 
-// ===== LIKED ITEMS — GET =====
 app.get('/liked', async (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.set('Pragma', 'no-cache');
@@ -312,7 +295,6 @@ app.get('/liked', async (req, res) => {
   }
 });
 
-// ===== LIKED ITEMS — POST =====
 app.post('/liked', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
@@ -356,7 +338,6 @@ app.post('/liked', async (req, res) => {
   }
 });
 
-// ===== PUBLIC AVATARS — returns shop registry for all visitors =====
 app.get('/public-avatars', async (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
@@ -376,7 +357,6 @@ app.get('/public-avatars', async (req, res) => {
   }
 });
 
-// ===== PROFILE — GET photo URL + visibility setting =====
 app.get('/profile', async (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
@@ -405,7 +385,6 @@ app.get('/profile', async (req, res) => {
   }
 });
 
-// ===== PROFILE PHOTO — upload to Shopify CDN and save URL as metafield =====
 app.post('/profile/photo', upload.single('photo'), async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
@@ -418,7 +397,6 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
   const graphqlUrl   = `https://${SHOPIFY_STORE}/admin/api/2024-04/graphql.json`;
 
   try {
-    // Step 1 — create a staged upload target on Shopify
     const stagedRes = await fetch(graphqlUrl, {
       method: 'POST',
       headers: jsonHeaders,
@@ -448,7 +426,6 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
       return res.status(500).json({ error: 'Failed to create staged upload' });
     }
 
-    // Step 2 — upload the file bytes to the staged S3 URL
     const form = new FormData();
     for (const { name, value } of target.parameters) form.append(name, value);
     form.append('file', new Blob([buffer], { type: mimetype }), originalname || 'photo.jpg');
@@ -460,7 +437,6 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
       return res.status(500).json({ error: 'Photo upload to CDN failed' });
     }
 
-    // Step 3 — register the file in Shopify Files
     const fileRes = await fetch(graphqlUrl, {
       method: 'POST',
       headers: jsonHeaders,
@@ -478,10 +454,8 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
     });
 
     const fileData = await fileRes.json();
-    // resourceUrl is the permanent CDN URL — use it directly since fileCreate may still be processing
     const cdnUrl = target.resourceUrl;
 
-    // Step 4 — save CDN URL as customer metafield
     const mfBase    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
     const listRes   = await fetch(`${mfBase}.json?namespace=custom&key=profile_photo`, { headers: adminHeaders });
     const listData  = await listRes.json();
@@ -509,7 +483,6 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
     }
 
     console.log('Profile photo saved for customer', customerId);
-    // Check if customer has photo_public=true, then update registry
     const pubCheck = await fetch(`https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields.json?namespace=custom&key=photo_public`, { headers: adminHeaders });
     const pubData  = await pubCheck.json();
     const isPublic = pubData.metafields?.[0]?.value === 'true';
@@ -521,7 +494,6 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
   }
 });
 
-// ===== PROFILE PHOTO BASE64 — save base64 photo as metafield and update registry =====
 app.post('/profile/photo-base64', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
@@ -530,7 +502,7 @@ app.post('/profile/photo-base64', async (req, res) => {
   const photo = req.body.photo_data || req.body.photo;
   if (!photo) return res.status(400).json({ error: 'photo required' });
 
-  const base       = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const base        = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
   const jsonHeaders = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
   const getHeaders  = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
 
@@ -570,7 +542,6 @@ app.post('/profile/photo-base64', async (req, res) => {
   }
 });
 
-// ===== PROFILE VISIBILITY — set photo_public metafield (true/false) =====
 app.post('/profile/visibility', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
@@ -617,7 +588,6 @@ app.post('/profile/visibility', async (req, res) => {
   }
 });
 
-// ===== REVIEW AVATAR TOGGLE — set show_on_reviews metafield =====
 app.post('/profile/review-avatar', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
