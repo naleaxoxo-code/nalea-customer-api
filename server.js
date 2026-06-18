@@ -558,12 +558,12 @@ app.post('/profile/photo-base64', async (req, res) => {
     const size     = buffer.length;
     const filename = `profile_${customerId}.jpg`;
 
-    // Step 1 — staged upload
+    // Step 1 — staged upload (PUT avoids FormData/Blob issues)
     const stagedRes = await fetch(graphqlUrl, {
       method: 'POST', headers: jsonHeaders,
       body: JSON.stringify({
         query: `mutation stagedUploadsCreate($input:[StagedUploadInput!]!){stagedUploadsCreate(input:$input){stagedTargets{url resourceUrl parameters{name value}}userErrors{field message}}}`,
-        variables: { input: [{ filename, mimeType: mimetype, resource: 'FILE', fileSize: String(size), httpMethod: 'POST' }] }
+        variables: { input: [{ filename, mimeType: mimetype, resource: 'FILE', fileSize: String(size), httpMethod: 'PUT' }] }
       })
     });
     const stagedData = await stagedRes.json();
@@ -573,14 +573,15 @@ app.post('/profile/photo-base64', async (req, res) => {
       return res.status(500).json({ error: 'Failed to create staged upload' });
     }
 
-    // Step 2 — push bytes to S3
-    const form = new FormData();
-    for (const { name, value } of target.parameters) form.append(name, value);
-    form.append('file', new Blob([buffer], { type: mimetype }), filename);
-    const uploadRes = await fetch(target.url, { method: 'POST', body: form });
+    // Step 2 — PUT raw bytes to CDN target URL
+    const uploadRes = await fetch(target.url, {
+      method: 'PUT',
+      headers: { 'Content-Type': mimetype },
+      body: buffer
+    });
     if (!uploadRes.ok) {
       const text = await uploadRes.text();
-      console.error('S3 upload error:', uploadRes.status, text);
+      console.error('CDN upload error:', uploadRes.status, text);
       return res.status(500).json({ error: 'Photo upload to CDN failed' });
     }
 
