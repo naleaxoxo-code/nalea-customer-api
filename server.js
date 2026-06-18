@@ -227,15 +227,17 @@ app.get('/profile', async (req, res) => {
   const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
   const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
 
-  try {
-    const [photoRes, publicRes] = await Promise.all([
-      fetch(`${base}.json?namespace=custom&key=profile_photo`, { headers }),
-      fetch(`${base}.json?namespace=custom&key=photo_public`,  { headers })
+    try {
+    const [photoRes, publicRes, reviewsRes] = await Promise.all([
+      fetch(`${base}.json?namespace=custom&key=profile_photo`,   { headers }),
+      fetch(`${base}.json?namespace=custom&key=photo_public`,    { headers }),
+      fetch(`${base}.json?namespace=custom&key=show_on_reviews`, { headers })
     ]);
-    const [photoData, publicData] = await Promise.all([photoRes.json(), publicRes.json()]);
-    const profile_photo = photoData.metafields?.[0]?.value || null;
-    const photo_public  = publicData.metafields?.[0]?.value === 'true';
-    return res.json({ success: true, profile_photo, photo_public });
+    const [photoData, publicData, reviewsData] = await Promise.all([photoRes.json(), publicRes.json(), reviewsRes.json()]);
+    const profile_photo   = photoData.metafields?.[0]?.value || null;
+    const photo_public    = publicData.metafields?.[0]?.value === 'true';
+    const show_on_reviews = reviewsData.metafields?.[0]?.value !== 'false';
+    return res.json({ success: true, profile_photo, photo_public, show_on_reviews });
   } catch (err) {
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -339,6 +341,45 @@ app.post('/profile/visibility', async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+// ===== REVIEW AVATAR TOGGLE — set show_on_reviews metafield =====
+app.post('/profile/review-avatar', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
 
+  const { show_on_reviews } = req.body;
+  if (typeof show_on_reviews === 'undefined') return res.status(400).json({ error: 'show_on_reviews required' });
+
+  const value       = show_on_reviews === true || show_on_reviews === 'true' ? 'true' : 'false';
+  const base        = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const jsonHeaders = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const getHeaders  = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=show_on_reviews`, { headers: getHeaders });
+    const listData = await listRes.json();
+
+    let response;
+    if (listData.metafields?.length > 0) {
+      const mfId = listData.metafields[0].id;
+      response = await fetch(`${base}/${mfId}.json`, {
+        method: 'PUT', headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { id: mfId, value, type: 'single_line_text_field' } })
+      });
+    } else {
+      response = await fetch(`${base}.json`, {
+        method: 'POST', headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'show_on_reviews', value, type: 'single_line_text_field' } })
+      });
+    }
+
+    const data = await response.json();
+    if (!response.ok) return res.status(response.status).json({ error: data });
+    return res.json({ success: true, show_on_reviews: value === 'true' });
+  } catch (err) {
+    console.error('Review avatar toggle exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nalea API listening on port ${PORT}`));
