@@ -6,7 +6,7 @@ const multer  = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '200kb' }));
 app.use(express.urlencoded({ extended: true }));
 
 const SHOPIFY_STORE         = process.env.SHOPIFY_STORE;
@@ -227,7 +227,7 @@ app.get('/profile', async (req, res) => {
   const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
   const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
 
-    try {
+  try {
     const [photoRes, publicRes, reviewsRes] = await Promise.all([
       fetch(`${base}.json?namespace=custom&key=profile_photo`,   { headers }),
       fetch(`${base}.json?namespace=custom&key=photo_public`,    { headers }),
@@ -311,6 +311,36 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
   }
 });
 
+app.post('/profile/photo-base64', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+  const { photo_data } = req.body;
+  if (!photo_data || typeof photo_data !== 'string') return res.status(400).json({ error: 'No photo data' });
+  if (photo_data.length > 65000) return res.status(400).json({ error: 'Image too large' });
+  const base        = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const jsonHeaders = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const getHeaders  = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=profile_photo`, { headers: getHeaders });
+    const listData = await listRes.json();
+    let response;
+    if (listData.metafields?.length > 0) {
+      const mfId = listData.metafields[0].id;
+      response = await fetch(`${base}/${mfId}.json`, { method: 'PUT', headers: jsonHeaders, body: JSON.stringify({ metafield: { id: mfId, value: photo_data, type: 'single_line_text_field' } }) });
+    } else {
+      response = await fetch(`${base}.json`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ metafield: { namespace: 'custom', key: 'profile_photo', value: photo_data, type: 'single_line_text_field' } }) });
+    }
+    const data = await response.json();
+    if (!response.ok) { console.error('Photo-base64 metafield error:', JSON.stringify(data)); return res.status(response.status).json({ error: data }); }
+    console.log('Photo base64 saved for customer', customerId);
+    return res.json({ success: true, profile_photo: photo_data });
+  } catch (err) {
+    console.error('Photo base64 exception:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/profile/visibility', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
@@ -341,7 +371,7 @@ app.post('/profile/visibility', async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
-// ===== REVIEW AVATAR TOGGLE — set show_on_reviews metafield =====
+
 app.post('/profile/review-avatar', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
@@ -358,21 +388,13 @@ app.post('/profile/review-avatar', async (req, res) => {
   try {
     const listRes  = await fetch(`${base}.json?namespace=custom&key=show_on_reviews`, { headers: getHeaders });
     const listData = await listRes.json();
-
     let response;
     if (listData.metafields?.length > 0) {
       const mfId = listData.metafields[0].id;
-      response = await fetch(`${base}/${mfId}.json`, {
-        method: 'PUT', headers: jsonHeaders,
-        body: JSON.stringify({ metafield: { id: mfId, value, type: 'single_line_text_field' } })
-      });
+      response = await fetch(`${base}/${mfId}.json`, { method: 'PUT', headers: jsonHeaders, body: JSON.stringify({ metafield: { id: mfId, value, type: 'single_line_text_field' } }) });
     } else {
-      response = await fetch(`${base}.json`, {
-        method: 'POST', headers: jsonHeaders,
-        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'show_on_reviews', value, type: 'single_line_text_field' } })
-      });
+      response = await fetch(`${base}.json`, { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ metafield: { namespace: 'custom', key: 'show_on_reviews', value, type: 'single_line_text_field' } }) });
     }
-
     const data = await response.json();
     if (!response.ok) return res.status(response.status).json({ error: data });
     return res.json({ success: true, show_on_reviews: value === 'true' });
@@ -381,5 +403,6 @@ app.post('/profile/review-avatar', async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nalea API listening on port ${PORT}`));
