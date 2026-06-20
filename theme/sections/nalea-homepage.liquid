@@ -1,132 +1,131 @@
 {% comment %}
-  ============================================================
-  NALEA HOMEPAGE — Premium Animated Section
-  ============================================================
+  NALEA HOMEPAGE — Premium Animated Section v2
 {% endcomment %}
 
 {{ 'nalea-homepage.css' | asset_url | stylesheet_tag }}
 
+<!-- EMAIL POPUP -->
+<div class="nh-popup-overlay" id="nhPopupOverlay" aria-hidden="true">
+  <div class="nh-popup" role="dialog" aria-modal="true" aria-label="Subscribe to Nalèa XoXo">
+    <button class="nh-popup__close" id="nhPopupClose" aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 2l14 14M16 2L2 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <div class="nh-popup__badge">Exclusive Access</div>
+    <div class="nh-popup__icon">
+      <svg width="38" height="38" viewBox="0 0 38 38" fill="none"><rect x="3" y="8" width="32" height="22" rx="4" stroke="#c9a84c" stroke-width="1.6"/><path d="M3 12l16 11 16-11" stroke="#c9a84c" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </div>
+    <h2 class="nh-popup__title">Join The Inner Circle</h2>
+    <p class="nh-popup__sub">Be the first to know about new drops, exclusive offers, and styling inspo curated just for you.</p>
+    <div class="nh-popup__perks">
+      <span>✦ 10% off your first order</span>
+      <span>✦ Early access to drops</span>
+      <span>✦ Members-only deals</span>
+    </div>
+    {% form 'customer', class: 'nh-popup__form', id: 'nhPopupForm' %}
+      <input type="hidden" name="contact[tags]" value="newsletter,popup">
+      <input class="nh-popup__input" type="email" name="contact[email]" placeholder="Your email address" required autocomplete="email">
+      <button class="nh-popup__btn" type="submit">
+        Claim My 10% Off
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    {% endform %}
+    <p class="nh-popup__skip" id="nhPopupSkip">No thanks, I'll pay full price</p>
+  </div>
+</div>
+
 <div class="nalea-homepage">
 
-  {% comment %} ═══ HERO SLIDER ═══ {% endcomment %}
+  <!-- HERO SLIDER -->
   <section class="nh-hero" aria-label="Featured highlights slider">
-
     {% for i in (1..3) %}
-      {% assign slide_image_key  = 'slide_' | append: i | append: '_image' %}
-      {% assign slide_eyebrow    = 'slide_' | append: i | append: '_eyebrow' %}
-      {% assign slide_heading    = 'slide_' | append: i | append: '_heading' %}
-      {% assign slide_sub        = 'slide_' | append: i | append: '_sub' %}
-      {% assign slide_cta_text   = 'slide_' | append: i | append: '_cta_text' %}
-      {% assign slide_cta_url    = 'slide_' | append: i | append: '_cta_url' %}
-      {% assign slide_image      = section.settings[slide_image_key] %}
-
+      {% assign slide_image_key = 'slide_' | append: i | append: '_image' %}
+      {% assign slide_eyebrow   = 'slide_' | append: i | append: '_eyebrow' %}
+      {% assign slide_heading   = 'slide_' | append: i | append: '_heading' %}
+      {% assign slide_sub       = 'slide_' | append: i | append: '_sub' %}
+      {% assign slide_cta_text  = 'slide_' | append: i | append: '_cta_text' %}
+      {% assign slide_cta_url   = 'slide_' | append: i | append: '_cta_url' %}
+      {% assign slide_image     = section.settings[slide_image_key] %}
       <div class="nh-hero__slide{% if i == 1 %} active{% endif %}"
-        {% if slide_image != blank %}
-          style="background-image: url('{{ slide_image | image_url: width: 2000 }}')"
-        {% endif %}>
-
+        {% if slide_image != blank %}style="background-image: url('{{ slide_image | image_url: width: 2000 }}')"{% endif %}>
         <div class="nh-hero__content">
-          <div class="nh-hero__eyebrow">
-            {{ section.settings[slide_eyebrow] | default: 'New Season' }}
-          </div>
-          <h2 class="nh-hero__title">
-            {{ section.settings[slide_heading] | default: 'Dress to Impress' }}
-          </h2>
-          <p class="nh-hero__subtitle">
-            {{ section.settings[slide_sub] | default: 'Discover pieces crafted for the bold and the beautiful.' }}
-          </p>
+          <div class="nh-hero__eyebrow">{{ section.settings[slide_eyebrow] | default: 'New Season' }}</div>
+          <h2 class="nh-hero__title">{{ section.settings[slide_heading] | default: 'Dress to Impress' }}</h2>
+          <p class="nh-hero__subtitle">{{ section.settings[slide_sub] | default: 'Discover pieces crafted for the bold and the beautiful.' }}</p>
           <a href="{{ section.settings[slide_cta_url] | default: '/collections/all' }}" class="nh-hero__cta">
             {{ section.settings[slide_cta_text] | default: 'Shop Now' }}
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </a>
         </div>
-
       </div>
     {% endfor %}
-
     <div class="nh-hero__dots" role="tablist" aria-label="Slider navigation">
       {% for i in (1..3) %}
-        <button class="nh-hero__dot{% if i == 1 %} active{% endif %}"
-                role="tab"
-                aria-label="Go to slide {{ i }}"></button>
+        <button class="nh-hero__dot{% if i == 1 %} active{% endif %}" role="tab" aria-label="Go to slide {{ i }}"></button>
       {% endfor %}
     </div>
-
     <div class="nh-hero__counter" aria-hidden="true">01 / 03</div>
-
     <div class="nh-hero__scroll" aria-hidden="true">
       <div class="nh-hero__scroll-line"></div>
       <span>Scroll</span>
     </div>
-
   </section>
 
-  {% comment %} ═══ MARQUEE ═══ {% endcomment %}
+  <!-- MARQUEE -->
   <div class="nh-marquee" aria-hidden="true">
     <div class="nh-marquee__track">
       {% for n in (1..8) %}
         <span class="nh-marquee__item">
-          New Arrivals
-          <span class="nh-marquee__sep"></span>
-          Free Shipping Over R800
-          <span class="nh-marquee__sep"></span>
-          Nalèa XoXo
-          <span class="nh-marquee__sep"></span>
-          Shop The Look
-          <span class="nh-marquee__sep"></span>
+          New Arrivals <span class="nh-marquee__sep"></span>
+          Free Shipping Over R800 <span class="nh-marquee__sep"></span>
+          Nalèa XoXo <span class="nh-marquee__sep"></span>
+          Shop The Look <span class="nh-marquee__sep"></span>
+          Members Sale <span class="nh-marquee__sep"></span>
         </span>
       {% endfor %}
     </div>
   </div>
 
-  {% comment %} ═══ COLLECTIONS ═══ {% endcomment %}
-  <section class="nh-collections">
-    <div class="nh-section-header nh-reveal">
-      <p class="nh-section-eyebrow">Curated For You</p>
-      <h2 class="nh-section-title">Shop By Style</h2>
-    </div>
-    <div class="nh-collections__grid">
-      {% for block in section.blocks %}
-        {% if block.type == 'collection_card' %}
-          {% assign col = block.settings.collection %}
-          <div class="nh-collections__card nh-reveal nh-reveal-delay-{{ forloop.index }}"
-               {{ block.shopify_attributes }}>
-
-            {% if block.settings.image != blank %}
-              <img class="nh-collections__card-img"
-                   src="{{ block.settings.image | image_url: width: 700 }}"
-                   alt="{{ block.settings.label | escape }}"
-                   loading="lazy">
-            {% elsif col != blank and col.image != blank %}
-              <img class="nh-collections__card-img"
-                   src="{{ col.image | image_url: width: 700 }}"
-                   alt="{{ col.title | escape }}"
-                   loading="lazy">
-            {% else %}
-              <div style="width:100%;height:100%;background:linear-gradient(135deg,#18122b,#1e1630);position:absolute;inset:0;"></div>
-            {% endif %}
-
-            <div class="nh-collections__card-info">
-              <div class="nh-collections__card-name">
-                {{ block.settings.label | default: col.title | default: 'Collection' }}
-              </div>
-              <a href="{{ col.url | default: '/collections/all' }}" class="nh-collections__card-link">
-                Explore
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                  <path d="M1 6h10M7 2l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </a>
-            </div>
-
+  <!-- FLASH SALE COUNTDOWN -->
+  <section class="nh-sale-banner">
+    <div class="nh-sale-banner__bg"></div>
+    <div class="nh-sale-banner__inner">
+      <div class="nh-sale-banner__left">
+        <span class="nh-sale-banner__tag">Flash Sale</span>
+        <h2 class="nh-sale-banner__title">Up To <em>50% Off</em> Sitewide</h2>
+        <p class="nh-sale-banner__sub">Limited time. Selected styles. Don't sleep on it.</p>
+        <a href="/collections/sale" class="nh-sale-banner__cta">
+          Shop The Sale
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+      <div class="nh-sale-banner__right">
+        <p class="nh-sale-banner__ends">Sale ends in</p>
+        <div class="nh-countdown" id="nhCountdown">
+          <div class="nh-countdown__unit">
+            <span class="nh-countdown__num" id="nhDays">00</span>
+            <span class="nh-countdown__label">Days</span>
           </div>
-        {% endif %}
-      {% endfor %}
+          <span class="nh-countdown__sep">:</span>
+          <div class="nh-countdown__unit">
+            <span class="nh-countdown__num" id="nhHours">00</span>
+            <span class="nh-countdown__label">Hours</span>
+          </div>
+          <span class="nh-countdown__sep">:</span>
+          <div class="nh-countdown__unit">
+            <span class="nh-countdown__num" id="nhMins">00</span>
+            <span class="nh-countdown__label">Mins</span>
+          </div>
+          <span class="nh-countdown__sep">:</span>
+          <div class="nh-countdown__unit">
+            <span class="nh-countdown__num" id="nhSecs">00</span>
+            <span class="nh-countdown__label">Secs</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  {% comment %} ═══ FEATURED PRODUCTS ═══ {% endcomment %}
+  <!-- FEATURED PRODUCTS -->
   {% if section.settings.featured_collection != blank %}
     {% assign feat_col = collections[section.settings.featured_collection] %}
     {% if feat_col != blank %}
@@ -134,41 +133,33 @@
         <div class="nh-section-header nh-reveal">
           <p class="nh-section-eyebrow">Just Dropped</p>
           <h2 class="nh-section-title">New Arrivals</h2>
+          <p class="nh-section-desc">Freshly curated pieces landing in your wardrobe.</p>
         </div>
         <div class="nh-featured__grid">
           {% for product in feat_col.products limit: 8 %}
             <div class="nh-product-card nh-reveal nh-reveal-delay-{{ forloop.index }}">
               <div class="nh-product-card__media">
-
                 {% if product.featured_image != blank %}
                   <img class="nh-product-card__img"
                        src="{{ product.featured_image | image_url: width: 600 }}"
                        alt="{{ product.title | escape }}"
                        loading="lazy">
                 {% endif %}
-
                 {% if product.compare_at_price > product.price %}
-                  <span class="nh-product-card__badge">Sale</span>
+                  <span class="nh-product-card__badge nh-product-card__badge--sale">
+                    -{{ product.compare_at_price | minus: product.price | times: 100 | divided_by: product.compare_at_price }}%
+                  </span>
                 {% elsif product.tags contains 'new' %}
                   <span class="nh-product-card__badge">New</span>
                 {% endif %}
-
                 <button class="nh-product-card__like" type="button" aria-label="Like {{ product.title | escape }}">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                  </svg>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                 </button>
-
-                <button class="nh-product-card__quick-add"
-                        type="button"
-                        data-product-url="{{ product.url }}">
-                  Quick View
-                </button>
-
+                <button class="nh-product-card__quick-add" type="button" data-product-url="{{ product.url }}">Quick View</button>
               </div>
               <div class="nh-product-card__info">
                 <a href="{{ product.url }}" class="nh-product-card__name">{{ product.title }}</a>
-                <div>
+                <div class="nh-product-card__prices">
                   <span class="nh-product-card__price">{{ product.price | money }}</span>
                   {% if product.compare_at_price > product.price %}
                     <span class="nh-product-card__price-compare">{{ product.compare_at_price | money }}</span>
@@ -178,11 +169,107 @@
             </div>
           {% endfor %}
         </div>
+        <div class="nh-view-all nh-reveal">
+          <a href="{{ feat_col.url }}" class="nh-view-all__btn">
+            View All New Arrivals
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
       </section>
     {% endif %}
   {% endif %}
 
-  {% comment %} ═══ BRAND STATEMENT ═══ {% endcomment %}
+  <!-- COLLECTIONS GRID -->
+  <section class="nh-collections">
+    <div class="nh-section-header nh-reveal">
+      <p class="nh-section-eyebrow">Curated For You</p>
+      <h2 class="nh-section-title">Shop By Style</h2>
+      <p class="nh-section-desc">Every collection, a mood. Find yours.</p>
+    </div>
+    <div class="nh-collections__grid">
+      {% for block in section.blocks %}
+        {% if block.type == 'collection_card' %}
+          {% assign col = block.settings.collection %}
+          <div class="nh-collections__card nh-reveal nh-reveal-delay-{{ forloop.index }}" {{ block.shopify_attributes }}>
+            {% if block.settings.image != blank %}
+              <img class="nh-collections__card-img" src="{{ block.settings.image | image_url: width: 700 }}" alt="{{ block.settings.label | escape }}" loading="lazy">
+            {% elsif col != blank and col.image != blank %}
+              <img class="nh-collections__card-img" src="{{ col.image | image_url: width: 700 }}" alt="{{ col.title | escape }}" loading="lazy">
+            {% else %}
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,#18122b,#1e1630);position:absolute;inset:0;"></div>
+            {% endif %}
+            <div class="nh-collections__card-info">
+              <div class="nh-collections__card-name">{{ block.settings.label | default: col.title | default: 'Collection' }}</div>
+              <a href="{{ col.url | default: '/collections/all' }}" class="nh-collections__card-link">
+                Explore
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 6h10M7 2l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div class="nh-view-all nh-reveal">
+      <a href="/collections/all" class="nh-view-all__btn nh-view-all__btn--outline">
+        View All Collections
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- SALE COLLECTIONS (6 grid with individual timers) -->
+  <section class="nh-sale-collections">
+    <div class="nh-sale-collections__header nh-reveal">
+      <span class="nh-sale-collections__fire">🔥</span>
+      <p class="nh-section-eyebrow" style="color:#ff6b6b;">Limited Time Offers</p>
+      <h2 class="nh-section-title">Sale Collections</h2>
+      <p class="nh-section-desc">Handpicked deals — each with their own deadline. Move fast.</p>
+    </div>
+    <div class="nh-sale-collections__grid">
+      {% for block in section.blocks %}
+        {% if block.type == 'sale_collection_card' %}
+          {% assign col = block.settings.collection %}
+          <div class="nh-sale-col-card nh-reveal nh-reveal-delay-{{ forloop.index }}" {{ block.shopify_attributes }}>
+            <div class="nh-sale-col-card__media">
+              {% if block.settings.image != blank %}
+                <img src="{{ block.settings.image | image_url: width: 600 }}" alt="{{ block.settings.label | escape }}" loading="lazy" class="nh-sale-col-card__img">
+              {% elsif col != blank and col.image != blank %}
+                <img src="{{ col.image | image_url: width: 600 }}" alt="{{ col.title | escape }}" loading="lazy" class="nh-sale-col-card__img">
+              {% else %}
+                <div style="width:100%;height:100%;background:linear-gradient(135deg,#2a0a0a,#1a0808);"></div>
+              {% endif %}
+              <div class="nh-sale-col-card__discount">{{ block.settings.discount | default: '30% OFF' }}</div>
+            </div>
+            <div class="nh-sale-col-card__body">
+              <h3 class="nh-sale-col-card__name">{{ block.settings.label | default: col.title | default: 'Sale Collection' }}</h3>
+              <div class="nh-mini-countdown" data-hours="{{ block.settings.hours | default: 24 }}">
+                <span class="nh-mini-countdown__label">Ends in:</span>
+                <span class="nh-mini-countdown__time">
+                  <span class="mc-h">00</span>:<span class="mc-m">00</span>:<span class="mc-s">00</span>
+                </span>
+              </div>
+              <a href="{{ col.url | default: '/collections/all' }}" class="nh-sale-col-card__cta">Shop Now</a>
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- VIEW ALL PRODUCTS -->
+  <section class="nh-all-products nh-reveal">
+    <div class="nh-all-products__inner">
+      <p class="nh-section-eyebrow">Everything You Need</p>
+      <h2 class="nh-all-products__title">Explore The Full Collection</h2>
+      <p class="nh-all-products__sub">Over 200+ styles in one place. Your next obsession is waiting.</p>
+      <a href="/collections/all" class="nh-all-products__btn">
+        Browse All Products
+        <svg width="15" height="15" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- BRAND STATEMENT -->
   <section class="nh-brand">
     <p class="nh-brand__text nh-reveal">
       {{ section.settings.brand_text | default: 'Where fashion meets identity. Every piece tells your story.' }}
@@ -190,29 +277,19 @@
     <p class="nh-brand__sub nh-reveal nh-reveal-delay-1">
       {{ section.settings.brand_sub | default: 'Curated with intention. Designed for the woman who moves boldly through the world.' }}
     </p>
-    <a href="{{ section.settings.brand_cta_url | default: '/pages/about' }}"
-       class="nh-brand__cta nh-reveal nh-reveal-delay-2">
+    <a href="{{ section.settings.brand_cta_url | default: '/pages/about' }}" class="nh-brand__cta nh-reveal nh-reveal-delay-2">
       {{ section.settings.brand_cta_text | default: 'Our Story' }}
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
   </section>
 
-  {% comment %} ═══ NEWSLETTER ═══ {% endcomment %}
+  <!-- NEWSLETTER -->
   <section class="nh-newsletter">
     <h3 class="nh-newsletter__title nh-reveal">Stay In The Loop</h3>
-    <p class="nh-newsletter__sub nh-reveal nh-reveal-delay-1">
-      Be first to hear about new drops, exclusives, and styling tips.
-    </p>
+    <p class="nh-newsletter__sub nh-reveal nh-reveal-delay-1">Be first to hear about new drops, exclusives, and styling tips.</p>
     {% form 'customer', class: 'nh-newsletter__form nh-reveal nh-reveal-delay-2' %}
       <input type="hidden" name="contact[tags]" value="newsletter">
-      <input class="nh-newsletter__input"
-             type="email"
-             name="contact[email]"
-             placeholder="Your email address"
-             required
-             autocomplete="email">
+      <input class="nh-newsletter__input" type="email" name="contact[email]" placeholder="Your email address" required autocomplete="email">
       <button class="nh-newsletter__btn" type="submit">Subscribe</button>
     {% endform %}
   </section>
@@ -229,26 +306,26 @@
   "settings": [
     { "type": "header", "content": "Hero — Slide 1" },
     { "type": "image_picker", "id": "slide_1_image",    "label": "Slide 1 Background Image" },
-    { "type": "text",         "id": "slide_1_eyebrow",  "label": "Eyebrow / Tag",    "default": "New Season" },
-    { "type": "text",         "id": "slide_1_heading",  "label": "Heading",          "default": "Dress to Impress" },
-    { "type": "textarea",     "id": "slide_1_sub",      "label": "Subheading",       "default": "New arrivals. Bold looks. Made for you." },
-    { "type": "text",         "id": "slide_1_cta_text", "label": "Button Text",      "default": "Shop Now" },
+    { "type": "text",         "id": "slide_1_eyebrow",  "label": "Eyebrow",    "default": "New Season" },
+    { "type": "text",         "id": "slide_1_heading",  "label": "Heading",    "default": "Dress to Impress" },
+    { "type": "textarea",     "id": "slide_1_sub",      "label": "Subheading", "default": "New arrivals. Bold looks. Made for you." },
+    { "type": "text",         "id": "slide_1_cta_text", "label": "Button Text","default": "Shop Now" },
     { "type": "url",          "id": "slide_1_cta_url",  "label": "Button Link" },
 
     { "type": "header", "content": "Hero — Slide 2" },
     { "type": "image_picker", "id": "slide_2_image",    "label": "Slide 2 Background Image" },
-    { "type": "text",         "id": "slide_2_eyebrow",  "label": "Eyebrow / Tag",    "default": "Limited Edition" },
-    { "type": "text",         "id": "slide_2_heading",  "label": "Heading",          "default": "Own the Room" },
-    { "type": "textarea",     "id": "slide_2_sub",      "label": "Subheading",       "default": "Exclusive pieces. Curated for confidence." },
-    { "type": "text",         "id": "slide_2_cta_text", "label": "Button Text",      "default": "Explore" },
+    { "type": "text",         "id": "slide_2_eyebrow",  "label": "Eyebrow",    "default": "Limited Edition" },
+    { "type": "text",         "id": "slide_2_heading",  "label": "Heading",    "default": "Own the Room" },
+    { "type": "textarea",     "id": "slide_2_sub",      "label": "Subheading", "default": "Exclusive pieces. Curated for confidence." },
+    { "type": "text",         "id": "slide_2_cta_text", "label": "Button Text","default": "Explore" },
     { "type": "url",          "id": "slide_2_cta_url",  "label": "Button Link" },
 
     { "type": "header", "content": "Hero — Slide 3" },
     { "type": "image_picker", "id": "slide_3_image",    "label": "Slide 3 Background Image" },
-    { "type": "text",         "id": "slide_3_eyebrow",  "label": "Eyebrow / Tag",    "default": "Trending Now" },
-    { "type": "text",         "id": "slide_3_heading",  "label": "Heading",          "default": "Make Your Move" },
-    { "type": "textarea",     "id": "slide_3_sub",      "label": "Subheading",       "default": "The looks everyone's talking about." },
-    { "type": "text",         "id": "slide_3_cta_text", "label": "Button Text",      "default": "View All" },
+    { "type": "text",         "id": "slide_3_eyebrow",  "label": "Eyebrow",    "default": "Trending Now" },
+    { "type": "text",         "id": "slide_3_heading",  "label": "Heading",    "default": "Make Your Move" },
+    { "type": "textarea",     "id": "slide_3_sub",      "label": "Subheading", "default": "The looks everyone's talking about." },
+    { "type": "text",         "id": "slide_3_cta_text", "label": "Button Text","default": "View All" },
     { "type": "url",          "id": "slide_3_cta_url",  "label": "Button Link" },
 
     { "type": "header", "content": "Featured Products" },
@@ -269,9 +346,20 @@
         { "type": "image_picker", "id": "image",      "label": "Override Image (optional)" },
         { "type": "text",         "id": "label",      "label": "Override Label (optional)" }
       ]
+    },
+    {
+      "type": "sale_collection_card",
+      "name": "Sale Collection Card",
+      "settings": [
+        { "type": "collection",   "id": "collection", "label": "Collection" },
+        { "type": "image_picker", "id": "image",      "label": "Override Image (optional)" },
+        { "type": "text",         "id": "label",      "label": "Collection Name" },
+        { "type": "text",         "id": "discount",   "label": "Discount Badge e.g. 30% OFF", "default": "30% OFF" },
+        { "type": "number",       "id": "hours",      "label": "Countdown Hours", "default": 24 }
+      ]
     }
   ],
-  "max_blocks": 8,
+  "max_blocks": 16,
   "presets": [
     {
       "name": "Nalèa Homepage",
@@ -279,7 +367,13 @@
         { "type": "collection_card" },
         { "type": "collection_card" },
         { "type": "collection_card" },
-        { "type": "collection_card" }
+        { "type": "collection_card" },
+        { "type": "sale_collection_card" },
+        { "type": "sale_collection_card" },
+        { "type": "sale_collection_card" },
+        { "type": "sale_collection_card" },
+        { "type": "sale_collection_card" },
+        { "type": "sale_collection_card" }
       ]
     }
   ]
