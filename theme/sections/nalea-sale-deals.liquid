@@ -1,0 +1,143 @@
+{% comment %} NALEA — Sale Deals Section with Countdown Timers {% endcomment %}
+{{ 'nalea-homepage.css' | asset_url | stylesheet_tag }}
+{{ 'nalea-sections.css' | asset_url | stylesheet_tag }}
+
+<div class="ns-sale-deals">
+  <div class="ns-sale-deals__header">
+    {% if section.settings.eyebrow != blank %}
+      <p class="ns-sale-deals__eyebrow">{{ section.settings.eyebrow }}</p>
+    {% endif %}
+    <h2 class="ns-sale-deals__title">{{ section.settings.title | default: 'Hot Sale Deals' }}</h2>
+    {% if section.settings.subtitle != blank %}
+      <p class="ns-sale-deals__sub">{{ section.settings.subtitle }}</p>
+    {% endif %}
+  </div>
+
+  <div class="ns-sale-deals__grid">
+    {% for block in section.blocks %}
+      {% if block.type == 'deal' %}
+        {% assign deal_col = collections[block.settings.collection] %}
+        <div class="ns-deal-card" data-hours="{{ block.settings.hours | default: 24 }}" data-deal-index="{{ forloop.index0 }}" {{ block.shopify_attributes }}>
+
+          <!-- Media -->
+          <div class="ns-deal-card__media">
+            {% if block.settings.image != blank %}
+              <img class="ns-deal-card__img"
+                   src="{{ block.settings.image | image_url: width: 700 }}"
+                   alt="{{ block.settings.deal_name | escape }}"
+                   loading="lazy">
+            {% elsif deal_col != blank and deal_col.image != blank %}
+              <img class="ns-deal-card__img"
+                   src="{{ deal_col.image | image_url: width: 700 }}"
+                   alt="{{ deal_col.title | escape }}"
+                   loading="lazy">
+            {% else %}
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,#1a0500,#2d0e00);"></div>
+            {% endif %}
+            <div class="ns-deal-card__media-overlay"></div>
+            {% if block.settings.discount != blank %}
+              <span class="ns-deal-card__badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right:3px;vertical-align:middle;"><path d="M12 2C9 7 5 9 5 14a7 7 0 0014 0c0-5-4-7-7-12z"/></svg>
+                {{ block.settings.discount }}% OFF
+              </span>
+            {% endif %}
+          </div>
+
+          <!-- Body -->
+          <div class="ns-deal-card__body">
+            {% if block.settings.eyebrow != blank %}
+              <p class="ns-deal-card__eyebrow">{{ block.settings.eyebrow }}</p>
+            {% endif %}
+            <h3 class="ns-deal-card__name">
+              {% if block.settings.deal_name != blank %}
+                {{ block.settings.deal_name }}
+              {% elsif deal_col != blank %}
+                {{ deal_col.title }}
+              {% else %}
+                Deal of the Day
+              {% endif %}
+            </h3>
+            {% if block.settings.deal_desc != blank %}
+              <p class="ns-deal-card__desc">{{ block.settings.deal_desc }}</p>
+            {% endif %}
+
+            <!-- Countdown Timer -->
+            <div class="ns-deal-timer" data-hours="{{ block.settings.hours | default: 24 }}" data-deal-index="{{ forloop.index0 }}">
+              <span class="ns-deal-timer__label">Ends in</span>
+              <div class="ns-deal-timer__units">
+                <div class="ns-deal-timer__unit">
+                  <span class="ns-deal-h">00</span>
+                  <span class="ns-deal-timer__unit-label">hrs</span>
+                </div>
+                <span class="ns-deal-timer__sep">:</span>
+                <div class="ns-deal-timer__unit">
+                  <span class="ns-deal-m">00</span>
+                  <span class="ns-deal-timer__unit-label">min</span>
+                </div>
+                <span class="ns-deal-timer__sep">:</span>
+                <div class="ns-deal-timer__unit">
+                  <span class="ns-deal-s">00</span>
+                  <span class="ns-deal-timer__unit-label">sec</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- CTA -->
+            {% assign deal_link = block.settings.url %}
+            {% if deal_link == blank and deal_col != blank %}
+              {% assign deal_link = deal_col.url %}
+            {% endif %}
+            {% if deal_link != blank %}
+              <a href="{{ deal_link }}" class="ns-deal-card__cta">
+                Shop This Deal
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+            {% endif %}
+          </div>
+
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+<script src="{{ 'nalea-sections.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Sale Deals",
+  "tag": "section",
+  "class": "nalea-sale-deals-section",
+  "settings": [
+    { "type": "text",     "id": "eyebrow",  "label": "Eyebrow",  "default": "Fire Deals" },
+    { "type": "text",     "id": "title",    "label": "Heading",  "default": "Hot Sale Deals" },
+    { "type": "textarea", "id": "subtitle", "label": "Subtitle", "default": "Limited time offers — grab them before they're gone." }
+  ],
+  "blocks": [
+    {
+      "type": "deal",
+      "name": "Sale Deal",
+      "settings": [
+        { "type": "collection",  "id": "collection", "label": "Collection" },
+        { "type": "image_picker","id": "image",      "label": "Override Image" },
+        { "type": "text",        "id": "eyebrow",    "label": "Eyebrow Label", "default": "Today Only" },
+        { "type": "text",        "id": "deal_name",  "label": "Deal Name",     "default": "Summer Sale" },
+        { "type": "textarea",    "id": "deal_desc",  "label": "Description",   "default": "Handpicked styles at unbeatable prices." },
+        { "type": "text",        "id": "discount",   "label": "Discount %",    "default": "30" },
+        { "type": "range",       "id": "hours",      "label": "Timer Duration (hours)", "min": 2, "max": 100, "step": 1, "default": 24 },
+        { "type": "url",         "id": "url",        "label": "Override Link" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Sale Deals",
+      "blocks": [
+        {"type":"deal","settings":{"eyebrow":"Flash Sale","deal_name":"Dresses & Sets","deal_desc":"Up to 40% off our top-rated dresses and co-ord sets.","discount":"40","hours":48}},
+        {"type":"deal","settings":{"eyebrow":"Weekend Only","deal_name":"Accessories Blowout","deal_desc":"Jewellery, bags and shoes — all reduced for the weekend.","discount":"25","hours":72}},
+        {"type":"deal","settings":{"eyebrow":"Clearance","deal_name":"Traditional Wear Sale","deal_desc":"Heritage pieces at heritage prices. Limited stock.","discount":"35","hours":24}}
+      ]
+    }
+  ]
+}
+{% endschema %}

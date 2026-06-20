@@ -1,0 +1,150 @@
+{% comment %} NALEA — Shop By Department (20 departments) {% endcomment %}
+{{ 'nalea-homepage.css' | asset_url | stylesheet_tag }}
+{{ 'nalea-sections.css' | asset_url | stylesheet_tag }}
+
+<div class="ns-departments">
+  <div class="ns-departments__header">
+    <p class="ns-departments__eyebrow">{{ section.settings.eyebrow | default: 'Everything in One Place' }}</p>
+    <h2 class="ns-departments__title">{{ section.settings.title | default: 'Shop By Department' }}</h2>
+    {% if section.settings.sub != blank %}
+      <p class="ns-departments__sub">{{ section.settings.sub }}</p>
+    {% endif %}
+  </div>
+
+  <div class="ns-departments__grid">
+    {% for block in section.blocks %}
+      {% if block.type == 'department' %}
+        <a href="{{ block.settings.url | default: '/collections/all' }}"
+           class="ns-dept-card"
+           {{ block.shopify_attributes }}>
+          <div class="ns-dept-card__icon">
+            {% case block.settings.icon %}
+              {% when 'dress' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 2l-4 6h4v12h8V8h4l-4-6"/><path d="M8 2h8"/></svg>
+              {% when 'top' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 6l4-4 6 3 6-3 4 4-3 3H5L2 6z"/><rect x="5" y="9" width="14" height="11" rx="1"/></svg>
+              {% when 'pants' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 3h16v5l-4 13h-3l-1-8-1 8H8L4 8V3z"/></svg>
+              {% when 'skirt' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 3h10l3 18H4L7 3z"/><line x1="6" y1="9" x2="18" y2="9"/></svg>
+              {% when 'active' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              {% when 'swim' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 18c3-3 7-3 10 0s7 3 10 0"/><path d="M8 6h8v8H8z" rx="2"/></svg>
+              {% when 'coat' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4l4 2v14H4V4zM20 4l-4 2v14h4V4zM8 6h8"/><path d="M10 6v4h4V6"/></svg>
+              {% when 'bag' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M8 8V6a4 4 0 018 0v2"/></svg>
+              {% when 'shoe' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 16s1-8 7-8l6 3 5-1v4l-3 2H3z"/></svg>
+              {% when 'jewel' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polygon points="12,2 22,9 18,21 6,21 2,9"/><line x1="2" y1="9" x2="22" y2="9"/></svg>
+              {% when 'him' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="7" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
+              {% when 'baby' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M8 14a7 7 0 000 7h8a7 7 0 000-7"/><circle cx="9" cy="11" r=".5" fill="currentColor"/><circle cx="15" cy="11" r=".5" fill="currentColor"/></svg>
+              {% when 'traditional' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polygon points="12,2 2,22 22,22"/><line x1="7" y1="16" x2="17" y2="16"/><line x1="12" y1="8" x2="12" y2="22"/></svg>
+              {% when 'wedding' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2l2 6h6l-5 4 2 6-5-3-5 3 2-6L4 8h6z"/></svg>
+              {% when 'sale' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+              {% when 'lounge' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="8" width="18" height="10" rx="3"/><path d="M7 8V6a5 5 0 0110 0v2"/></svg>
+              {% when 'knit' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4c0 8 4 12 8 12s8-4 8-12"/><path d="M9 4v5M15 4v5"/></svg>
+              {% when 'set' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+              {% when 'access' %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
+              {% else %}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
+            {% endcase %}
+          </div>
+          <span class="ns-dept-card__name">{{ block.settings.name | default: 'Department' }}</span>
+          {% if block.settings.count != blank %}
+            <span class="ns-dept-card__count">{{ block.settings.count }} items</span>
+          {% endif %}
+        </a>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+<script src="{{ 'nalea-sections.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Shop By Department",
+  "tag": "section",
+  "class": "nalea-departments-section",
+  "settings": [
+    { "type": "text",     "id": "eyebrow", "label": "Eyebrow",  "default": "Everything in One Place" },
+    { "type": "text",     "id": "title",   "label": "Heading",  "default": "Shop By Department" },
+    { "type": "textarea", "id": "sub",     "label": "Subtext",  "default": "20 curated categories — find your perfect style." }
+  ],
+  "blocks": [
+    {
+      "type": "department",
+      "name": "Department",
+      "settings": [
+        { "type": "text",   "id": "name",  "label": "Department Name", "default": "New In" },
+        { "type": "url",    "id": "url",   "label": "Link" },
+        { "type": "text",   "id": "count", "label": "Item Count (optional)", "default": "120+" },
+        { "type": "select", "id": "icon",  "label": "Icon",
+          "options": [
+            {"value":"dress",       "label":"Dress"},
+            {"value":"top",         "label":"Top / Blouse"},
+            {"value":"pants",       "label":"Pants / Jeans"},
+            {"value":"skirt",       "label":"Skirt"},
+            {"value":"active",      "label":"Activewear"},
+            {"value":"swim",        "label":"Swimwear"},
+            {"value":"coat",        "label":"Coat / Outerwear"},
+            {"value":"bag",         "label":"Bag"},
+            {"value":"shoe",        "label":"Shoes"},
+            {"value":"jewel",       "label":"Jewellery"},
+            {"value":"him",         "label":"For Him"},
+            {"value":"baby",        "label":"Baby / Kids"},
+            {"value":"traditional", "label":"Traditional"},
+            {"value":"wedding",     "label":"Wedding / Formal"},
+            {"value":"sale",        "label":"Sale"},
+            {"value":"lounge",      "label":"Loungewear"},
+            {"value":"knit",        "label":"Knitwear"},
+            {"value":"set",         "label":"Sets & Co-ords"},
+            {"value":"access",      "label":"Accessories"},
+            {"value":"other",       "label":"Other"}
+          ],
+          "default": "dress"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Shop By Department",
+      "blocks": [
+        {"type":"department","settings":{"name":"New In","icon":"sale","count":"50+"}},
+        {"type":"department","settings":{"name":"Dresses","icon":"dress","count":"80+"}},
+        {"type":"department","settings":{"name":"Tops & Blouses","icon":"top","count":"120+"}},
+        {"type":"department","settings":{"name":"Trousers & Jeans","icon":"pants","count":"60+"}},
+        {"type":"department","settings":{"name":"Skirts","icon":"skirt","count":"40+"}},
+        {"type":"department","settings":{"name":"Activewear","icon":"active","count":"35+"}},
+        {"type":"department","settings":{"name":"Swimwear","icon":"swim","count":"25+"}},
+        {"type":"department","settings":{"name":"Outerwear","icon":"coat","count":"30+"}},
+        {"type":"department","settings":{"name":"Bags & Purses","icon":"bag","count":"45+"}},
+        {"type":"department","settings":{"name":"Shoes & Heels","icon":"shoe","count":"55+"}},
+        {"type":"department","settings":{"name":"Jewellery","icon":"jewel","count":"70+"}},
+        {"type":"department","settings":{"name":"Accessories","icon":"access","count":"90+"}},
+        {"type":"department","settings":{"name":"For Him","icon":"him","count":"40+"}},
+        {"type":"department","settings":{"name":"Baby & Kids","icon":"baby","count":"60+"}},
+        {"type":"department","settings":{"name":"Traditional Wear","icon":"traditional","count":"30+"}},
+        {"type":"department","settings":{"name":"Wedding & Formal","icon":"wedding","count":"25+"}},
+        {"type":"department","settings":{"name":"Sets & Co-ords","icon":"set","count":"35+"}},
+        {"type":"department","settings":{"name":"Loungewear","icon":"lounge","count":"28+"}},
+        {"type":"department","settings":{"name":"Knitwear","icon":"knit","count":"22+"}},
+        {"type":"department","settings":{"name":"Sale","icon":"sale","count":"200+"}}
+      ]
+    }
+  ]
+}
+{% endschema %}

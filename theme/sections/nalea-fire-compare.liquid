@@ -1,0 +1,120 @@
+{% comment %} NALEA — Fire Glass Compare Section {% endcomment %}
+{{ 'nalea-homepage.css' | asset_url | stylesheet_tag }}
+{{ 'nalea-sections.css' | asset_url | stylesheet_tag }}
+
+<div class="ns-fire-compare">
+  <div class="ns-fire-compare__header">
+    {% if section.settings.eyebrow != blank %}
+      <p class="ns-sale-slider__eyebrow" style="color:var(--ns-fire1);">{{ section.settings.eyebrow }}</p>
+    {% endif %}
+    <h2 class="ns-fire-compare__title">{{ section.settings.title | default: 'Choose Your Look' }}</h2>
+    {% if section.settings.sub != blank %}
+      <p class="ns-fire-compare__sub">{{ section.settings.sub }}</p>
+    {% endif %}
+  </div>
+
+  <div class="ns-fire-compare__wrap">
+
+    <!-- LEFT PANEL -->
+    <div class="ns-fire-compare__panel ns-fire-compare__panel--left">
+      {% if section.settings.left_image != blank %}
+        <img src="{{ section.settings.left_image | image_url: width: 900 }}"
+             alt="{{ section.settings.left_label | escape }}"
+             loading="lazy">
+      {% else %}
+        <div style="width:100%;height:100%;background:linear-gradient(135deg,#1a0e05,#2d1a0a);min-height:500px;"></div>
+      {% endif %}
+      <div class="ns-fire-compare__overlay"></div>
+      <div class="ns-fire-compare__label">
+        {% if section.settings.left_label != blank %}
+          <span class="ns-fire-compare__label-text">{{ section.settings.left_label }}</span>
+        {% endif %}
+        {% if section.settings.left_price != blank %}
+          <span class="ns-fire-compare__label-price">{{ section.settings.left_price }}</span>
+        {% endif %}
+        {% if section.settings.left_url != blank %}
+          <a href="{{ section.settings.left_url }}" class="ns-fire-compare__label-cta">
+            Shop Now
+            <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- FIRE GLASS DIVIDER -->
+    <div class="ns-fire-compare__divider" aria-hidden="true">
+      <!-- Embers -->
+      <div class="ns-ember"></div>
+      <div class="ns-ember"></div>
+      <div class="ns-ember"></div>
+      <div class="ns-ember"></div>
+      <div class="ns-ember"></div>
+      <!-- Crack lines -->
+      <div class="ns-fire-crack"></div>
+      <div class="ns-fire-crack"></div>
+      <div class="ns-fire-crack"></div>
+      <div class="ns-fire-crack"></div>
+      <!-- Falling shards -->
+      <div class="ns-glass-shard"></div>
+      <div class="ns-glass-shard"></div>
+      <div class="ns-glass-shard"></div>
+      <!-- Center icon -->
+      <div class="ns-fire-compare__icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C9 7 5 9 5 14a7 7 0 0014 0c0-5-4-7-7-12zm0 18c-2.2 0-4-1.8-4-4 0-2.5 2-4.5 4-7 2 2.5 4 4.5 4 7 0 2.2-1.8 4-4 4z"/></svg>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="ns-fire-compare__panel ns-fire-compare__panel--right">
+      {% if section.settings.right_image != blank %}
+        <img src="{{ section.settings.right_image | image_url: width: 900 }}"
+             alt="{{ section.settings.right_label | escape }}"
+             loading="lazy">
+      {% else %}
+        <div style="width:100%;height:100%;background:linear-gradient(135deg,#05100a,#0e2015);min-height:500px;"></div>
+      {% endif %}
+      <div class="ns-fire-compare__overlay"></div>
+      <div class="ns-fire-compare__label">
+        {% if section.settings.right_label != blank %}
+          <span class="ns-fire-compare__label-text">{{ section.settings.right_label }}</span>
+        {% endif %}
+        {% if section.settings.right_price != blank %}
+          <span class="ns-fire-compare__label-price">{{ section.settings.right_price }}</span>
+        {% endif %}
+        {% if section.settings.right_url != blank %}
+          <a href="{{ section.settings.right_url }}" class="ns-fire-compare__label-cta">
+            Shop Now
+            <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="{{ 'nalea-sections.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Fire Glass Compare",
+  "tag": "section",
+  "class": "nalea-fire-compare-section",
+  "settings": [
+    { "type": "text",     "id": "eyebrow",     "label": "Eyebrow", "default": "Style vs Style" },
+    { "type": "text",     "id": "title",       "label": "Heading", "default": "Choose Your Look" },
+    { "type": "textarea", "id": "sub",         "label": "Subtext", "default": "Two looks. One choice. Both fire." },
+    { "type": "header",   "content": "Left Side" },
+    { "type": "image_picker", "id": "left_image",  "label": "Left Image" },
+    { "type": "text",         "id": "left_label",  "label": "Left Label",  "default": "Midnight Edition" },
+    { "type": "text",         "id": "left_price",  "label": "Left Price",  "default": "R 650" },
+    { "type": "url",          "id": "left_url",    "label": "Left Link" },
+    { "type": "header",   "content": "Right Side" },
+    { "type": "image_picker", "id": "right_image", "label": "Right Image" },
+    { "type": "text",         "id": "right_label", "label": "Right Label", "default": "Golden Hour" },
+    { "type": "text",         "id": "right_price", "label": "Right Price", "default": "R 720" },
+    { "type": "url",          "id": "right_url",   "label": "Right Link" }
+  ],
+  "presets": [{ "name": "Fire Glass Compare" }]
+}
+{% endschema %}

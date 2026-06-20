@@ -1,0 +1,165 @@
+{% comment %} NALEA — Heritage / Traditional SA Catalog + Family Categories {% endcomment %}
+{{ 'nalea-homepage.css' | asset_url | stylesheet_tag }}
+{{ 'nalea-sections.css' | asset_url | stylesheet_tag }}
+
+<div class="ns-heritage">
+
+  <!-- Header -->
+  <div class="ns-heritage__header">
+    <p class="ns-heritage__eyebrow">{{ section.settings.eyebrow | default: 'Ubuntu • Heritage • Indlela Yethu' }}</p>
+    <h2 class="ns-heritage__title">{{ section.settings.title | default: 'Our Heritage Collection' }}</h2>
+    <p class="ns-heritage__subtitle">{{ section.settings.subtitle | default: '"Umuntu ngumuntu ngabantu"' }}</p>
+    <p class="ns-heritage__ubuntu">{{ section.settings.tagline | default: 'I am because we are — wear your story' }}</p>
+    <div class="ns-heritage__divider">
+      <div class="ns-heritage__divider-line"></div>
+      <div class="ns-heritage__divider-gem"></div>
+      <div class="ns-heritage__divider-line"></div>
+    </div>
+  </div>
+
+  <!-- Four Categories -->
+  <div class="ns-heritage__cats">
+
+    <!-- 1. BABY CLOTHES -->
+    <div class="ns-heritage-cat">
+      {% if section.settings.baby_image != blank %}
+        <img class="ns-heritage-cat__img"
+             src="{{ section.settings.baby_image | image_url: width: 700 }}"
+             alt="{{ section.settings.baby_name | escape }}"
+             loading="lazy">
+      {% endif %}
+      <div class="ns-heritage-cat__pattern"></div>
+      <div class="ns-heritage-cat__overlay"></div>
+      <div class="ns-heritage-cat__beads"></div>
+      <div class="ns-heritage-cat__body">
+        <div class="ns-heritage-cat__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="7" r="3"/><path d="M8 11a7 7 0 000 10h8a7 7 0 000-10"/><circle cx="9.5" cy="9.5" r=".5" fill="currentColor"/><circle cx="14.5" cy="9.5" r=".5" fill="currentColor"/></svg>
+        </div>
+        <p class="ns-heritage-cat__label">{{ section.settings.baby_label | default: 'Little Ones' }}</p>
+        <h3 class="ns-heritage-cat__name">{{ section.settings.baby_name | default: 'Baby Clothes' }}</h3>
+        <p class="ns-heritage-cat__desc">{{ section.settings.baby_desc | default: 'Soft, safe and beautifully made for your little one. Traditional prints meet modern comfort.' }}</p>
+        <a href="{{ section.settings.baby_url | default: '/collections/baby' }}" class="ns-heritage-cat__link">
+          Shop Baby
+          <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- 2. FOR HIM -->
+    <div class="ns-heritage-cat">
+      {% if section.settings.him_image != blank %}
+        <img class="ns-heritage-cat__img"
+             src="{{ section.settings.him_image | image_url: width: 700 }}"
+             alt="{{ section.settings.him_name | escape }}"
+             loading="lazy">
+      {% endif %}
+      <div class="ns-heritage-cat__pattern"></div>
+      <div class="ns-heritage-cat__overlay"></div>
+      <div class="ns-heritage-cat__beads"></div>
+      <div class="ns-heritage-cat__body">
+        <div class="ns-heritage-cat__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="7" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>
+        </div>
+        <p class="ns-heritage-cat__label">{{ section.settings.him_label | default: 'The King' }}</p>
+        <h3 class="ns-heritage-cat__name">{{ section.settings.him_name | default: 'For Him' }}</h3>
+        <p class="ns-heritage-cat__desc">{{ section.settings.him_desc | default: 'Confidence woven into every thread. From casual to formal — dressed for royalty.' }}</p>
+        <a href="{{ section.settings.him_url | default: '/collections/men' }}" class="ns-heritage-cat__link">
+          Shop Him
+          <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- 3. FOR US — FAMILY -->
+    <div class="ns-heritage-cat">
+      {% if section.settings.family_image != blank %}
+        <img class="ns-heritage-cat__img"
+             src="{{ section.settings.family_image | image_url: width: 700 }}"
+             alt="{{ section.settings.family_name | escape }}"
+             loading="lazy">
+      {% endif %}
+      <div class="ns-heritage-cat__pattern"></div>
+      <div class="ns-heritage-cat__overlay"></div>
+      <div class="ns-heritage-cat__beads"></div>
+      <div class="ns-heritage-cat__body">
+        <div class="ns-heritage-cat__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="7" r="3"/><circle cx="16" cy="7" r="3"/><path d="M2 21v-1a6 6 0 0112 0v1"/><path d="M14 21v-1a6 6 0 0112 0v1" opacity=".5"/></svg>
+        </div>
+        <p class="ns-heritage-cat__label">{{ section.settings.family_label | default: 'Ubuntu Family' }}</p>
+        <h3 class="ns-heritage-cat__name">{{ section.settings.family_name | default: 'For Us — Family' }}</h3>
+        <p class="ns-heritage-cat__desc">{{ section.settings.family_desc | default: 'Together we shine. Coordinated family looks rooted in love, style and our culture.' }}</p>
+        <a href="{{ section.settings.family_url | default: '/collections/family' }}" class="ns-heritage-cat__link">
+          Shop Family
+          <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- 4. TRADITIONAL CATALOG -->
+    <div class="ns-heritage-cat">
+      {% if section.settings.trad_image != blank %}
+        <img class="ns-heritage-cat__img"
+             src="{{ section.settings.trad_image | image_url: width: 700 }}"
+             alt="{{ section.settings.trad_name | escape }}"
+             loading="lazy">
+      {% endif %}
+      <div class="ns-heritage-cat__pattern"></div>
+      <div class="ns-heritage-cat__overlay"></div>
+      <div class="ns-heritage-cat__beads"></div>
+      <div class="ns-heritage-cat__body">
+        <div class="ns-heritage-cat__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polygon points="12,2 2,22 22,22"/><line x1="7" y1="16" x2="17" y2="16"/><line x1="12" y1="9" x2="12" y2="22"/></svg>
+        </div>
+        <p class="ns-heritage-cat__label">{{ section.settings.trad_label | default: 'Isintu — Our Way' }}</p>
+        <h3 class="ns-heritage-cat__name">{{ section.settings.trad_name | default: 'Traditional Catalog' }}</h3>
+        <p class="ns-heritage-cat__desc">{{ section.settings.trad_desc | default: 'Isizulu. Xhosa. Sotho. Venda. Every nation, every colour, every story — proudly South African.' }}</p>
+        <a href="{{ section.settings.trad_url | default: '/collections/traditional' }}" class="ns-heritage-cat__link">
+          Explore Heritage
+          <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="ns-heritage__strip"></div>
+</div>
+
+{% schema %}
+{
+  "name": "Heritage & Catalog",
+  "tag": "section",
+  "class": "nalea-heritage-section",
+  "settings": [
+    { "type": "text",     "id": "eyebrow",  "label": "Eyebrow",   "default": "Ubuntu • Heritage • Indlela Yethu" },
+    { "type": "text",     "id": "title",    "label": "Heading",   "default": "Our Heritage Collection" },
+    { "type": "text",     "id": "subtitle", "label": "Subtitle",  "default": "\"Umuntu ngumuntu ngabantu\"" },
+    { "type": "text",     "id": "tagline",  "label": "Tagline",   "default": "I am because we are — wear your story" },
+    { "type": "header",   "content": "Baby Clothes" },
+    { "type": "image_picker", "id": "baby_image", "label": "Image" },
+    { "type": "text",         "id": "baby_label", "label": "Eyebrow Label", "default": "Little Ones" },
+    { "type": "text",         "id": "baby_name",  "label": "Category Name", "default": "Baby Clothes" },
+    { "type": "textarea",     "id": "baby_desc",  "label": "Description", "default": "Soft, safe and beautifully made for your little one." },
+    { "type": "url",          "id": "baby_url",   "label": "Link" },
+    { "type": "header",   "content": "For Him" },
+    { "type": "image_picker", "id": "him_image",  "label": "Image" },
+    { "type": "text",         "id": "him_label",  "label": "Eyebrow Label", "default": "The King" },
+    { "type": "text",         "id": "him_name",   "label": "Category Name", "default": "For Him" },
+    { "type": "textarea",     "id": "him_desc",   "label": "Description", "default": "Confidence woven into every thread." },
+    { "type": "url",          "id": "him_url",    "label": "Link" },
+    { "type": "header",   "content": "For Us — Family" },
+    { "type": "image_picker", "id": "family_image", "label": "Image" },
+    { "type": "text",         "id": "family_label", "label": "Eyebrow Label", "default": "Ubuntu Family" },
+    { "type": "text",         "id": "family_name",  "label": "Category Name", "default": "For Us — Family" },
+    { "type": "textarea",     "id": "family_desc",  "label": "Description", "default": "Together we shine. Coordinated family looks." },
+    { "type": "url",          "id": "family_url",   "label": "Link" },
+    { "type": "header",   "content": "Traditional Catalog" },
+    { "type": "image_picker", "id": "trad_image",   "label": "Image" },
+    { "type": "text",         "id": "trad_label",   "label": "Eyebrow Label", "default": "Isintu — Our Way" },
+    { "type": "text",         "id": "trad_name",    "label": "Category Name", "default": "Traditional Catalog" },
+    { "type": "textarea",     "id": "trad_desc",    "label": "Description", "default": "Isizulu. Xhosa. Sotho. Venda. Every nation, every colour, every story." },
+    { "type": "url",          "id": "trad_url",     "label": "Link" }
+  ],
+  "presets": [{ "name": "Heritage & Catalog" }]
+}
+{% endschema %}
