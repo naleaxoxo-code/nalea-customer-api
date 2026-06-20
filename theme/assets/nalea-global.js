@@ -311,10 +311,202 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* 8. Ambient background canvas                                       */
+  /* ------------------------------------------------------------------ */
+
+  function initAmbientCanvas() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var canvas = document.createElement('canvas');
+    canvas.id = 'nalea-ambient-canvas';
+    canvas.setAttribute('aria-hidden', 'true');
+    canvas.style.cssText = [
+      'position:fixed',
+      'inset:0',
+      'width:100%',
+      'height:100%',
+      'z-index:0',
+      'pointer-events:none',
+    ].join(';');
+    document.body.insertBefore(canvas, document.body.firstChild);
+
+    var ctx = canvas.getContext('2d');
+    var W = 0, H = 0;
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize, { passive: true });
+
+    /* ── Embers ─────────────────────────────────────────────────────── */
+    var FIRE_COLORS = ['#ff6b00', '#ff3d00', '#ffd200', '#c9a84c', '#ff8c00'];
+    var embers = [];
+
+    function mkEmber(spreadY) {
+      var maxLife = rand(320, 600);
+      return {
+        x: rand(0, W),
+        y: spreadY !== undefined ? rand(0, H) : H + rand(0, 60),
+        size: rand(0.6, 2.2),
+        speed: rand(0.18, 0.55),
+        drift: (Math.random() - 0.5) * 0.28,
+        opacity: 0,
+        maxOpacity: rand(0.10, 0.32),
+        color: FIRE_COLORS[Math.floor(rand(0, FIRE_COLORS.length))],
+        life: spreadY !== undefined ? rand(0, maxLife) : 0,
+        maxLife: maxLife,
+      };
+    }
+
+    for (var i = 0; i < 22; i++) { embers.push(mkEmber(true)); }
+
+    /* ── Laser streaks ──────────────────────────────────────────────── */
+    var lasers = [];
+    var nextLaser = Date.now() + rand(3000, 7000);
+
+    function mkLaser() {
+      var dir = Math.random() > 0.5 ? 1 : -1;
+      return {
+        y: rand(H * 0.04, H * 0.92),
+        progress: 0,
+        speed: rand(0.006, 0.012),
+        halfLen: rand(60, 140),
+        maxOpacity: rand(0.10, 0.22),
+        color: Math.random() > 0.45 ? '#ff6b00' : '#c9a84c',
+        dir: dir,
+      };
+    }
+
+    /* ── Glass shimmer bands ────────────────────────────────────────── */
+    var shimmers = [];
+    var nextShimmer = Date.now() + rand(5000, 11000);
+
+    function mkShimmer() {
+      return {
+        progress: 0,
+        speed: rand(0.0014, 0.0028),
+        halfW: rand(30, 70),
+        maxOpacity: rand(0.018, 0.045),
+        tilt: rand(-0.25, 0.25),
+      };
+    }
+
+    /* ── Draw loop ──────────────────────────────────────────────────── */
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      var now = Date.now();
+
+      /* spawn lasers */
+      if (now >= nextLaser) {
+        lasers.push(mkLaser());
+        nextLaser = now + rand(3500, 8000);
+      }
+
+      /* spawn shimmers */
+      if (now >= nextShimmer) {
+        shimmers.push(mkShimmer());
+        nextShimmer = now + rand(5000, 12000);
+      }
+
+      /* draw embers */
+      for (var e = 0; e < embers.length; e++) {
+        var em = embers[e];
+        em.y     -= em.speed;
+        em.x     += em.drift;
+        em.life  += 1;
+        var lf = em.life / em.maxLife;
+        em.opacity = lf < 0.15 ? (lf / 0.15) * em.maxOpacity
+                   : lf > 0.78 ? ((1 - lf) / 0.22) * em.maxOpacity
+                   : em.maxOpacity;
+        if (em.life >= em.maxLife || em.y < -8) {
+          embers[e] = mkEmber();
+          continue;
+        }
+        ctx.save();
+        ctx.globalAlpha = em.opacity;
+        ctx.beginPath();
+        ctx.arc(em.x, em.y, em.size, 0, 6.2832);
+        ctx.fillStyle   = em.color;
+        ctx.shadowColor = em.color;
+        ctx.shadowBlur  = em.size * 5;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      /* draw lasers */
+      for (var li = lasers.length - 1; li >= 0; li--) {
+        var l = lasers[li];
+        l.progress += l.speed;
+        if (l.progress > 1.35) { lasers.splice(li, 1); continue; }
+
+        var lOp = l.maxOpacity;
+        if (l.progress < 0.08) lOp *= l.progress / 0.08;
+        if (l.progress > 1.0)  lOp *= (1.35 - l.progress) / 0.35;
+
+        var cx = l.dir === 1
+          ? l.progress * (W + l.halfLen * 2) - l.halfLen
+          : W - (l.progress * (W + l.halfLen * 2) - l.halfLen);
+
+        var gL = ctx.createLinearGradient(cx - l.halfLen, l.y, cx + l.halfLen, l.y);
+        gL.addColorStop(0,    'transparent');
+        gL.addColorStop(0.35, l.color);
+        gL.addColorStop(0.5,  '#ffffff');
+        gL.addColorStop(0.65, l.color);
+        gL.addColorStop(1,    'transparent');
+
+        ctx.save();
+        ctx.globalAlpha  = lOp;
+        ctx.strokeStyle  = gL;
+        ctx.lineWidth    = 0.9;
+        ctx.shadowColor  = l.color;
+        ctx.shadowBlur   = 7;
+        ctx.beginPath();
+        ctx.moveTo(cx - l.halfLen, l.y);
+        ctx.lineTo(cx + l.halfLen, l.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      /* draw glass shimmer bands */
+      for (var si = shimmers.length - 1; si >= 0; si--) {
+        var s = shimmers[si];
+        s.progress += s.speed;
+        if (s.progress > 1) { shimmers.splice(si, 1); continue; }
+
+        var sx = -s.halfW * 2 + s.progress * (W + s.halfW * 4);
+        var fade = s.progress < 0.12 ? s.progress / 0.12
+                 : s.progress > 0.88 ? (1 - s.progress) / 0.12
+                 : 1;
+        var sOp = s.maxOpacity * fade;
+
+        /* tilted band using transform */
+        ctx.save();
+        ctx.translate(sx, 0);
+        ctx.transform(1, s.tilt, 0, 1, 0, 0);
+        var gS = ctx.createLinearGradient(-s.halfW, 0, s.halfW, 0);
+        gS.addColorStop(0,   'transparent');
+        gS.addColorStop(0.4, 'rgba(255,255,255,' + sOp + ')');
+        gS.addColorStop(0.6, 'rgba(220,200,160,' + (sOp * 1.5) + ')');
+        gS.addColorStop(1,   'transparent');
+        ctx.fillStyle = gS;
+        ctx.fillRect(-s.halfW, -H * 0.3, s.halfW * 2, H * 1.6);
+        ctx.restore();
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+  }
+
+  /* ------------------------------------------------------------------ */
   /* Boot                                                               */
   /* ------------------------------------------------------------------ */
 
   ready(function () {
+    try { initAmbientCanvas(); } catch (e) {}
     try { initPageVibe(); } catch (e) {}
     try { initParticles(); } catch (e) {}
     try { initReveal(); } catch (e) {}

@@ -91,6 +91,20 @@ body::before {
   animation: nalea-bg-breathe 14s ease-in-out infinite;
 }
 
+/* Slow-drifting glass caustic overlay — a second fixed layer */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 35% at 20% 40%, rgba(201,168,76,0.045), transparent 70%),
+    radial-gradient(ellipse 40% 55% at 80% 65%, rgba(255,107,0,0.035), transparent 70%),
+    radial-gradient(ellipse 60% 30% at 50% 10%,  rgba(255,61,0,0.03),  transparent 65%);
+  animation: nalea-glass-drift 22s ease-in-out infinite alternate;
+}
+
 /* Keep real content above the ambient layer. */
 #header-group,
 main,
@@ -99,6 +113,11 @@ footer,
 .nalea-ember {
   position: relative;
   z-index: 1;
+}
+
+/* Canvas sits at z-index 0 — behind all content, above body bg */
+#nalea-ambient-canvas {
+  z-index: 0 !important;
 }
 
 main {
@@ -1176,6 +1195,13 @@ main.nalea-page-exit {
 @keyframes nalea-bg-breathe {
   0%, 100% { opacity: 0.85; }
   50% { opacity: 1; }
+}
+
+@keyframes nalea-glass-drift {
+  0%   { background-position: 0% 0%, 100% 100%, 50% 0%; opacity: 0.8; }
+  33%  { background-position: 25% 60%, 70% 30%, 80% 50%; opacity: 1; }
+  66%  { background-position: 60% 20%, 20% 80%, 30% 90%; opacity: 0.9; }
+  100% { background-position: 10% 90%, 85% 15%, 65% 40%; opacity: 0.85; }
 }
 
 @keyframes nalea-border-glow {
