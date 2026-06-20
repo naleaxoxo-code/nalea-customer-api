@@ -1,0 +1,152 @@
+{% comment %} NALEA — Follow Us on Social (Animated Fire Glass) {% endcomment %}
+{{ 'nalea-homepage.css' | asset_url | stylesheet_tag }}
+{{ 'nalea-sections.css' | asset_url | stylesheet_tag }}
+
+<div class="ns-social">
+
+  <!-- Header -->
+  <div class="ns-social__header">
+    <p class="ns-social__eyebrow">{{ section.settings.eyebrow | default: 'Join The Community' }}</p>
+    <h2 class="ns-social__title">{{ section.settings.title | default: 'Follow Us on Social' }}</h2>
+    {% if section.settings.sub != blank %}
+      <p class="ns-social__sub">{{ section.settings.sub }}</p>
+    {% endif %}
+  </div>
+
+  <!-- Perks Marquee -->
+  <div class="ns-social__marquee" aria-hidden="true">
+    <div class="ns-social__marquee-track">
+      {% assign perks = "FREE SHIPPING CODES,EXCLUSIVE DISCOUNTS,FLASH SALE ALERTS,MEMBER PROMOS,EARLY ACCESS DROPS,STYLING TIPS,GIVEAWAYS,VIP OFFERS" | split: "," %}
+      {% for i in (1..3) %}
+        {% for perk in perks %}
+          <span class="ns-social__marquee-item">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="color:var(--ns-fire1)"><path d="M12 2C9 7 5 9 5 14a7 7 0 0014 0c0-5-4-7-7-12z"/></svg>
+            {{ perk }}
+          </span>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Social Cards Grid -->
+  <div class="ns-social__grid">
+
+    {% for block in section.blocks %}
+      {% if block.type == 'social' %}
+        <a href="{{ block.settings.url | default: '#' }}"
+           class="ns-social-card ns-social-card--{{ block.settings.platform }}"
+           target="_blank" rel="noopener noreferrer"
+           {{ block.shopify_attributes }}>
+
+          <!-- Fire ember particles -->
+          <div class="ns-social-card__embers" aria-hidden="true">
+            <div class="ns-social-card__ember"></div>
+            <div class="ns-social-card__ember"></div>
+            <div class="ns-social-card__ember"></div>
+          </div>
+
+          <!-- Glass overlay -->
+          <div class="ns-social-card__glass"></div>
+
+          <!-- Platform Icon -->
+          <div class="ns-social-card__icon-wrap">
+            <div class="ns-social-card__icon">
+              {% case block.settings.platform %}
+                {% when 'instagram' %}
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+                {% when 'tiktok' %}
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.01a8.16 8.16 0 004.77 1.52V7.1a4.85 4.85 0 01-1-.41z"/></svg>
+                {% when 'facebook' %}
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+                {% when 'youtube' %}
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 001.46 6.42 29 29 0 001 12a29 29 0 00.46 5.58A2.78 2.78 0 003.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/></svg>
+                {% when 'pinterest' %}
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.08 3.16 9.44 7.63 11.22-.1-.95-.2-2.41.04-3.45.22-.93 1.45-6.15 1.45-6.15s-.37-.74-.37-1.84c0-1.73 1-3.02 2.25-3.02 1.06 0 1.57.8 1.57 1.75 0 1.07-.68 2.67-1.03 4.15-.29 1.24.61 2.25 1.83 2.25 2.2 0 3.68-2.84 3.68-6.2 0-2.56-1.72-4.36-4.2-4.36-2.86 0-4.54 2.15-4.54 4.37 0 .87.33 1.8.75 2.3.08.1.09.19.07.29-.08.31-.25 1-.28 1.14-.04.18-.14.22-.32.13-1.25-.58-2.03-2.42-2.03-3.89 0-3.15 2.29-6.05 6.61-6.05 3.47 0 6.16 2.47 6.16 5.78 0 3.45-2.17 6.22-5.19 6.22-1.01 0-1.97-.53-2.3-1.15l-.62 2.33c-.23.87-.84 1.96-1.25 2.62.94.29 1.94.45 2.97.45 6.63 0 12-5.37 12-12S18.63 0 12 0z"/></svg>
+                {% when 'whatsapp' %}
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M17.47 14.39c-.3-.15-1.76-.87-2.03-.97s-.47-.15-.67.15-.77.97-.94 1.16-.35.22-.64.07a8.12 8.12 0 01-2.39-1.47 8.97 8.97 0 01-1.65-2.06c-.17-.3-.02-.46.13-.61s.3-.35.44-.52a2 2 0 00.3-.5.55.55 0 000-.52c-.08-.15-.67-1.62-.92-2.22s-.49-.5-.67-.51h-.57a1.1 1.1 0 00-.8.37 3.37 3.37 0 00-1.05 2.5 5.84 5.84 0 001.22 3.1 13.39 13.39 0 005.14 4.53 15.3 15.3 0 001.72.63 4.14 4.14 0 001.9.12 3.09 3.09 0 002.03-1.44 2.5 2.5 0 00.17-1.44c-.07-.13-.27-.2-.57-.35zM12 21.93A9.93 9.93 0 116.6 4.35L5.26 9.07a7.86 7.86 0 1010.82 6.6l4.72-1.34A9.92 9.92 0 0112 21.93z"/></svg>
+                {% else %}
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+              {% endcase %}
+            </div>
+          </div>
+
+          <!-- Info -->
+          <div class="ns-social-card__info">
+            <p class="ns-social-card__platform">{{ block.settings.platform | capitalize }}</p>
+            <p class="ns-social-card__handle">{{ block.settings.handle | default: '@naleaxoxo' }}</p>
+            {% if block.settings.followers != blank %}
+              <p class="ns-social-card__followers">{{ block.settings.followers }} followers</p>
+            {% endif %}
+          </div>
+
+          <!-- Perk badge -->
+          {% if block.settings.perk != blank %}
+            <div class="ns-social-card__perk">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="color:var(--ns-fire1)"><path d="M12 2C9 7 5 9 5 14a7 7 0 0014 0c0-5-4-7-7-12z"/></svg>
+              {{ block.settings.perk }}
+            </div>
+          {% endif %}
+
+          <!-- Follow CTA -->
+          <div class="ns-social-card__cta">
+            Follow
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+
+        </a>
+      {% endif %}
+    {% endfor %}
+
+  </div>
+
+</div>
+
+<script src="{{ 'nalea-sections.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Follow on Social",
+  "tag": "section",
+  "class": "nalea-social-follow-section",
+  "settings": [
+    { "type": "text",     "id": "eyebrow", "label": "Eyebrow", "default": "Join The Community" },
+    { "type": "text",     "id": "title",   "label": "Heading", "default": "Follow Us on Social" },
+    { "type": "textarea", "id": "sub",     "label": "Subtext", "default": "Stay connected for free shipping codes, flash sales, exclusive promos and styling inspo." }
+  ],
+  "blocks": [
+    {
+      "type": "social",
+      "name": "Social Platform",
+      "settings": [
+        {
+          "type": "select", "id": "platform", "label": "Platform",
+          "options": [
+            {"value":"instagram","label":"Instagram"},
+            {"value":"tiktok",   "label":"TikTok"},
+            {"value":"facebook", "label":"Facebook"},
+            {"value":"youtube",  "label":"YouTube"},
+            {"value":"pinterest","label":"Pinterest"},
+            {"value":"whatsapp", "label":"WhatsApp"}
+          ],
+          "default": "instagram"
+        },
+        { "type": "text", "id": "handle",    "label": "Handle / Username", "default": "@naleaxoxo" },
+        { "type": "text", "id": "followers", "label": "Follower Count (e.g. 12K)", "default": "12K" },
+        { "type": "text", "id": "perk",      "label": "Perk Badge (e.g. Free Shipping Codes)", "default": "Free Shipping Codes" },
+        { "type": "url",  "id": "url",       "label": "Profile Link" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Follow on Social",
+      "blocks": [
+        {"type":"social","settings":{"platform":"instagram","handle":"@naleaxoxo","followers":"12K","perk":"Exclusive Discount Codes"}},
+        {"type":"social","settings":{"platform":"tiktok","handle":"@naleaxoxo","followers":"8K","perk":"Flash Sale Alerts"}},
+        {"type":"social","settings":{"platform":"facebook","handle":"Nalèa XoXo","followers":"5K","perk":"Member Promos"}},
+        {"type":"social","settings":{"platform":"whatsapp","handle":"Join Our Group","followers":"","perk":"Free Shipping Codes"}}
+      ]
+    }
+  ]
+}
+{% endschema %}
