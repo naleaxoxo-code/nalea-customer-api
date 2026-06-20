@@ -1,0 +1,287 @@
+{% comment %}
+  ============================================================
+  NALEA HOMEPAGE — Premium Animated Section
+  ============================================================
+{% endcomment %}
+
+{{ 'nalea-homepage.css' | asset_url | stylesheet_tag }}
+
+<div class="nalea-homepage">
+
+  {% comment %} ═══ HERO SLIDER ═══ {% endcomment %}
+  <section class="nh-hero" aria-label="Featured highlights slider">
+
+    {% for i in (1..3) %}
+      {% assign slide_image_key  = 'slide_' | append: i | append: '_image' %}
+      {% assign slide_eyebrow    = 'slide_' | append: i | append: '_eyebrow' %}
+      {% assign slide_heading    = 'slide_' | append: i | append: '_heading' %}
+      {% assign slide_sub        = 'slide_' | append: i | append: '_sub' %}
+      {% assign slide_cta_text   = 'slide_' | append: i | append: '_cta_text' %}
+      {% assign slide_cta_url    = 'slide_' | append: i | append: '_cta_url' %}
+      {% assign slide_image      = section.settings[slide_image_key] %}
+
+      <div class="nh-hero__slide{% if i == 1 %} active{% endif %}"
+        {% if slide_image != blank %}
+          style="background-image: url('{{ slide_image | image_url: width: 2000 }}')"
+        {% endif %}>
+
+        <div class="nh-hero__content">
+          <div class="nh-hero__eyebrow">
+            {{ section.settings[slide_eyebrow] | default: 'New Season' }}
+          </div>
+          <h2 class="nh-hero__title">
+            {{ section.settings[slide_heading] | default: 'Dress to Impress' }}
+          </h2>
+          <p class="nh-hero__subtitle">
+            {{ section.settings[slide_sub] | default: 'Discover pieces crafted for the bold and the beautiful.' }}
+          </p>
+          <a href="{{ section.settings[slide_cta_url] | default: '/collections/all' }}" class="nh-hero__cta">
+            {{ section.settings[slide_cta_text] | default: 'Shop Now' }}
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+        </div>
+
+      </div>
+    {% endfor %}
+
+    <div class="nh-hero__dots" role="tablist" aria-label="Slider navigation">
+      {% for i in (1..3) %}
+        <button class="nh-hero__dot{% if i == 1 %} active{% endif %}"
+                role="tab"
+                aria-label="Go to slide {{ i }}"></button>
+      {% endfor %}
+    </div>
+
+    <div class="nh-hero__counter" aria-hidden="true">01 / 03</div>
+
+    <div class="nh-hero__scroll" aria-hidden="true">
+      <div class="nh-hero__scroll-line"></div>
+      <span>Scroll</span>
+    </div>
+
+  </section>
+
+  {% comment %} ═══ MARQUEE ═══ {% endcomment %}
+  <div class="nh-marquee" aria-hidden="true">
+    <div class="nh-marquee__track">
+      {% for n in (1..8) %}
+        <span class="nh-marquee__item">
+          New Arrivals
+          <span class="nh-marquee__sep"></span>
+          Free Shipping Over R800
+          <span class="nh-marquee__sep"></span>
+          Nalèa XoXo
+          <span class="nh-marquee__sep"></span>
+          Shop The Look
+          <span class="nh-marquee__sep"></span>
+        </span>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% comment %} ═══ COLLECTIONS ═══ {% endcomment %}
+  <section class="nh-collections">
+    <div class="nh-section-header nh-reveal">
+      <p class="nh-section-eyebrow">Curated For You</p>
+      <h2 class="nh-section-title">Shop By Style</h2>
+    </div>
+    <div class="nh-collections__grid">
+      {% for block in section.blocks %}
+        {% if block.type == 'collection_card' %}
+          {% assign col = block.settings.collection %}
+          <div class="nh-collections__card nh-reveal nh-reveal-delay-{{ forloop.index }}"
+               {{ block.shopify_attributes }}>
+
+            {% if block.settings.image != blank %}
+              <img class="nh-collections__card-img"
+                   src="{{ block.settings.image | image_url: width: 700 }}"
+                   alt="{{ block.settings.label | escape }}"
+                   loading="lazy">
+            {% elsif col != blank and col.image != blank %}
+              <img class="nh-collections__card-img"
+                   src="{{ col.image | image_url: width: 700 }}"
+                   alt="{{ col.title | escape }}"
+                   loading="lazy">
+            {% else %}
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,#18122b,#1e1630);position:absolute;inset:0;"></div>
+            {% endif %}
+
+            <div class="nh-collections__card-info">
+              <div class="nh-collections__card-name">
+                {{ block.settings.label | default: col.title | default: 'Collection' }}
+              </div>
+              <a href="{{ col.url | default: '/collections/all' }}" class="nh-collections__card-link">
+                Explore
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M1 6h10M7 2l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </a>
+            </div>
+
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </section>
+
+  {% comment %} ═══ FEATURED PRODUCTS ═══ {% endcomment %}
+  {% if section.settings.featured_collection != blank %}
+    {% assign feat_col = collections[section.settings.featured_collection] %}
+    {% if feat_col != blank %}
+      <section class="nh-featured">
+        <div class="nh-section-header nh-reveal">
+          <p class="nh-section-eyebrow">Just Dropped</p>
+          <h2 class="nh-section-title">New Arrivals</h2>
+        </div>
+        <div class="nh-featured__grid">
+          {% for product in feat_col.products limit: 8 %}
+            <div class="nh-product-card nh-reveal nh-reveal-delay-{{ forloop.index }}">
+              <div class="nh-product-card__media">
+
+                {% if product.featured_image != blank %}
+                  <img class="nh-product-card__img"
+                       src="{{ product.featured_image | image_url: width: 600 }}"
+                       alt="{{ product.title | escape }}"
+                       loading="lazy">
+                {% endif %}
+
+                {% if product.compare_at_price > product.price %}
+                  <span class="nh-product-card__badge">Sale</span>
+                {% elsif product.tags contains 'new' %}
+                  <span class="nh-product-card__badge">New</span>
+                {% endif %}
+
+                <button class="nh-product-card__like" type="button" aria-label="Like {{ product.title | escape }}">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                </button>
+
+                <button class="nh-product-card__quick-add"
+                        type="button"
+                        data-product-url="{{ product.url }}">
+                  Quick View
+                </button>
+
+              </div>
+              <div class="nh-product-card__info">
+                <a href="{{ product.url }}" class="nh-product-card__name">{{ product.title }}</a>
+                <div>
+                  <span class="nh-product-card__price">{{ product.price | money }}</span>
+                  {% if product.compare_at_price > product.price %}
+                    <span class="nh-product-card__price-compare">{{ product.compare_at_price | money }}</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  {% endif %}
+
+  {% comment %} ═══ BRAND STATEMENT ═══ {% endcomment %}
+  <section class="nh-brand">
+    <p class="nh-brand__text nh-reveal">
+      {{ section.settings.brand_text | default: 'Where fashion meets identity. Every piece tells your story.' }}
+    </p>
+    <p class="nh-brand__sub nh-reveal nh-reveal-delay-1">
+      {{ section.settings.brand_sub | default: 'Curated with intention. Designed for the woman who moves boldly through the world.' }}
+    </p>
+    <a href="{{ section.settings.brand_cta_url | default: '/pages/about' }}"
+       class="nh-brand__cta nh-reveal nh-reveal-delay-2">
+      {{ section.settings.brand_cta_text | default: 'Our Story' }}
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+  </section>
+
+  {% comment %} ═══ NEWSLETTER ═══ {% endcomment %}
+  <section class="nh-newsletter">
+    <h3 class="nh-newsletter__title nh-reveal">Stay In The Loop</h3>
+    <p class="nh-newsletter__sub nh-reveal nh-reveal-delay-1">
+      Be first to hear about new drops, exclusives, and styling tips.
+    </p>
+    {% form 'customer', class: 'nh-newsletter__form nh-reveal nh-reveal-delay-2' %}
+      <input type="hidden" name="contact[tags]" value="newsletter">
+      <input class="nh-newsletter__input"
+             type="email"
+             name="contact[email]"
+             placeholder="Your email address"
+             required
+             autocomplete="email">
+      <button class="nh-newsletter__btn" type="submit">Subscribe</button>
+    {% endform %}
+  </section>
+
+</div>
+
+<script src="{{ 'nalea-homepage.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Nalèa Homepage",
+  "tag": "section",
+  "class": "nalea-homepage-section",
+  "settings": [
+    { "type": "header", "content": "Hero — Slide 1" },
+    { "type": "image_picker", "id": "slide_1_image",    "label": "Slide 1 Background Image" },
+    { "type": "text",         "id": "slide_1_eyebrow",  "label": "Eyebrow / Tag",    "default": "New Season" },
+    { "type": "text",         "id": "slide_1_heading",  "label": "Heading",          "default": "Dress to Impress" },
+    { "type": "textarea",     "id": "slide_1_sub",      "label": "Subheading",       "default": "New arrivals. Bold looks. Made for you." },
+    { "type": "text",         "id": "slide_1_cta_text", "label": "Button Text",      "default": "Shop Now" },
+    { "type": "url",          "id": "slide_1_cta_url",  "label": "Button Link" },
+
+    { "type": "header", "content": "Hero — Slide 2" },
+    { "type": "image_picker", "id": "slide_2_image",    "label": "Slide 2 Background Image" },
+    { "type": "text",         "id": "slide_2_eyebrow",  "label": "Eyebrow / Tag",    "default": "Limited Edition" },
+    { "type": "text",         "id": "slide_2_heading",  "label": "Heading",          "default": "Own the Room" },
+    { "type": "textarea",     "id": "slide_2_sub",      "label": "Subheading",       "default": "Exclusive pieces. Curated for confidence." },
+    { "type": "text",         "id": "slide_2_cta_text", "label": "Button Text",      "default": "Explore" },
+    { "type": "url",          "id": "slide_2_cta_url",  "label": "Button Link" },
+
+    { "type": "header", "content": "Hero — Slide 3" },
+    { "type": "image_picker", "id": "slide_3_image",    "label": "Slide 3 Background Image" },
+    { "type": "text",         "id": "slide_3_eyebrow",  "label": "Eyebrow / Tag",    "default": "Trending Now" },
+    { "type": "text",         "id": "slide_3_heading",  "label": "Heading",          "default": "Make Your Move" },
+    { "type": "textarea",     "id": "slide_3_sub",      "label": "Subheading",       "default": "The looks everyone's talking about." },
+    { "type": "text",         "id": "slide_3_cta_text", "label": "Button Text",      "default": "View All" },
+    { "type": "url",          "id": "slide_3_cta_url",  "label": "Button Link" },
+
+    { "type": "header", "content": "Featured Products" },
+    { "type": "collection", "id": "featured_collection", "label": "New Arrivals Collection" },
+
+    { "type": "header", "content": "Brand Statement" },
+    { "type": "textarea", "id": "brand_text",     "label": "Brand Quote",   "default": "Where fashion meets identity. Every piece tells your story." },
+    { "type": "textarea", "id": "brand_sub",      "label": "Brand Subtext", "default": "Curated with intention. Designed for the woman who moves boldly through the world." },
+    { "type": "text",     "id": "brand_cta_text", "label": "CTA Text",      "default": "Our Story" },
+    { "type": "url",      "id": "brand_cta_url",  "label": "CTA Link" }
+  ],
+  "blocks": [
+    {
+      "type": "collection_card",
+      "name": "Collection Card",
+      "settings": [
+        { "type": "collection",   "id": "collection", "label": "Collection" },
+        { "type": "image_picker", "id": "image",      "label": "Override Image (optional)" },
+        { "type": "text",         "id": "label",      "label": "Override Label (optional)" }
+      ]
+    }
+  ],
+  "max_blocks": 8,
+  "presets": [
+    {
+      "name": "Nalèa Homepage",
+      "blocks": [
+        { "type": "collection_card" },
+        { "type": "collection_card" },
+        { "type": "collection_card" },
+        { "type": "collection_card" }
+      ]
+    }
+  ]
+}
+{% endschema %}
