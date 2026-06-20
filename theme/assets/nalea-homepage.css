@@ -1299,6 +1299,71 @@
 .nh-brand__cta:hover::before { transform: scaleX(1); }
 
 /* ================================================================
+   EXPLORE CTA
+   ================================================================ */
+.nh-explore {
+  padding: 100px 24px;
+  background: linear-gradient(180deg, var(--nh-black) 0%, #0d0a05 50%, var(--nh-black) 100%);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.nh-explore::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 50% at 50% 50%, rgba(201,168,76,0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+.nh-explore__inner {
+  max-width: 680px;
+  margin: 0 auto;
+  position: relative;
+}
+.nh-explore__eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--nh-gold);
+  margin: 0 0 18px;
+}
+.nh-explore__title {
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--nh-cream);
+  line-height: 1.1;
+  margin: 0 0 20px;
+}
+.nh-explore__sub {
+  font-size: 1rem;
+  color: var(--nh-muted);
+  line-height: 1.7;
+  margin: 0 0 40px;
+}
+.nh-explore__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 40px;
+  background: linear-gradient(135deg, var(--nh-gold) 0%, #b8922e 100%);
+  color: #080808;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 50px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 0 30px rgba(201,168,76,0.25);
+}
+.nh-explore__btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 40px rgba(201,168,76,0.4);
+}
+
+/* ================================================================
    NEWSLETTER
    ================================================================ */
 .nh-newsletter {

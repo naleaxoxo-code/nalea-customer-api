@@ -347,6 +347,19 @@
     </a>
   </section>
 
+  <!-- EXPLORE CTA -->
+  <section class="nh-explore">
+    <div class="nh-explore__inner nh-reveal">
+      <p class="nh-explore__eyebrow">{{ section.settings.explore_eyebrow | default: 'Everything You Need' }}</p>
+      <h2 class="nh-explore__title nh-reveal nh-reveal-delay-1">{{ section.settings.explore_title | default: 'Explore The Full Collection' }}</h2>
+      <p class="nh-explore__sub nh-reveal nh-reveal-delay-2">{{ section.settings.explore_sub | default: 'Dresses, sets, accessories, traditional wear and more — all in one place.' }}</p>
+      <a href="{{ section.settings.explore_url | default: '/collections/all' }}" class="nh-explore__btn nh-reveal nh-reveal-delay-3">
+        {{ section.settings.explore_cta | default: 'Shop All Products' }}
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </section>
+
   <!-- NEWSLETTER -->
   <section class="nh-newsletter">
     <h3 class="nh-newsletter__title nh-reveal">Stay In The Loop</h3>
@@ -400,6 +413,12 @@
     { "type": "url",        "id": "custom_page_url",   "label": "View All Page URL (leave blank to use collection)" },
 
     { "type": "header", "content": "Brand Statement" },
+    { "type": "header",   "content": "Explore CTA" },
+    { "type": "text",     "id": "explore_eyebrow", "label": "Eyebrow",    "default": "Everything You Need" },
+    { "type": "text",     "id": "explore_title",   "label": "Heading",    "default": "Explore The Full Collection" },
+    { "type": "textarea","id": "explore_sub",     "label": "Subtext",    "default": "Dresses, sets, accessories, traditional wear and more — all in one place." },
+    { "type": "text",     "id": "explore_cta",     "label": "Button Text","default": "Shop All Products" },
+    { "type": "url",      "id": "explore_url",     "label": "Button Link" },
     { "type": "textarea", "id": "brand_text",     "label": "Brand Quote",   "default": "Where fashion meets identity. Every piece tells your story." },
     { "type": "textarea", "id": "brand_sub",      "label": "Brand Subtext", "default": "Curated with intention. Designed for the woman who moves boldly through the world." },
     { "type": "text",     "id": "brand_cta_text", "label": "CTA Text",      "default": "Our Story" },
