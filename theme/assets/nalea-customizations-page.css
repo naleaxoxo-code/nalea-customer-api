@@ -1,0 +1,241 @@
+/* ================================================================
+   NALEA — CUSTOMIZATIONS PAGE  (nalea-customizations-page.css)
+   ================================================================ */
+
+/* ── PAGE SHELL ─────────────────────────────────────────────── */
+.ncp-page {
+  background: #080808;
+  color: #e8d9b5;
+  font-family: 'Cormorant Garamond', 'Georgia', serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HERO ────────────────────────────────────────────────────── */
+.ncp-hero {
+  position: relative;
+  text-align: center;
+  padding: 96px 24px 72px;
+  overflow: hidden;
+}
+
+.ncp-hero__glow {
+  position: absolute;
+  top: -80px; left: 50%; transform: translateX(-50%);
+  width: 700px; height: 460px;
+  background: radial-gradient(ellipse 60% 55% at 50% 30%,
+    rgba(201,168,76,.18) 0%,
+    rgba(155,127,212,.10) 55%,
+    transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ncp-hero__inner {
+  position: relative;
+  z-index: 1;
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.ncp-hero__eyebrow {
+  font-size: .72rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: #c9a84c;
+  opacity: .85;
+  margin: 0;
+}
+
+.ncp-hero__title {
+  font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+  font-weight: 300;
+  letter-spacing: .06em;
+  color: #f5e6c8;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.ncp-hero__sub {
+  font-size: clamp(.95rem, 1.8vw, 1.12rem);
+  color: rgba(232,217,181,.62);
+  max-width: 560px;
+  line-height: 1.75;
+  margin: 0;
+}
+
+/* ── DELIVERY BANNER ─────────────────────────────────────────── */
+.ncp-delivery-banner {
+  margin-top: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: rgba(201,168,76,.08);
+  border: 1px solid rgba(201,168,76,.25);
+  border-radius: 14px;
+  padding: 16px 22px;
+  max-width: 620px;
+  width: 100%;
+  text-align: left;
+  backdrop-filter: blur(6px);
+}
+
+.ncp-delivery-banner__icon {
+  flex-shrink: 0;
+  color: #c9a84c;
+  margin-top: 1px;
+}
+
+.ncp-delivery-banner__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: .92rem;
+  line-height: 1.6;
+  color: rgba(232,217,181,.82);
+}
+
+.ncp-delivery-banner__text strong {
+  color: #e8d9b5;
+  font-size: .95rem;
+  letter-spacing: .03em;
+}
+
+.ncp-delivery-banner__text span strong {
+  color: #c9a84c;
+}
+
+/* ── CONTENT WRAPPER ─────────────────────────────────────────── */
+.ncp-content {
+  padding: 0 24px 80px;
+}
+
+.ncp-content__inner {
+  max-width: 1380px;
+  margin: 0 auto;
+}
+
+/* ── GRID ────────────────────────────────────────────────────── */
+.ncp-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px;
+  padding: 12px 4px;
+}
+
+/* ── CARD (reuses nh-custom-card from homepage CSS,
+         plus extra ncp-card descriptor styles) ──────────────── */
+.ncp-card {
+  --card-tilt: rotate(0deg);
+}
+
+.ncp-card:nth-child(4n+1) { --card-tilt: rotate(-1.2deg); }
+.ncp-card:nth-child(4n+2) { --card-tilt: rotate(1.1deg) translateY(8px); }
+.ncp-card:nth-child(4n+3) { --card-tilt: rotate(-0.8deg) translateY(4px); }
+.ncp-card:nth-child(4n+4) { --card-tilt: rotate(1.4deg) translateY(14px); }
+
+.ncp-card__desc {
+  font-size: .82rem;
+  color: rgba(232,217,181,.58);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── EMPTY STATE ─────────────────────────────────────────────── */
+.ncp-empty {
+  text-align: center;
+  padding: 80px 24px;
+  color: rgba(232,217,181,.45);
+  font-size: 1rem;
+  letter-spacing: .04em;
+}
+
+/* ── BOTTOM NOTE ─────────────────────────────────────────────── */
+.ncp-bottom-note {
+  background: rgba(12,10,6,.72);
+  border-top: 1px solid rgba(201,168,76,.12);
+  padding: 72px 24px 96px;
+}
+
+.ncp-bottom-note__inner {
+  max-width: 780px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+
+.ncp-bottom-note__icon {
+  font-size: 1.5rem;
+  color: #c9a84c;
+  opacity: .7;
+}
+
+.ncp-bottom-note__title {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 300;
+  letter-spacing: .08em;
+  color: #f5e6c8;
+  margin: 0;
+}
+
+.ncp-bottom-note__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.ncp-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  background: rgba(201,168,76,.05);
+  border: 1px solid rgba(201,168,76,.12);
+  border-radius: 12px;
+  padding: 20px 26px;
+  text-align: left;
+}
+
+.ncp-step__num {
+  flex-shrink: 0;
+  font-size: 1.8rem;
+  font-weight: 200;
+  color: rgba(201,168,76,.45);
+  letter-spacing: .04em;
+  line-height: 1;
+  min-width: 42px;
+}
+
+.ncp-step__text {
+  font-size: .96rem;
+  line-height: 1.7;
+  color: rgba(232,217,181,.72);
+}
+
+.ncp-step__text strong {
+  color: #c9a84c;
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .ncp-grid { grid-template-columns: repeat(3, 1fr); gap: 22px; }
+}
+
+@media (max-width: 820px) {
+  .ncp-grid { grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .ncp-hero  { padding: 72px 20px 52px; }
+  .ncp-card:nth-child(n) { --card-tilt: rotate(0deg); }
+}
+
+@media (max-width: 480px) {
+  .ncp-grid { grid-template-columns: 1fr; gap: 16px; }
+  .ncp-delivery-banner { flex-direction: column; gap: 10px; }
+  .ncp-bottom-note { padding: 52px 20px 72px; }
+}

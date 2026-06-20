@@ -269,6 +269,70 @@
     </div>
   </section>
 
+  <!-- CUSTOMIZATIONS SECTION -->
+  {% if section.settings.custom_collection != blank %}
+    {% assign custom_col = collections[section.settings.custom_collection] %}
+    {% if custom_col != blank %}
+      <section class="nh-customizations">
+        <div class="nh-customizations__bg-glow" aria-hidden="true"></div>
+        <div class="nh-customizations__inner">
+          <div class="nh-section-header nh-reveal">
+            <p class="nh-section-eyebrow nh-custom-eyebrow">Made Just For You</p>
+            <h2 class="nh-section-title">Customizations</h2>
+            <p class="nh-customizations__desc">Pieces crafted to your exact vision — one of a kind, made to order.</p>
+          </div>
+          <div class="nh-customizations__delivery-note nh-reveal">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>Customization items are handcrafted to order — please allow <strong>7–14 business days</strong> for delivery.</span>
+          </div>
+          <div class="nh-customizations__grid">
+            {% for product in custom_col.products limit: 8 %}
+              <div class="nh-custom-card nh-reveal nh-reveal-delay-{{ forloop.index }}" data-index="{{ forloop.index }}">
+                <div class="nh-custom-card__rays" aria-hidden="true">
+                  <span class="nh-custom-card__ray nh-custom-card__ray--1"></span>
+                  <span class="nh-custom-card__ray nh-custom-card__ray--2"></span>
+                  <span class="nh-custom-card__ray nh-custom-card__ray--3"></span>
+                  <span class="nh-custom-card__ray nh-custom-card__ray--4"></span>
+                </div>
+                <div class="nh-custom-card__media">
+                  {% if product.featured_image != blank %}
+                    <img class="nh-custom-card__img"
+                         src="{{ product.featured_image | image_url: width: 600 }}"
+                         alt="{{ product.title | escape }}"
+                         loading="lazy">
+                  {% endif %}
+                  <div class="nh-custom-card__glass-overlay" aria-hidden="true"></div>
+                  <span class="nh-custom-card__badge">Custom</span>
+                  <button class="nh-custom-card__like nh-product-card__like" type="button" aria-label="Like {{ product.title | escape }}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  </button>
+                </div>
+                <div class="nh-custom-card__info">
+                  <a href="{{ product.url }}" class="nh-custom-card__name">{{ product.title }}</a>
+                  <div class="nh-custom-card__prices">
+                    <span class="nh-custom-card__price">{{ product.price | money }}</span>
+                    {% if product.compare_at_price > product.price %}
+                      <span class="nh-custom-card__price-compare">{{ product.compare_at_price | money }}</span>
+                    {% endif %}
+                  </div>
+                  <a href="{{ product.url }}" class="nh-custom-card__cta">Customise
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </a>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="nh-view-all nh-reveal" style="margin-top:56px;">
+            <a href="{{ section.settings.custom_page_url | default: custom_col.url }}" class="nh-view-all__btn nh-custom-view-btn">
+              View All Customizations
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+        </div>
+      </section>
+    {% endif %}
+  {% endif %}
+
   <!-- BRAND STATEMENT -->
   <section class="nh-brand">
     <p class="nh-brand__text nh-reveal">
@@ -330,6 +394,10 @@
 
     { "type": "header", "content": "Featured Products" },
     { "type": "collection", "id": "featured_collection", "label": "New Arrivals Collection" },
+
+    { "type": "header", "content": "Customizations Section" },
+    { "type": "collection", "id": "custom_collection", "label": "Customizations Collection" },
+    { "type": "url",        "id": "custom_page_url",   "label": "View All Page URL (leave blank to use collection)" },
 
     { "type": "header", "content": "Brand Statement" },
     { "type": "textarea", "id": "brand_text",     "label": "Brand Quote",   "default": "Where fashion meets identity. Every piece tells your story." },

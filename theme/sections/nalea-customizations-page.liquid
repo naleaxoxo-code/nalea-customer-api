@@ -1,0 +1,135 @@
+{% comment %}
+  NALEA — Customizations Full Page Section
+  Add this to any page via the theme editor to show all customization products.
+{% endcomment %}
+
+{{ 'nalea-homepage.css' | asset_url | stylesheet_tag }}
+{{ 'nalea-customizations-page.css' | asset_url | stylesheet_tag }}
+
+{% if section.settings.collection != blank %}
+  {% assign col = collections[section.settings.collection] %}
+{% endif %}
+
+<div class="ncp-page">
+
+  <!-- HERO BANNER -->
+  <div class="ncp-hero">
+    <div class="ncp-hero__glow" aria-hidden="true"></div>
+    <div class="ncp-hero__inner">
+      <p class="ncp-hero__eyebrow">Handcrafted to Order</p>
+      <h1 class="ncp-hero__title">{{ section.settings.page_title | default: 'Customizations' }}</h1>
+      <p class="ncp-hero__sub">{{ section.settings.page_sub | default: 'Every piece is made uniquely for you. Choose your style, we handle the craft.' }}</p>
+      <div class="ncp-delivery-banner">
+        <div class="ncp-delivery-banner__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 4v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        </div>
+        <div class="ncp-delivery-banner__text">
+          <strong>Delivery Notice</strong>
+          <span>Customization items are handcrafted to your exact order — please allow <strong>7–14 business days</strong> for your piece to be made and delivered to you.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCTS GRID -->
+  <div class="ncp-content">
+    <div class="ncp-content__inner">
+
+      {% if col != blank %}
+        {% if col.products_count == 0 %}
+          <div class="ncp-empty">
+            <p>No customization products found. Check back soon.</p>
+          </div>
+        {% else %}
+          <div class="ncp-grid">
+            {% for product in col.products %}
+              <div class="nh-custom-card ncp-card" data-index="{{ forloop.index }}">
+                <div class="nh-custom-card__rays" aria-hidden="true">
+                  <span class="nh-custom-card__ray nh-custom-card__ray--1"></span>
+                  <span class="nh-custom-card__ray nh-custom-card__ray--2"></span>
+                  <span class="nh-custom-card__ray nh-custom-card__ray--3"></span>
+                  <span class="nh-custom-card__ray nh-custom-card__ray--4"></span>
+                </div>
+                <div class="nh-custom-card__media">
+                  {% if product.featured_image != blank %}
+                    <img class="nh-custom-card__img"
+                         src="{{ product.featured_image | image_url: width: 700 }}"
+                         alt="{{ product.title | escape }}"
+                         loading="lazy">
+                  {% endif %}
+                  <div class="nh-custom-card__glass-overlay" aria-hidden="true"></div>
+                  <span class="nh-custom-card__badge">Custom</span>
+                  <button class="nh-product-card__like nh-custom-card__like" type="button" aria-label="Like {{ product.title | escape }}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  </button>
+                </div>
+                <div class="nh-custom-card__info">
+                  <a href="{{ product.url }}" class="nh-custom-card__name">{{ product.title }}</a>
+                  {% if product.description != blank %}
+                    <p class="ncp-card__desc">{{ product.description | strip_html | truncate: 90 }}</p>
+                  {% endif %}
+                  <div class="nh-custom-card__prices">
+                    <span class="nh-custom-card__price">{{ product.price | money }}</span>
+                    {% if product.compare_at_price > product.price %}
+                      <span class="nh-custom-card__price-compare">{{ product.compare_at_price | money }}</span>
+                    {% endif %}
+                  </div>
+                  <a href="{{ product.url }}" class="nh-custom-card__cta">
+                    Customise This
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </a>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="ncp-empty">
+          <p>Select a collection in the theme editor to display products here.</p>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- BOTTOM NOTE -->
+  <div class="ncp-bottom-note">
+    <div class="ncp-bottom-note__inner">
+      <div class="ncp-bottom-note__icon">✦</div>
+      <h3 class="ncp-bottom-note__title">How Customizations Work</h3>
+      <div class="ncp-bottom-note__steps">
+        <div class="ncp-step">
+          <span class="ncp-step__num">01</span>
+          <span class="ncp-step__text">Choose your item and submit your customization details at checkout.</span>
+        </div>
+        <div class="ncp-step">
+          <span class="ncp-step__num">02</span>
+          <span class="ncp-step__text">Our team handcrafts your piece with care — every detail made to your spec.</span>
+        </div>
+        <div class="ncp-step">
+          <span class="ncp-step__num">03</span>
+          <span class="ncp-step__text">Your order is delivered within <strong>7–14 business days</strong> straight to your door.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="{{ 'nalea-homepage.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Customizations Page",
+  "tag": "section",
+  "class": "nalea-customizations-page-section",
+  "settings": [
+    { "type": "collection", "id": "collection",  "label": "Customizations Collection" },
+    { "type": "text",       "id": "page_title",  "label": "Page Title",    "default": "Customizations" },
+    { "type": "textarea",   "id": "page_sub",    "label": "Page Subtitle", "default": "Every piece is made uniquely for you. Choose your style, we handle the craft." }
+  ],
+  "presets": [
+    { "name": "Customizations Page" }
+  ]
+}
+{% endschema %}
