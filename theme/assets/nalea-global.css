@@ -115,9 +115,11 @@ footer,
   z-index: 1;
 }
 
-/* Canvas sits at z-index 0 — behind all content, above body bg */
+/* Canvas uses screen blend — black = invisible, fire/gold glows show through */
 #nalea-ambient-canvas {
-  z-index: 0 !important;
+  z-index: 9 !important;
+  mix-blend-mode: screen !important;
+  opacity: 1 !important;
 }
 
 main {

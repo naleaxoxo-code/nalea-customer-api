@@ -349,11 +349,11 @@
       return {
         x: rand(0, W),
         y: spreadY !== undefined ? rand(0, H) : H + rand(0, 60),
-        size: rand(0.6, 2.2),
-        speed: rand(0.18, 0.55),
-        drift: (Math.random() - 0.5) * 0.28,
+        size: rand(1.2, 3.5),
+        speed: rand(0.3, 0.8),
+        drift: (Math.random() - 0.5) * 0.4,
         opacity: 0,
-        maxOpacity: rand(0.10, 0.32),
+        maxOpacity: rand(0.55, 0.9),
         color: FIRE_COLORS[Math.floor(rand(0, FIRE_COLORS.length))],
         life: spreadY !== undefined ? rand(0, maxLife) : 0,
         maxLife: maxLife,
@@ -373,7 +373,7 @@
         progress: 0,
         speed: rand(0.006, 0.012),
         halfLen: rand(60, 140),
-        maxOpacity: rand(0.10, 0.22),
+        maxOpacity: rand(0.35, 0.7),
         color: Math.random() > 0.45 ? '#ff6b00' : '#c9a84c',
         dir: dir,
       };
@@ -388,7 +388,7 @@
         progress: 0,
         speed: rand(0.0014, 0.0028),
         halfW: rand(30, 70),
-        maxOpacity: rand(0.018, 0.045),
+        maxOpacity: rand(0.06, 0.12),
         tilt: rand(-0.25, 0.25),
       };
     }
