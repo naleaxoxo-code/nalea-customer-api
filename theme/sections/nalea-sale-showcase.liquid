@@ -1,0 +1,500 @@
+{% comment %} NALEA — Sale Showcase | 30 Promo Styles {% endcomment %}
+
+{% assign disc_type  = section.settings.discount_type %}
+{% assign disc_val   = section.settings.discount_value | plus: 0 %}
+{% assign promo      = section.settings.promo_style %}
+
+<style>
+/* ── Base variables ─────────────────────────────────────── */
+.nss { --nss-black:#080808; --nss-gold:#c9a84c; --nss-fire1:#ff6b00; --nss-fire2:#ff3d00; --nss-fire3:#ffd200; --nss-glass:rgba(255,255,255,.04); --nss-muted:rgba(255,255,255,.45); --nss-c1:var(--nss-gold); --nss-c2:var(--nss-fire1); background:var(--nss-black); color:#fff; padding:80px 0; position:relative; overflow:hidden; }
+.nss-inner { max-width:1320px; margin:0 auto; padding:0 24px; }
+
+/* ── Keyframes ───────────────────────────────────────────── */
+@keyframes nss-fire-glow   { 0%,100%{box-shadow:0 0 8px rgba(255,107,0,.3)} 50%{box-shadow:0 0 28px rgba(255,107,0,.75),inset 0 0 16px rgba(255,107,0,.08)} }
+@keyframes nss-gold-pulse  { 0%,100%{box-shadow:0 0 6px rgba(201,168,76,.2)} 50%{box-shadow:0 0 24px rgba(201,168,76,.65)} }
+@keyframes nss-red-beat    { 0%,100%{box-shadow:0 0 6px rgba(255,0,64,.3)} 20%{box-shadow:0 0 22px rgba(255,0,64,.85)} 40%{box-shadow:0 0 6px rgba(255,0,64,.3)} 60%{box-shadow:0 0 14px rgba(255,0,64,.6)} }
+@keyframes nss-blue-zap    { 0%,100%{box-shadow:0 0 8px rgba(0,150,255,.3)} 50%{box-shadow:0 0 30px rgba(0,150,255,.85),0 0 50px rgba(0,150,255,.25)} }
+@keyframes nss-purple-glow { 0%,100%{box-shadow:0 0 8px rgba(150,0,255,.3)} 50%{box-shadow:0 0 26px rgba(150,0,255,.75)} }
+@keyframes nss-terra-glow  { 0%,100%{box-shadow:0 0 8px rgba(165,90,60,.35)} 50%{box-shadow:0 0 28px rgba(165,90,60,.8)} }
+@keyframes nss-emerald     { 0%,100%{box-shadow:0 0 8px rgba(0,200,100,.3)} 50%{box-shadow:0 0 24px rgba(0,200,100,.75)} }
+@keyframes nss-shake       { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-2px) rotate(-.3deg)} 40%{transform:translateX(2px) rotate(.3deg)} 60%{transform:translateX(-1px)} 80%{transform:translateX(1px)} }
+@keyframes nss-spin-border { to{transform:rotate(360deg)} }
+@keyframes nss-shimmer     { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+@keyframes nss-scanline    { 0%{transform:translateY(-100%)} 100%{transform:translateY(400%)} }
+@keyframes nss-badge-bob   { 0%,100%{transform:scale(1) rotate(-5deg)} 50%{transform:scale(1.12) rotate(-5deg)} }
+@keyframes nss-badge-bob0  { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+@keyframes nss-neon-flick  { 0%,94%,96%,98%,100%{opacity:1} 95%{opacity:.55} 97%{opacity:.75} 99%{opacity:.6} }
+@keyframes nss-entrance    { from{opacity:0;transform:translateY(20px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+@keyframes nss-march       { 0%{background-position:0 0,100% 0,100% 100%,0 100%} 100%{background-position:20px 0,100% 20px,calc(100% - 20px) 100%,0 calc(100% - 20px)} }
+
+/* ── Header ──────────────────────────────────────────────── */
+.nss-header { text-align:center; margin-bottom:20px; }
+.nss-eyebrow { font-size:.7rem; letter-spacing:.22em; text-transform:uppercase; color:var(--nss-c1); margin-bottom:10px; }
+.nss-title   { font-size:clamp(1.8rem,4vw,3rem); font-weight:700; letter-spacing:-.02em; margin-bottom:12px; }
+.nss-sub     { font-size:.95rem; color:var(--nss-muted); max-width:560px; margin:0 auto; }
+
+/* ── Discount bar ────────────────────────────────────────── */
+.nss-bar { display:flex; align-items:center; justify-content:center; gap:12px; background:linear-gradient(90deg,transparent,var(--nss-glass),transparent); border:1px solid rgba(255,255,255,.06); border-radius:100px; padding:12px 32px; margin:24px auto 40px; max-width:560px; position:relative; overflow:hidden; }
+.nss-bar::after { content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent); animation:nss-shimmer 3s linear infinite; }
+.nss-bar__ico  { font-size:1.2rem; }
+.nss-bar__txt  { font-size:.82rem; font-weight:700; letter-spacing:.08em; color:var(--nss-c1); text-transform:uppercase; }
+
+/* ── Grid ────────────────────────────────────────────────── */
+.nss-grid { display:grid; grid-template-columns:repeat(var(--cols,4),1fr); gap:20px; }
+@media(max-width:1024px){.nss-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:768px) {.nss-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px) {.nss-grid{grid-template-columns:1fr}}
+
+/* ── Card base ───────────────────────────────────────────── */
+.nss-card { position:relative; background:var(--nss-glass); border:1px solid rgba(201,168,76,.14); border-radius:16px; overflow:hidden; transition:transform .3s ease; animation:nss-entrance .5s ease both; animation-delay:calc(var(--i,0)*.08s); }
+.nss-card:hover { transform:translateY(-6px); }
+
+/* ── Badge ───────────────────────────────────────────────── */
+.nss-badge { position:absolute; top:12px; right:12px; z-index:10; background:linear-gradient(135deg,var(--nss-fire1),var(--nss-fire2)); color:#fff; border-radius:8px; padding:6px 10px; display:flex; flex-direction:column; align-items:center; line-height:1.2; box-shadow:0 4px 16px rgba(0,0,0,.4); animation:nss-badge-bob 2s ease-in-out infinite; min-width:44px; }
+.nss-badge__ico  { font-size:.9rem; }
+.nss-badge__txt  { font-size:.62rem; font-weight:800; letter-spacing:.05em; white-space:nowrap; }
+
+/* ── Media ───────────────────────────────────────────────── */
+.nss-card__media { display:block; aspect-ratio:1; overflow:hidden; }
+.nss-card__media img { width:100%; height:100%; object-fit:cover; transition:transform .5s ease; }
+.nss-card:hover .nss-card__media img { transform:scale(1.06); }
+.nss-card__placeholder { background:rgba(255,255,255,.04); width:100%; aspect-ratio:1; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.15); font-size:2.5rem; }
+
+/* ── Body ────────────────────────────────────────────────── */
+.nss-card__body   { padding:16px; }
+.nss-card__vendor { font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--nss-muted); margin-bottom:4px; }
+.nss-card__name   { font-size:.9rem; font-weight:600; margin-bottom:10px; line-height:1.3; }
+.nss-card__name a { color:#fff; text-decoration:none; transition:color .2s; }
+.nss-card__name a:hover { color:var(--nss-c1); }
+.nss-prices { display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+.nss-price   { font-size:1.1rem; font-weight:700; color:var(--nss-c1); }
+.nss-compare { font-size:.85rem; color:var(--nss-muted); text-decoration:line-through; }
+.nss-saving  { font-size:.68rem; background:rgba(201,168,76,.12); color:var(--nss-c1); border:1px solid rgba(201,168,76,.2); border-radius:4px; padding:2px 6px; font-weight:700; }
+
+/* ── Quick Add ───────────────────────────────────────────── */
+.nss-qadd { width:100%; background:linear-gradient(135deg,var(--nss-c1),var(--nss-c2)); color:#080808; border:none; border-radius:8px; padding:10px 0; font-size:.76rem; font-weight:800; letter-spacing:.09em; text-transform:uppercase; cursor:pointer; transition:opacity .2s,transform .2s; }
+.nss-qadd:hover:not(:disabled) { opacity:.9; transform:scale(1.02); }
+.nss-qadd:disabled { opacity:.35; cursor:not-allowed; }
+
+/* ── View All ────────────────────────────────────────────── */
+.nss-footer { text-align:center; margin-top:48px; }
+.nss-view-all { display:inline-flex; align-items:center; gap:8px; color:var(--nss-c1); text-decoration:none; font-size:.82rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; border:1px solid currentColor; border-radius:100px; padding:12px 32px; transition:all .3s ease; }
+.nss-view-all:hover { background:var(--nss-c1); color:#080808; }
+
+/* ════════════════════════════════════════════════════════════
+   30 PROMO STYLE VARIANTS
+   ════════════════════════════════════════════════════════════ */
+
+/* 1 ── fire-percent */
+[data-promo="fire-percent"] { --nss-c1:#ff6b00; --nss-c2:#ffd200; }
+[data-promo="fire-percent"] .nss-card { animation:nss-entrance .5s ease both,nss-fire-glow 2.5s ease-in-out infinite; border-color:rgba(255,107,0,.35); }
+[data-promo="fire-percent"] .nss-badge { background:linear-gradient(135deg,#ff6b00,#ff3d00); border-radius:50px; }
+
+/* 2 ── flash-sale */
+[data-promo="flash-sale"] { --nss-c1:#ff0040; --nss-c2:#ff6b00; }
+[data-promo="flash-sale"] .nss-card { animation:nss-entrance .5s ease both,nss-red-beat 1.8s ease-in-out infinite; border:1.5px solid rgba(255,0,64,.5); }
+[data-promo="flash-sale"] .nss-badge { background:#ff0040; border-radius:4px 0 0 4px; right:0; top:16px; clip-path:polygon(0 0,100% 0,85% 50%,100% 100%,0 100%); padding:7px 18px 7px 12px; }
+
+/* 3 ── hot-deal */
+[data-promo="hot-deal"] { --nss-c1:#ff8c00; --nss-c2:#ff4500; }
+[data-promo="hot-deal"] .nss-card { animation:nss-entrance .5s ease both,nss-fire-glow 3s ease-in-out infinite; border-color:rgba(255,140,0,.4); background:linear-gradient(180deg,rgba(255,140,0,.05) 0%,var(--nss-glass) 40%); }
+[data-promo="hot-deal"] .nss-badge { background:linear-gradient(135deg,#ff8c00,#ff4500); border-radius:50%; width:54px; height:54px; justify-content:center; animation:nss-badge-bob0 1.8s ease-in-out infinite; }
+
+/* 4 ── blaze */
+[data-promo="blaze"] { --nss-c1:#ffd200; --nss-c2:#ff3d00; }
+[data-promo="blaze"] .nss-card { border:1.5px solid transparent; }
+[data-promo="blaze"] .nss-card::before { content:''; position:absolute; inset:-1.5px; border-radius:17px; background:conic-gradient(#ff6b00,#ffd200,#ff3d00,#ff6b00); z-index:-1; animation:nss-spin-border 3s linear infinite; }
+
+/* 5 ── ember */
+[data-promo="ember"] { --nss-c1:#e8a040; --nss-c2:#c96020; }
+[data-promo="ember"] .nss-card { border-color:rgba(232,160,64,.22); box-shadow:0 4px 24px rgba(201,96,32,.1); }
+[data-promo="ember"] .nss-badge { background:linear-gradient(135deg,#e8a040,#c96020); border-radius:6px; }
+
+/* 6 ── inferno */
+[data-promo="inferno"] { --nss-c1:#dc143c; --nss-c2:#8b0000; }
+[data-promo="inferno"] .nss-card { animation:nss-entrance .5s ease both,nss-red-beat 2.5s ease-in-out infinite; border-color:rgba(220,20,60,.45); background:linear-gradient(160deg,rgba(139,0,0,.14) 0%,var(--nss-glass) 50%); }
+[data-promo="inferno"] .nss-badge { background:linear-gradient(135deg,#dc143c,#8b0000); clip-path:polygon(12% 0,100% 0,88% 100%,0 100%); border-radius:0; padding:7px 18px; }
+
+/* 7 ── glass-gold */
+[data-promo="glass-gold"] { --nss-c1:#c9a84c; --nss-c2:#e8d080; }
+[data-promo="glass-gold"] .nss-card { animation:nss-entrance .5s ease both,nss-gold-pulse 3s ease-in-out infinite; border-color:rgba(201,168,76,.3); background:rgba(201,168,76,.04); }
+[data-promo="glass-gold"] .nss-badge { background:linear-gradient(135deg,#c9a84c,#e8d080); color:#080808; border-radius:100px; }
+
+/* 8 ── glass-dark */
+[data-promo="glass-dark"] { --nss-c1:#ffffff; --nss-c2:#aaaaaa; }
+[data-promo="glass-dark"] .nss-card { border-color:rgba(255,255,255,.09); background:rgba(255,255,255,.03); }
+[data-promo="glass-dark"] .nss-badge { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); backdrop-filter:blur(8px); animation:nss-badge-bob0 2s ease-in-out infinite; }
+
+/* 9 ── glass-crystal */
+[data-promo="glass-crystal"] { --nss-c1:#a0d8ef; --nss-c2:#d4a0ef; }
+[data-promo="glass-crystal"] .nss-card { border:1px solid transparent; }
+[data-promo="glass-crystal"] .nss-card::before { content:''; position:absolute; inset:-1px; border-radius:17px; background:linear-gradient(135deg,#ff6b9d,#a78bfa,#60a5fa,#34d399,#fbbf24,#ff6b9d); background-size:300% 300%; animation:nss-shimmer 4s linear infinite; z-index:-1; }
+[data-promo="glass-crystal"] .nss-badge { background:linear-gradient(135deg,#a78bfa,#60a5fa); }
+
+/* 10 ── glass-smoke */
+[data-promo="glass-smoke"] { --nss-c1:#b0b0c8; --nss-c2:#808098; }
+[data-promo="glass-smoke"] .nss-card { border-color:rgba(180,180,210,.18); background:rgba(100,100,128,.07); }
+[data-promo="glass-smoke"] .nss-badge { background:rgba(80,80,110,.7); border:1px solid rgba(200,200,230,.25); color:#d8d8e8; }
+
+/* 11 ── glass-mirror */
+[data-promo="glass-mirror"] { --nss-c1:#d0d8e4; --nss-c2:#90a0b4; }
+[data-promo="glass-mirror"] .nss-card { border-color:rgba(255,255,255,.14); background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.02),rgba(255,255,255,.07)); }
+[data-promo="glass-mirror"] .nss-badge { background:linear-gradient(135deg,#c8d4e0,#90a0b8); color:#080808; }
+
+/* 12 ── glass-royal */
+[data-promo="glass-royal"] { --nss-c1:#c084fc; --nss-c2:#7c3aed; }
+[data-promo="glass-royal"] .nss-card { animation:nss-entrance .5s ease both,nss-purple-glow 3s ease-in-out infinite; border-color:rgba(192,132,252,.3); background:rgba(124,58,237,.05); }
+[data-promo="glass-royal"] .nss-badge { background:linear-gradient(135deg,#7c3aed,#c084fc); }
+
+/* 13 ── heritage-earth */
+[data-promo="heritage-earth"] { --nss-c1:#c8784c; --nss-c2:#8b4513; }
+[data-promo="heritage-earth"] .nss-card { animation:nss-entrance .5s ease both,nss-terra-glow 3s ease-in-out infinite; border-color:rgba(200,120,76,.35); background:rgba(165,90,60,.06); }
+[data-promo="heritage-earth"] .nss-badge { background:linear-gradient(135deg,#c8784c,#8b4513); }
+
+/* 14 ── heritage-ubuntu */
+[data-promo="heritage-ubuntu"] { --nss-c1:#d4a840; --nss-c2:#8b6820; }
+[data-promo="heritage-ubuntu"] .nss-card { border:2px dotted rgba(212,168,64,.38); background:rgba(212,168,64,.04); }
+[data-promo="heritage-ubuntu"] .nss-badge { background:linear-gradient(135deg,#d4a840,#8b6820); border-radius:50%; width:54px; height:54px; justify-content:center; animation:nss-badge-bob0 2s ease-in-out infinite; }
+
+/* 15 ── heritage-sunset */
+[data-promo="heritage-sunset"] { --nss-c1:#f59e0b; --nss-c2:#ef4444; }
+[data-promo="heritage-sunset"] .nss-card { border-color:rgba(245,158,11,.3); background:linear-gradient(160deg,rgba(239,68,68,.07) 0%,rgba(245,158,11,.04) 100%); }
+[data-promo="heritage-sunset"] .nss-badge { background:linear-gradient(135deg,#ef4444,#f59e0b); }
+
+/* 16 ── heritage-tribal */
+[data-promo="heritage-tribal"] { --nss-c1:#c9a84c; --nss-c2:#8b6820; }
+[data-promo="heritage-tribal"] .nss-card { border:2px dashed rgba(201,168,76,.42); }
+[data-promo="heritage-tribal"] .nss-badge { background:linear-gradient(135deg,#c9a84c,#8b6820); clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); width:56px; height:56px; justify-content:center; border-radius:0; top:10px; right:10px; }
+
+/* 17 ── heritage-royal */
+[data-promo="heritage-royal"] { --nss-c1:#c9a84c; --nss-c2:#1a237e; }
+[data-promo="heritage-royal"] .nss-card { border-color:rgba(201,168,76,.28); background:linear-gradient(160deg,rgba(26,35,126,.14) 0%,var(--nss-glass) 60%); }
+[data-promo="heritage-royal"] .nss-badge { background:linear-gradient(135deg,#1a237e,#c9a84c); }
+
+/* 18 ── heritage-fire */
+[data-promo="heritage-fire"] { --nss-c1:#ff7043; --nss-c2:#bf360c; }
+[data-promo="heritage-fire"] .nss-card { animation:nss-entrance .5s ease both,nss-fire-glow 2.5s ease-in-out infinite; border-color:rgba(255,112,67,.4); }
+[data-promo="heritage-fire"] .nss-badge { background:linear-gradient(135deg,#ff7043,#bf360c); }
+
+/* 19 ── neon-fire */
+[data-promo="neon-fire"] { --nss-c1:#ff6b00; --nss-c2:#ff9100; }
+[data-promo="neon-fire"] .nss-card { border-color:rgba(255,107,0,.5); animation:nss-entrance .5s ease both,nss-neon-flick 5s linear infinite,nss-fire-glow 2s ease-in-out infinite; }
+[data-promo="neon-fire"] .nss-badge { background:#ff6b00; box-shadow:0 0 12px #ff6b00,0 0 28px rgba(255,107,0,.45); border-radius:4px; }
+
+/* 20 ── electric-blue */
+[data-promo="electric-blue"] { --nss-c1:#00bfff; --nss-c2:#0080ff; }
+[data-promo="electric-blue"] .nss-card { animation:nss-entrance .5s ease both,nss-blue-zap 2s ease-in-out infinite; border-color:rgba(0,191,255,.4); background:rgba(0,128,255,.04); }
+[data-promo="electric-blue"] .nss-badge { background:linear-gradient(135deg,#0080ff,#00bfff); }
+
+/* 21 ── pulse-red */
+[data-promo="pulse-red"] { --nss-c1:#ff1744; --nss-c2:#d50000; }
+[data-promo="pulse-red"] .nss-card { animation:nss-entrance .5s ease both,nss-red-beat 1.2s ease-in-out infinite; border-color:rgba(255,23,68,.5); }
+[data-promo="pulse-red"] .nss-badge { background:linear-gradient(135deg,#d50000,#ff1744); }
+
+/* 22 ── shake-urgent */
+[data-promo="shake-urgent"] { --nss-c1:#ff3d00; --nss-c2:#ffd200; }
+[data-promo="shake-urgent"] .nss-card { animation:nss-entrance .5s ease both,nss-shake .9s ease-in-out infinite; border:2px solid rgba(255,61,0,.5); }
+[data-promo="shake-urgent"] .nss-badge { background:linear-gradient(135deg,#ff3d00,#ffd200); color:#080808; }
+
+/* 23 ── countdown-dash */
+[data-promo="countdown-dash"] { --nss-c1:#ffd200; --nss-c2:#ff6b00; }
+[data-promo="countdown-dash"] .nss-card { border:2px dashed rgba(255,210,0,.5); animation:nss-entrance .5s ease both,nss-march 1.4s linear infinite; }
+[data-promo="countdown-dash"] .nss-badge { background:linear-gradient(135deg,#ff6b00,#ffd200); color:#080808; border-radius:4px; }
+
+/* 24 ── spotlight */
+[data-promo="spotlight"] { --nss-c1:#ffffff; --nss-c2:#c9a84c; }
+[data-promo="spotlight"] .nss-card { border-color:rgba(255,255,255,.1); }
+[data-promo="spotlight"] .nss-card::after { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:130%; height:55%; background:radial-gradient(ellipse at 50% 0,rgba(201,168,76,.17) 0%,transparent 70%); pointer-events:none; z-index:0; }
+[data-promo="spotlight"] .nss-badge { background:linear-gradient(135deg,#c9a84c,#e8d080); color:#080808; }
+
+/* 25 ── minimal-gold */
+[data-promo="minimal-gold"] { --nss-c1:#c9a84c; --nss-c2:#e8d080; }
+[data-promo="minimal-gold"] .nss-card { border:none; border-bottom:2px solid rgba(201,168,76,.5); border-radius:0; background:transparent; }
+[data-promo="minimal-gold"] .nss-badge { background:transparent; border:1.5px solid #c9a84c; color:#c9a84c; box-shadow:none; animation:none; }
+
+/* 26 ── premium-black */
+[data-promo="premium-black"] { --nss-c1:#ffffff; --nss-c2:#c9a84c; background:#000; }
+[data-promo="premium-black"] .nss-card { background:#111; border-color:rgba(255,255,255,.07); }
+[data-promo="premium-black"] .nss-badge { background:#fff; color:#080808; box-shadow:none; animation:none; }
+[data-promo="premium-black"] .nss-qadd { background:linear-gradient(135deg,#fff,#ccc); }
+
+/* 27 ── diamond-shine */
+[data-promo="diamond-shine"] { --nss-c1:#d0eaff; --nss-c2:#90b8e0; }
+[data-promo="diamond-shine"] .nss-card { border-color:rgba(208,234,255,.25); }
+[data-promo="diamond-shine"] .nss-card::before { content:''; position:absolute; inset:-1px; border-radius:17px; background:linear-gradient(135deg,rgba(255,255,255,.22) 20%,transparent 50%,rgba(255,255,255,.12) 80%); background-size:200% 200%; animation:nss-shimmer 3s linear infinite; z-index:0; pointer-events:none; }
+[data-promo="diamond-shine"] .nss-badge { background:linear-gradient(135deg,#d0eaff,#80aad0); color:#080808; }
+
+/* 28 ── crown-royal */
+[data-promo="crown-royal"] { --nss-c1:#d4af37; --nss-c2:#8b6914; }
+[data-promo="crown-royal"] .nss-card { border-color:rgba(212,175,55,.32); animation:nss-entrance .5s ease both,nss-gold-pulse 3s ease-in-out infinite; }
+[data-promo="crown-royal"] .nss-badge { background:linear-gradient(135deg,#d4af37,#8b6914); clip-path:polygon(0 40%,20% 0,40% 40%,50% 15%,60% 40%,80% 0,100% 40%,100% 100%,0 100%); border-radius:0 0 6px 6px; width:58px; height:46px; top:0; right:18px; justify-content:flex-end; padding-bottom:7px; animation:none; }
+
+/* 29 ── vip-ribbon */
+[data-promo="vip-ribbon"] { --nss-c1:#c9a84c; --nss-c2:#080808; }
+[data-promo="vip-ribbon"] .nss-card { border-color:rgba(201,168,76,.2); overflow:hidden; }
+[data-promo="vip-ribbon"] .nss-badge { top:0; right:0; border-radius:0; padding:0; width:86px; height:86px; background:none; box-shadow:none; animation:none; overflow:hidden; }
+[data-promo="vip-ribbon"] .nss-badge::before { content:attr(data-label); position:absolute; top:22px; right:-22px; background:linear-gradient(135deg,#c9a84c,#e8d080); color:#080808; font-size:.58rem; font-weight:800; letter-spacing:.08em; padding:5px 30px; transform:rotate(45deg); white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+
+/* 30 ── mega-sale */
+[data-promo="mega-sale"] { --nss-c1:#ff0040; --nss-c2:#ffd200; }
+[data-promo="mega-sale"] .nss-card { border:2px solid rgba(255,0,64,.6); }
+[data-promo="mega-sale"] .nss-card::after { content:''; position:absolute; top:0; left:0; width:100%; height:3px; background:linear-gradient(90deg,transparent,rgba(255,0,64,.9),transparent); animation:nss-scanline 2s linear infinite; pointer-events:none; z-index:2; }
+[data-promo="mega-sale"] .nss-badge { background:linear-gradient(135deg,#ff0040,#ffd200); color:#080808; clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%); border-radius:4px 4px 0 0; animation:none; }
+</style>
+
+<section class="nss" data-promo="{{ promo }}">
+  <div class="nss-inner">
+
+    <div class="nss-header">
+      {% if section.settings.eyebrow != blank %}<p class="nss-eyebrow">{{ section.settings.eyebrow }}</p>{% endif %}
+      <h2 class="nss-title">{{ section.settings.title | default: 'On Sale Now' }}</h2>
+      {% if section.settings.subtitle != blank %}<p class="nss-sub">{{ section.settings.subtitle }}</p>{% endif %}
+    </div>
+
+    <div class="nss-bar">
+      <span class="nss-bar__ico">
+        {%- case promo -%}
+          {%- when 'flash-sale','electric-blue','shake-urgent','mega-sale' -%}⚡
+          {%- when 'glass-royal','crown-royal','heritage-royal','vip-ribbon','premium-black' -%}👑
+          {%- when 'heritage-earth','heritage-ubuntu','heritage-sunset','heritage-tribal','heritage-fire','heritage-royal' -%}🌍
+          {%- when 'diamond-shine','glass-crystal','glass-mirror' -%}💎
+          {%- when 'pulse-red','inferno' -%}❤️‍🔥
+          {%- when 'countdown-dash' -%}⏱️
+          {%- when 'minimal-gold','glass-gold','spotlight' -%}✨
+          {%- when 'glass-smoke' -%}🌫️
+          {%- else -%}🔥
+        {%- endcase -%}
+      </span>
+      <span class="nss-bar__txt">
+        {%- case disc_type -%}
+          {%- when 'percentage' -%}{{ disc_val }}% OFF — Price already cut on every item below
+          {%- when 'fixed' -%}R{{ disc_val }} OFF — Deducted from every item in this section
+          {%- when 'halfprice' -%}Half Price — 50% off everything here
+          {%- when 'bogo' -%}Buy 1 Get 1 FREE — Add 2 to cart, only pay for 1
+          {%- when 'buy2get1' -%}Buy 2 Get 1 FREE — Add 3 to cart, cheapest item is free
+          {%- else -%}{{ section.settings.custom_label | default: 'Special Offer — Limited Time Only' }}
+        {%- endcase -%}
+      </span>
+    </div>
+
+    <div class="nss-grid" style="--cols:{{ section.settings.columns | default: 4 }}">
+      {% for block in section.blocks %}
+        {% assign prod = block.settings.product %}
+        {% if prod != blank %}
+          {% assign variant    = prod.selected_or_first_available_variant %}
+          {% assign orig_price = variant.price %}
+
+          {%- case disc_type -%}
+            {%- when 'percentage' -%}
+              {%- assign disc_cents  = orig_price | times: disc_val | divided_by: 100 -%}
+              {%- assign final_price = orig_price | minus: disc_cents -%}
+              {%- assign b1 = disc_val | append: '%' -%}
+              {%- assign b2 = 'OFF' -%}
+            {%- when 'fixed' -%}
+              {%- assign disc_cents  = disc_val | times: 100 -%}
+              {%- assign final_price = orig_price | minus: disc_cents -%}
+              {%- if final_price < 0 -%}{%- assign final_price = 0 -%}{%- endif -%}
+              {%- assign b1 = 'R' | append: disc_val -%}
+              {%- assign b2 = 'OFF' -%}
+            {%- when 'halfprice' -%}
+              {%- assign final_price = orig_price | divided_by: 2 -%}
+              {%- assign b1 = '½' -%}
+              {%- assign b2 = 'PRICE' -%}
+            {%- when 'bogo' -%}
+              {%- assign final_price = orig_price -%}
+              {%- assign b1 = 'B1G1' -%}
+              {%- assign b2 = 'FREE' -%}
+            {%- when 'buy2get1' -%}
+              {%- assign final_price = orig_price -%}
+              {%- assign b1 = 'B2G1' -%}
+              {%- assign b2 = 'FREE' -%}
+            {%- else -%}
+              {%- assign final_price = orig_price -%}
+              {%- assign b1 = section.settings.custom_badge_line1 | default: 'SALE' -%}
+              {%- assign b2 = section.settings.custom_badge_line2 | default: '🔥' -%}
+          {%- endcase -%}
+
+          {%- if final_price < orig_price -%}
+            {%- assign saved = orig_price | minus: final_price -%}
+          {%- else -%}
+            {%- assign saved = 0 -%}
+          {%- endif -%}
+
+          <div class="nss-card" style="--i:{{ forloop.index0 }}" {{ block.shopify_attributes }}>
+
+            <div class="nss-badge" data-label="{{ b1 }} {{ b2 }}">
+              <span class="nss-badge__ico">
+                {%- case promo -%}
+                  {%- when 'flash-sale','electric-blue','shake-urgent' -%}⚡
+                  {%- when 'glass-royal','crown-royal','vip-ribbon' -%}👑
+                  {%- when 'diamond-shine','glass-crystal' -%}💎
+                  {%- when 'heritage-earth','heritage-ubuntu','heritage-tribal','heritage-sunset','heritage-royal','heritage-fire' -%}🌍
+                  {%- when 'pulse-red','inferno','mega-sale' -%}❤️‍🔥
+                  {%- when 'minimal-gold','glass-gold','premium-black','spotlight' -%}✦
+                  {%- when 'countdown-dash' -%}⏱️
+                  {%- else -%}🔥
+                {%- endcase -%}
+              </span>
+              <span class="nss-badge__txt">{{ b1 }}</span>
+              <span class="nss-badge__txt">{{ b2 }}</span>
+            </div>
+
+            <a href="{{ prod.url }}" class="nss-card__media">
+              {%- if prod.featured_image -%}
+                <img src="{{ prod.featured_image | image_url: width: 600 }}"
+                     alt="{{ prod.title | escape }}" loading="lazy">
+              {%- else -%}
+                <div class="nss-card__placeholder">📦</div>
+              {%- endif -%}
+            </a>
+
+            <div class="nss-card__body">
+              {%- if section.settings.show_vendor -%}
+                <p class="nss-card__vendor">{{ prod.vendor }}</p>
+              {%- endif -%}
+              <h3 class="nss-card__name"><a href="{{ prod.url }}">{{ prod.title }}</a></h3>
+              <div class="nss-prices">
+                <span class="nss-price">{{ final_price | money }}</span>
+                {%- if final_price < orig_price -%}
+                  <span class="nss-compare">{{ orig_price | money }}</span>
+                  <span class="nss-saving">Save {{ saved | money }}</span>
+                {%- endif -%}
+              </div>
+              <button class="nss-qadd"
+                      data-variant-id="{{ variant.id }}"
+                      {%- unless variant.available -%}disabled{%- endunless -%}>
+                {%- if variant.available -%}Quick Add{%- else -%}Sold Out{%- endif -%}
+              </button>
+            </div>
+
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {%- if section.settings.view_all_url != blank -%}
+      <div class="nss-footer">
+        <a href="{{ section.settings.view_all_url }}" class="nss-view-all">
+          {{ section.settings.view_all_text | default: 'View All Deals' }} →
+        </a>
+      </div>
+    {%- endif -%}
+
+  </div>
+</section>
+
+<script>
+(function(){
+  document.addEventListener('click',async function(e){
+    const btn=e.target.closest('.nss-qadd');
+    if(!btn||btn.disabled)return;
+    const vid=btn.dataset.variantId;
+    if(!vid)return;
+    const orig=btn.textContent.trim();
+    btn.textContent='Adding…';btn.disabled=true;
+    try{
+      const r=await fetch('/cart/add.js',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:vid,quantity:1})});
+      if(!r.ok)throw new Error();
+      btn.textContent='✓ Added!';
+      const c=await fetch('/cart.js').then(x=>x.json());
+      document.querySelectorAll('[data-cart-count]').forEach(el=>el.textContent=c.item_count);
+      setTimeout(()=>{btn.textContent=orig;btn.disabled=false;},2200);
+    }catch{btn.textContent=orig;btn.disabled=false;}
+  });
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Sale Showcase",
+  "tag": "section",
+  "class": "nalea-sale-showcase",
+  "settings": [
+    {
+      "type": "select",
+      "id": "promo_style",
+      "label": "Promo Style (30 options)",
+      "default": "fire-percent",
+      "options": [
+        {"value":"fire-percent",   "label":"🔥 1. Fire Percent — Orange fire glow"},
+        {"value":"flash-sale",     "label":"⚡ 2. Flash Sale — Red heartbeat pulse"},
+        {"value":"hot-deal",       "label":"🌡️ 3. Hot Deal — Breathing orange circle"},
+        {"value":"blaze",          "label":"🌀 4. Blaze — Rotating conic border"},
+        {"value":"ember",          "label":"✨ 5. Ember — Soft warm glow"},
+        {"value":"inferno",        "label":"🔴 6. Inferno — Deep crimson slash badge"},
+        {"value":"glass-gold",     "label":"💛 7. Glass Gold — Frosted luxury pulse"},
+        {"value":"glass-dark",     "label":"⬛ 8. Glass Dark — Minimal dark glass"},
+        {"value":"glass-crystal",  "label":"🌈 9. Glass Crystal — Rainbow shimmer"},
+        {"value":"glass-smoke",    "label":"🌫️ 10. Glass Smoke — Smoky grey"},
+        {"value":"glass-mirror",   "label":"🪟 11. Glass Mirror — Reflective silver"},
+        {"value":"glass-royal",    "label":"💜 12. Glass Royal — Purple luxury glow"},
+        {"value":"heritage-earth", "label":"🌍 13. Heritage Earth — Terracotta SA"},
+        {"value":"heritage-ubuntu","label":"🟤 14. Heritage Ubuntu — Beadwork dots"},
+        {"value":"heritage-sunset","label":"🌅 15. Heritage Sunset — SA sunset"},
+        {"value":"heritage-tribal","label":"🔷 16. Heritage Tribal — Hex diamond badge"},
+        {"value":"heritage-royal", "label":"💙 17. Heritage Royal — Navy & Gold"},
+        {"value":"heritage-fire",  "label":"🔥 18. Heritage Fire — SA fire glow"},
+        {"value":"neon-fire",      "label":"🟠 19. Neon Fire — Flicker + fire glow"},
+        {"value":"electric-blue",  "label":"⚡ 20. Electric Blue — Electric flash"},
+        {"value":"pulse-red",      "label":"❤️ 21. Pulse Red — Fast heartbeat"},
+        {"value":"shake-urgent",   "label":"🚨 22. Shake Urgent — Vibrating card"},
+        {"value":"countdown-dash", "label":"⏱️ 23. Countdown Dash — Marching dashes"},
+        {"value":"spotlight",      "label":"💡 24. Spotlight — Gold cone from above"},
+        {"value":"minimal-gold",   "label":"➖ 25. Minimal Gold — Clean bottom line"},
+        {"value":"premium-black",  "label":"⬛ 26. Premium Black — All black luxury"},
+        {"value":"diamond-shine",  "label":"💎 27. Diamond Shine — Sparkle shimmer"},
+        {"value":"crown-royal",    "label":"👑 28. Crown Royal — Crown top badge"},
+        {"value":"vip-ribbon",     "label":"🎀 29. VIP Ribbon — Corner ribbon"},
+        {"value":"mega-sale",      "label":"🚨 30. Mega Sale — Red scanline border"}
+      ]
+    },
+    {"type":"header","content":"Discount Settings"},
+    {
+      "type":"select",
+      "id":"discount_type",
+      "label":"Discount Type",
+      "default":"percentage",
+      "options":[
+        {"value":"percentage","label":"% Percentage Off"},
+        {"value":"fixed",     "label":"R Fixed Amount Off"},
+        {"value":"halfprice", "label":"Half Price (50% Off)"},
+        {"value":"bogo",      "label":"Buy 1 Get 1 Free"},
+        {"value":"buy2get1",  "label":"Buy 2 Get 1 Free"},
+        {"value":"custom",    "label":"Custom Label"}
+      ]
+    },
+    {"type":"number","id":"discount_value","label":"Discount Value (number only — % or R)","default":20},
+    {"type":"text","id":"custom_label","label":"Custom Promo Bar Text (Custom type)","default":"Special Offer — Limited Time Only"},
+    {"type":"text","id":"custom_badge_line1","label":"Custom Badge Line 1","default":"SALE"},
+    {"type":"text","id":"custom_badge_line2","label":"Custom Badge Line 2","default":"🔥"},
+    {"type":"header","content":"Section Content"},
+    {"type":"text","id":"eyebrow","label":"Eyebrow","default":"Limited Time"},
+    {"type":"text","id":"title","label":"Title","default":"On Sale Now"},
+    {"type":"textarea","id":"subtitle","label":"Subtitle"},
+    {"type":"range","id":"columns","label":"Columns (desktop)","min":2,"max":5,"step":1,"default":4},
+    {"type":"checkbox","id":"show_vendor","label":"Show Brand Name","default":true},
+    {"type":"text","id":"view_all_text","label":"View All Button Text","default":"View All Deals"},
+    {"type":"url","id":"view_all_url","label":"View All Button URL"}
+  ],
+  "blocks":[
+    {
+      "type":"product",
+      "name":"Product",
+      "settings":[
+        {"type":"product","id":"product","label":"Product"}
+      ]
+    }
+  ],
+  "max_blocks": 30,
+  "presets":[
+    {"name":"🔥 Fire Percent Sale","settings":{"promo_style":"fire-percent","discount_type":"percentage","discount_value":30,"eyebrow":"Hot Deals","title":"On Fire 🔥"}},
+    {"name":"⚡ Flash Sale","settings":{"promo_style":"flash-sale","discount_type":"percentage","discount_value":50,"eyebrow":"Flash Sale","title":"50% Off Today Only"}},
+    {"name":"💛 Gold Members Price","settings":{"promo_style":"glass-gold","discount_type":"fixed","discount_value":100,"eyebrow":"Premium Picks","title":"Members Price"}},
+    {"name":"🌍 Heritage Ubuntu Deals","settings":{"promo_style":"heritage-ubuntu","discount_type":"percentage","discount_value":25,"eyebrow":"Ubuntu Deals","title":"Community Savings"}},
+    {"name":"👑 VIP Exclusive","settings":{"promo_style":"vip-ribbon","discount_type":"custom","custom_label":"VIP Price — Exclusively yours","eyebrow":"VIP Members","title":"Your Exclusive Price"}},
+    {"name":"🎁 BOGO Free","settings":{"promo_style":"glass-royal","discount_type":"bogo","eyebrow":"Double The Love","title":"Buy 1 Get 1 Free"}},
+    {"name":"⏱️ Countdown Dash","settings":{"promo_style":"countdown-dash","discount_type":"percentage","discount_value":40,"eyebrow":"Hurry — Ends Soon","title":"Last Chance Deals"}},
+    {"name":"🚨 Mega Sale","settings":{"promo_style":"mega-sale","discount_type":"percentage","discount_value":60,"eyebrow":"Mega Sale","title":"Up To 60% Off"}}
+  ]
+}
+{% endschema %}
