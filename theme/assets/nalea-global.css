@@ -1,0 +1,1258 @@
+/* ==========================================================================
+   nalea-global.css
+   Nalèa XoXo — dark luxury "fire & glass" theme layer for Shopify Tinker.
+   Transforms every page to match the homepage aesthetic.
+
+   Design tokens
+   -------------------------------------------------------------------------
+   Background        #080808
+   Gold accent       #c9a84c
+   Fire              #ff6b00 / #ff3d00 / #ffd200
+   Glass panel       rgba(255,255,255,0.04) + border rgba(201,168,76,0.15)
+   Text              #ffffff / muted rgba(255,255,255,0.45)
+   Radius            16px cards / 8px buttons
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   0. ROOT VARIABLES + TINKER OVERRIDES
+   -------------------------------------------------------------------------- */
+:root {
+  --nalea-bg: #080808;
+  --nalea-bg-2: #0d0c0a;
+  --nalea-gold: #c9a84c;
+  --nalea-gold-soft: rgba(201, 168, 76, 0.55);
+  --nalea-gold-faint: rgba(201, 168, 76, 0.15);
+  --nalea-fire-1: #ff6b00;
+  --nalea-fire-2: #ff3d00;
+  --nalea-fire-3: #ffd200;
+  --nalea-text: #ffffff;
+  --nalea-muted: rgba(255, 255, 255, 0.45);
+  --nalea-muted-2: rgba(255, 255, 255, 0.6);
+  --nalea-glass: rgba(255, 255, 255, 0.04);
+  --nalea-glass-2: rgba(255, 255, 255, 0.06);
+  --nalea-glass-border: rgba(201, 168, 76, 0.15);
+  --nalea-glass-border-strong: rgba(201, 168, 76, 0.35);
+  --nalea-radius-card: 16px;
+  --nalea-radius-btn: 8px;
+  --nalea-blur: 16px;
+  --nalea-gold-gradient: linear-gradient(135deg, #ffd200 0%, #c9a84c 45%, #a07e2c 100%);
+  --nalea-fire-gradient: linear-gradient(135deg, #ffd200 0%, #ff6b00 50%, #ff3d00 100%);
+}
+
+/* Tinker theme variable overrides — these cascade through the whole theme. */
+:root,
+.color-scheme-1,
+.color-scheme-2,
+.color-scheme-3,
+.color-scheme-4,
+.color-scheme-5,
+[class*="color-scheme"],
+body {
+  --color-background: 8, 8, 8;
+  --color-foreground: 255, 255, 255;
+  --color-foreground-muted: 255, 255, 255;
+  --color-border: 201, 168, 76;
+  --color-accent: 201, 168, 76;
+  --color-button: 201, 168, 76;
+  --color-button-text: 8, 8, 8;
+  --color-card-background: 18, 17, 15;
+  --background: #080808;
+  --foreground: #ffffff;
+  --color-primary: #c9a84c;
+  --color-link: #c9a84c;
+}
+
+/* --------------------------------------------------------------------------
+   1. GLOBAL BODY + AMBIENT BACKGROUND
+   -------------------------------------------------------------------------- */
+html {
+  scroll-behavior: smooth;
+  background: var(--nalea-bg);
+}
+
+body {
+  background-color: var(--nalea-bg) !important;
+  color: var(--nalea-text) !important;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Subtle radial fire ambient glow — warmth only, no literal flame. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 15% 12%, rgba(255, 107, 0, 0.07), transparent 42%),
+    radial-gradient(circle at 85% 8%, rgba(201, 168, 76, 0.06), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(255, 61, 0, 0.05), transparent 55%);
+  animation: nalea-bg-breathe 14s ease-in-out infinite;
+}
+
+/* Keep real content above the ambient layer. */
+#header-group,
+main,
+footer,
+.nalea-particle,
+.nalea-ember {
+  position: relative;
+  z-index: 1;
+}
+
+main {
+  background: transparent !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. CUSTOM SCROLLBAR
+   -------------------------------------------------------------------------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--nalea-gold) #0a0a0a;
+}
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--nalea-gold-gradient);
+  border-radius: 8px;
+  border: 2px solid #0a0a0a;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #ffd200, #c9a84c);
+}
+
+/* --------------------------------------------------------------------------
+   3. TYPOGRAPHY
+   -------------------------------------------------------------------------- */
+body,
+p,
+li,
+span,
+label,
+dd,
+dt,
+figcaption {
+  color: var(--nalea-text);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--nalea-text) !important;
+  letter-spacing: 0.02em;
+  font-weight: 600;
+}
+
+h1 {
+  color: #f3e3b0 !important;
+  letter-spacing: 0.03em;
+  text-shadow: 0 0 24px rgba(201, 168, 76, 0.18);
+}
+
+main h2,
+main h3 {
+  letter-spacing: 0.04em;
+}
+
+a {
+  color: var(--nalea-gold);
+  transition: color 0.25s ease, opacity 0.25s ease;
+}
+a:hover {
+  color: var(--nalea-fire-3);
+}
+
+small,
+.caption,
+[class*="muted"],
+[class*="subdued"] {
+  color: var(--nalea-muted) !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. FORM CONTROLS
+   -------------------------------------------------------------------------- */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea,
+select,
+.field__input,
+.select__select,
+.search__input {
+  background: var(--nalea-glass) !important;
+  color: var(--nalea-text) !important;
+  border: 1px solid var(--nalea-glass-border) !important;
+  border-radius: var(--nalea-radius-btn);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+textarea:focus,
+select:focus,
+.field__input:focus {
+  border-color: var(--nalea-gold) !important;
+  box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.22), 0 0 16px rgba(201, 168, 76, 0.12) !important;
+  outline: none;
+}
+
+select,
+.select__select {
+  appearance: none;
+}
+
+label,
+legend {
+  color: var(--nalea-muted-2);
+}
+
+/* Checkbox / radio accent. */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--nalea-gold);
+}
+
+/* --------------------------------------------------------------------------
+   5. BUTTONS
+   -------------------------------------------------------------------------- */
+button,
+.button,
+.btn,
+input[type="submit"],
+input[type="button"],
+[class*="button"]:not(a):not(.button--secondary):not([class*="link"]) {
+  border-radius: var(--nalea-radius-btn);
+  transition: transform 0.18s ease, box-shadow 0.25s ease, filter 0.25s ease;
+}
+
+.button:not(.button--secondary):not([class*="tertiary"]),
+.btn--primary,
+button[type="submit"]:not(.button--secondary),
+.product-form__submit,
+.cart__checkout-button,
+.shopify-payment-button__button--unbranded {
+  background: var(--nalea-gold-gradient) !important;
+  color: #080808 !important;
+  border: none !important;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 18px rgba(201, 168, 76, 0.22);
+}
+
+.button:not(.button--secondary):hover,
+.btn--primary:hover,
+.product-form__submit:hover,
+.cart__checkout-button:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 26px rgba(201, 168, 76, 0.4);
+}
+
+/* Secondary / outline buttons → glass + gold border. */
+.button--secondary,
+.button--tertiary,
+[class*="button--secondary"] {
+  background: var(--nalea-glass) !important;
+  color: var(--nalea-gold) !important;
+  border: 1px solid var(--nalea-glass-border-strong) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.button--secondary:hover {
+  border-color: var(--nalea-gold) !important;
+  color: var(--nalea-fire-3) !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. HEADER / NAVBAR
+   -------------------------------------------------------------------------- */
+#header-group {
+  position: sticky;
+  top: 0;
+  transition: background 0.35s ease, box-shadow 0.35s ease, backdrop-filter 0.35s ease;
+  background: transparent;
+}
+
+#header-group .header,
+#header-group header-component,
+.header,
+.header-section {
+  background: transparent !important;
+  transition: background 0.35s ease;
+}
+
+/* Solid black glass once scrolled. */
+#header-group.nalea-scrolled,
+#header-group.nalea-scrolled .header,
+#header-group.nalea-scrolled .header-section,
+#header-group.nalea-scrolled header-component {
+  background: rgba(8, 8, 8, 0.82) !important;
+  -webkit-backdrop-filter: blur(var(--nalea-blur));
+  backdrop-filter: blur(var(--nalea-blur));
+}
+#header-group.nalea-scrolled {
+  box-shadow: 0 1px 0 var(--nalea-glass-border), 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Nav links. */
+.header__menu a,
+.header__inline-menu a,
+.header a:not(.button),
+nav a {
+  color: rgba(255, 255, 255, 0.78) !important;
+}
+.header__menu a:hover,
+.header a:not(.button):hover,
+nav a:hover {
+  color: var(--nalea-gold) !important;
+}
+
+/* Logo glow. */
+.header__heading-link,
+.header__logo,
+.header__heading {
+  filter: drop-shadow(0 0 14px rgba(201, 168, 76, 0.3));
+}
+.header__heading-link:hover {
+  filter: drop-shadow(0 0 20px rgba(255, 210, 0, 0.45));
+}
+
+/* Icons (search, account, cart). */
+.header__icons svg,
+.header__icon svg,
+.header [class*="icon"] svg {
+  color: var(--nalea-gold) !important;
+  fill: currentColor;
+}
+.header__icons a:hover svg,
+.header__icon:hover svg {
+  color: var(--nalea-fire-3) !important;
+}
+
+/* Cart count bubble → fire orange. */
+.cart-count-bubble,
+[data-cart-count],
+.header__cart-count,
+.cart-count {
+  background: var(--nalea-fire-gradient) !important;
+  color: #080808 !important;
+  font-weight: 700;
+  border-radius: 999px;
+  box-shadow: 0 0 12px rgba(255, 107, 0, 0.55);
+}
+
+/* --------------------------------------------------------------------------
+   7. CART DRAWER
+   -------------------------------------------------------------------------- */
+cart-drawer,
+.cart-drawer,
+.drawer,
+[class*="cart-drawer"] {
+  --color-background: 13, 12, 10;
+}
+.cart-drawer .drawer__inner,
+.drawer__inner,
+cart-drawer .drawer,
+.cart-drawer__inner {
+  background: rgba(13, 12, 10, 0.92) !important;
+  -webkit-backdrop-filter: blur(var(--nalea-blur));
+  backdrop-filter: blur(var(--nalea-blur));
+  border-left: 1px solid var(--nalea-glass-border);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.6);
+}
+.cart-drawer__heading,
+.drawer__heading,
+.cart-drawer h2 {
+  color: var(--nalea-gold) !important;
+  letter-spacing: 0.05em;
+}
+.cart-drawer .cart-item,
+.drawer .cart-item {
+  border-bottom: 1px solid var(--nalea-glass-border);
+}
+.cart-drawer__footer,
+.drawer__footer {
+  background: rgba(8, 8, 8, 0.7);
+  border-top: 1px solid var(--nalea-glass-border);
+}
+
+/* --------------------------------------------------------------------------
+   8. FOOTER TOP
+   -------------------------------------------------------------------------- */
+footer,
+.footer,
+.footer-group,
+.shopify-section-group-footer-group {
+  background: linear-gradient(180deg, #0a0908 0%, #050505 100%) !important;
+  color: var(--nalea-muted) !important;
+  border-top: 1px solid var(--nalea-glass-border);
+}
+
+.footer__content-top,
+.footer-block {
+  border-bottom: 1px solid var(--nalea-glass-border);
+}
+
+.footer .footer__heading,
+.footer h2,
+.footer h3,
+.footer-block__heading {
+  color: var(--nalea-gold) !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.footer a,
+.footer__list a,
+.footer-block a {
+  color: var(--nalea-muted) !important;
+  transition: color 0.25s ease, padding-left 0.25s ease;
+}
+.footer a:hover,
+.footer-block a:hover {
+  color: var(--nalea-gold) !important;
+  padding-left: 4px;
+}
+
+.footer__logo,
+.footer .header__heading-link {
+  filter: drop-shadow(0 0 16px rgba(255, 107, 0, 0.3));
+}
+
+/* Divider lines. */
+.footer hr,
+.footer .divider {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--nalea-gold-faint), transparent);
+}
+
+/* --------------------------------------------------------------------------
+   9. FOOTER BOTTOM / UTILITIES
+   -------------------------------------------------------------------------- */
+.footer__content-bottom,
+.footer__copyright,
+.footer__column--info {
+  background: #040404 !important;
+  color: var(--nalea-muted) !important;
+}
+.footer__content-bottom a,
+.footer__copyright a,
+.policies a {
+  color: var(--nalea-gold-soft) !important;
+}
+.footer__content-bottom a:hover {
+  color: var(--nalea-gold) !important;
+}
+.footer__copyright,
+.copyright {
+  color: rgba(255, 255, 255, 0.3) !important;
+  font-size: 0.78rem;
+}
+
+/* --------------------------------------------------------------------------
+   10. PRODUCT CARDS
+   -------------------------------------------------------------------------- */
+.product-card,
+[class*="product-card"],
+.card,
+.card-wrapper,
+.grid__item .card {
+  background: var(--nalea-glass) !important;
+  border: 1px solid var(--nalea-glass-border);
+  border-radius: var(--nalea-radius-card);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.product-card:hover,
+[class*="product-card"]:hover,
+.card-wrapper:hover .card,
+.card:hover {
+  border-color: var(--nalea-gold) !important;
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.5), 0 0 30px rgba(201, 168, 76, 0.18);
+  transform: translateY(-4px);
+}
+
+/* Image zoom on hover. */
+.product-card img,
+.card__media img,
+.card-wrapper img,
+[class*="product-card"] img {
+  transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.product-card:hover img,
+.card-wrapper:hover img,
+.card:hover img,
+[class*="product-card"]:hover img {
+  transform: scale(1.06);
+}
+
+/* Titles / prices. */
+.card__heading,
+.card__heading a,
+.product-card__title,
+.card-information__text {
+  color: var(--nalea-text) !important;
+}
+.card__heading a:hover {
+  color: var(--nalea-gold) !important;
+}
+.price,
+.price-item,
+.card .price {
+  color: var(--nalea-gold) !important;
+  font-weight: 600;
+}
+.price--on-sale .price-item--regular,
+.price__sale s {
+  color: var(--nalea-muted) !important;
+}
+
+/* Sale / sold-out badges → fire. */
+.badge,
+.card__badge,
+.product-card__badge,
+[class*="badge--sale"],
+.badge--sale {
+  background: var(--nalea-fire-gradient) !important;
+  color: #080808 !important;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  border: none !important;
+  border-radius: 6px;
+  box-shadow: 0 0 14px rgba(255, 61, 0, 0.45);
+}
+.badge--sold-out,
+[class*="sold"] .badge {
+  background: rgba(20, 20, 20, 0.85) !important;
+  color: var(--nalea-muted) !important;
+  box-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+   11. COLLECTION PAGE
+   -------------------------------------------------------------------------- */
+.collection,
+.collection-hero,
+.template-collection {
+  background: transparent;
+}
+.collection__title,
+.collection-hero__title {
+  color: #f3e3b0 !important;
+}
+
+/* Sidebar filters / facets. */
+.facets,
+.facets__wrapper,
+.collection-filters,
+.facets-wrapper,
+[class*="facet"] {
+  background: var(--nalea-glass) !important;
+  border: 1px solid var(--nalea-glass-border);
+  border-radius: var(--nalea-radius-card);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.facets__heading,
+.facets__summary,
+.facets summary,
+.facet-filters__label {
+  color: var(--nalea-gold) !important;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.facets__display,
+.facets__list {
+  background: rgba(8, 8, 8, 0.85) !important;
+  border: 1px solid var(--nalea-glass-border);
+  border-radius: 12px;
+}
+
+/* Active filter chips. */
+.active-facets__button,
+.active-facets [class*="button"],
+.facets__chip {
+  background: var(--nalea-gold-gradient) !important;
+  color: #080808 !important;
+  border-radius: 999px;
+  border: none !important;
+  font-weight: 600;
+}
+
+/* Sort dropdown. */
+.facet-filters__sort,
+.collection-sort select,
+.sorting select {
+  background: var(--nalea-glass) !important;
+  color: var(--nalea-text) !important;
+  border: 1px solid var(--nalea-glass-border) !important;
+}
+
+/* --------------------------------------------------------------------------
+   12. SEARCH PAGE
+   -------------------------------------------------------------------------- */
+.template-search,
+.search-page {
+  background: transparent;
+}
+.search__input,
+.search-bar input,
+.search-modal__input {
+  background: var(--nalea-glass) !important;
+  border: none !important;
+  border-bottom: 2px solid var(--nalea-glass-border) !important;
+  border-radius: var(--nalea-radius-btn) var(--nalea-radius-btn) 0 0;
+  position: relative;
+}
+.search__input:focus,
+.search-bar input:focus {
+  border-bottom: 2px solid var(--nalea-gold) !important;
+  box-shadow: 0 2px 0 0 var(--nalea-gold), 0 8px 20px -10px rgba(201, 168, 76, 0.4) !important;
+}
+.search__title,
+.search-page__title {
+  color: #f3e3b0 !important;
+}
+.predictive-search,
+.search-modal__content {
+  background: rgba(10, 10, 10, 0.96) !important;
+  border: 1px solid var(--nalea-glass-border);
+  -webkit-backdrop-filter: blur(var(--nalea-blur));
+  backdrop-filter: blur(var(--nalea-blur));
+}
+
+/* --------------------------------------------------------------------------
+   13. CART PAGE
+   -------------------------------------------------------------------------- */
+.cart,
+.cart-items,
+.template-cart {
+  background: transparent;
+}
+.cart-item,
+.cart__row,
+tr.cart-item {
+  background: var(--nalea-glass) !important;
+  border: 1px solid var(--nalea-glass-border);
+  border-radius: 12px;
+}
+.cart-item__name,
+.cart-item a {
+  color: var(--nalea-text) !important;
+}
+.cart-item__name:hover {
+  color: var(--nalea-gold) !important;
+}
+
+/* Quantity selector → gold. */
+.quantity,
+.quantity__input {
+  background: var(--nalea-glass) !important;
+  border: 1px solid var(--nalea-glass-border) !important;
+  border-radius: var(--nalea-radius-btn);
+}
+.quantity__button,
+.quantity button {
+  color: var(--nalea-gold) !important;
+  background: transparent !important;
+}
+.quantity__button:hover {
+  color: var(--nalea-fire-3) !important;
+}
+
+/* Order summary panel. */
+.cart__footer,
+.cart-summary,
+.totals {
+  background: var(--nalea-glass-2) !important;
+  border: 1px solid var(--nalea-glass-border-strong);
+  border-radius: var(--nalea-radius-card);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 0 28px rgba(201, 168, 76, 0.1);
+}
+.totals__total,
+.cart__total {
+  color: var(--nalea-gold) !important;
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   14. ACCOUNT / PROFILE
+   -------------------------------------------------------------------------- */
+.template-customers,
+[data-template*="account"],
+.account,
+.customer {
+  background: transparent;
+}
+.account .card,
+.customer table,
+.account__panel,
+.customer .order-history {
+  background: var(--nalea-glass) !important;
+  border: 1px solid var(--nalea-glass-border);
+  border-radius: var(--nalea-radius-card);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.account h1,
+.customer h1 {
+  color: #f3e3b0 !important;
+}
+.account__avatar,
+.customer__avatar {
+  border: 2px solid var(--nalea-gold);
+  border-radius: 50%;
+  box-shadow: 0 0 18px rgba(201, 168, 76, 0.35);
+}
+.account .section-header h2::before,
+.customer h2::before {
+  content: "🔥 ";
+}
+
+/* --------------------------------------------------------------------------
+   15. WISHLIST  (/pages/my-loved)
+   -------------------------------------------------------------------------- */
+.nalea-wishlist,
+.my-loved,
+[class*="wishlist"] {
+  background: transparent;
+}
+.nalea-wishlist__grid,
+.wishlist-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+.wishlist-item,
+.nalea-loved-card {
+  background: var(--nalea-glass) !important;
+  border: 1px solid var(--nalea-glass-border);
+  border-radius: var(--nalea-radius-card);
+}
+.wishlist-heart,
+[class*="wishlist"] .icon-heart,
+.heart-icon {
+  color: var(--nalea-fire-2) !important;
+  fill: var(--nalea-fire-2) !important;
+  filter: drop-shadow(0 0 8px rgba(255, 61, 0, 0.5));
+}
+.my-loved h1,
+[class*="wishlist"] h1 {
+  color: #f3e3b0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   16. ORDERS  (/pages/my-orders, /account/orders)
+   -------------------------------------------------------------------------- */
+.order,
+.order-card,
+.nalea-order,
+.account .order {
+  background: var(--nalea-glass) !important;
+  border: 1px solid var(--nalea-glass-border);
+  border-radius: var(--nalea-radius-card);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.order-status,
+.status-badge,
+[class*="order-status"] {
+  border-radius: 999px;
+  padding: 0.2em 0.8em;
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+.order-status--fulfilled,
+.status-badge.is-complete {
+  background: var(--nalea-gold-gradient) !important;
+  color: #080808 !important;
+}
+.order-status--pending,
+.status-badge.is-pending {
+  background: var(--nalea-fire-gradient) !important;
+  color: #080808 !important;
+}
+/* Timeline dots. */
+.order-timeline__dot,
+.nalea-timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--nalea-gold);
+  box-shadow: 0 0 10px rgba(201, 168, 76, 0.6);
+}
+
+/* --------------------------------------------------------------------------
+   17. STATIC PAGES (about, faq, contact…)
+   -------------------------------------------------------------------------- */
+.template-page .rte,
+.template-page .page-content,
+.page__content,
+.shopify-policy__container {
+  background: var(--nalea-glass) !important;
+  border: 1px solid var(--nalea-glass-border);
+  border-radius: var(--nalea-radius-card);
+  padding: clamp(1.25rem, 4vw, 2.75rem);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.template-page h1,
+.shopify-policy__title h1 {
+  color: #f3e3b0 !important;
+}
+.template-page h2,
+.page-content h2 {
+  color: var(--nalea-gold) !important;
+}
+.template-page p,
+.page-content p,
+.rte p {
+  color: rgba(255, 240, 220, 0.78) !important;
+  line-height: 1.75;
+}
+
+/* --------------------------------------------------------------------------
+   18. BLOG / ARTICLE
+   -------------------------------------------------------------------------- */
+.template-blog,
+.template-article {
+  background: transparent;
+}
+.article-card,
+.blog .card,
+.article-template__content {
+  background: var(--nalea-glass) !important;
+  border: 1px solid var(--nalea-glass-border);
+  border-radius: var(--nalea-radius-card);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.article-card__image,
+.article-template__hero-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--nalea-radius-card);
+}
+.article-card__image::after,
+.article-template__hero-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(201, 168, 76, 0));
+  transition: background 0.4s ease;
+}
+.article-card:hover .article-card__image::after {
+  background: linear-gradient(180deg, transparent 30%, rgba(201, 168, 76, 0.25));
+}
+.article-template__title,
+.blog h1,
+.article h1 {
+  color: #f3e3b0 !important;
+}
+.article-template__content .rte p {
+  color: rgba(255, 240, 220, 0.8) !important;
+  line-height: 1.8;
+}
+
+/* --------------------------------------------------------------------------
+   19. 404 PAGE
+   -------------------------------------------------------------------------- */
+.template-404 main,
+.error-404 {
+  text-align: center;
+}
+.template-404 h1,
+.error-404 h1 {
+  font-size: clamp(5rem, 20vw, 12rem) !important;
+  line-height: 1;
+  background: var(--nalea-fire-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent !important;
+  text-shadow: none;
+  animation: nalea-fire-pulse 4s ease-in-out infinite;
+}
+.template-404 .subtitle,
+.error-404 p {
+  color: var(--nalea-gold) !important;
+  letter-spacing: 0.06em;
+}
+.template-404 .content-for-layout,
+.error-404__panel {
+  background: var(--nalea-glass);
+  border: 1px solid var(--nalea-glass-border);
+  border-radius: var(--nalea-radius-card);
+  padding: 2.5rem;
+  max-width: 640px;
+  margin-inline: auto;
+}
+
+/* --------------------------------------------------------------------------
+   20. BREADCRUMBS
+   -------------------------------------------------------------------------- */
+.breadcrumb,
+.breadcrumbs,
+nav[aria-label="breadcrumb"] {
+  color: var(--nalea-muted) !important;
+  font-size: 0.85rem;
+}
+.breadcrumb a,
+.breadcrumbs a {
+  color: var(--nalea-muted) !important;
+}
+.breadcrumb a:hover {
+  color: var(--nalea-gold) !important;
+}
+.breadcrumb__separator,
+.breadcrumbs span[aria-hidden],
+.breadcrumb li + li::before {
+  color: var(--nalea-gold) !important;
+}
+
+/* --------------------------------------------------------------------------
+   21. PAGINATION
+   -------------------------------------------------------------------------- */
+.pagination__item,
+.pagination a,
+.pagination span {
+  background: var(--nalea-glass);
+  border: 1px solid var(--nalea-glass-border);
+  border-radius: var(--nalea-radius-btn);
+  color: var(--nalea-text) !important;
+  transition: border-color 0.25s ease, color 0.25s ease;
+}
+.pagination__item:hover,
+.pagination a:hover {
+  border-color: var(--nalea-gold);
+  color: var(--nalea-gold) !important;
+}
+.pagination__item--current,
+.pagination [aria-current],
+.pagination .is-active {
+  background: var(--nalea-gold-gradient) !important;
+  color: #080808 !important;
+  border-color: transparent !important;
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   22. NOTIFICATION / ERROR / SUCCESS BANNERS
+   -------------------------------------------------------------------------- */
+.banner,
+.alert,
+.form-status,
+.notification,
+[class*="banner--"] {
+  background: var(--nalea-glass) !important;
+  border: 1px solid var(--nalea-glass-border);
+  border-radius: 12px;
+  color: var(--nalea-text) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.banner--error,
+.alert--error,
+.form-status--error,
+[class*="error"] {
+  border-left: 3px solid var(--nalea-fire-2) !important;
+  box-shadow: -2px 0 14px -6px rgba(255, 61, 0, 0.5);
+}
+.banner--success,
+.alert--success,
+.form-status--success,
+[class*="success"] {
+  border-left: 3px solid var(--nalea-gold) !important;
+  box-shadow: -2px 0 14px -6px rgba(201, 168, 76, 0.5);
+}
+
+/* --------------------------------------------------------------------------
+   23. REVEAL ANIMATIONS
+   -------------------------------------------------------------------------- */
+.nalea-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--nalea-reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.nalea-revealed {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  animation: nalea-reveal-up 0.7s ease both;
+  animation-delay: var(--nalea-reveal-delay, 0ms);
+}
+
+/* --------------------------------------------------------------------------
+   24. PER-PAGE VIBE HEADER
+   -------------------------------------------------------------------------- */
+.nalea-page-vibe {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.25rem auto 0.5rem;
+  padding: 0.55rem 1.15rem;
+  background: var(--nalea-glass);
+  border: 1px solid var(--nalea-glass-border);
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 22px rgba(0, 0, 0, 0.4), 0 0 18px rgba(201, 168, 76, 0.1);
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.nalea-page-vibe__emoji {
+  font-size: 1.15rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px rgba(255, 107, 0, 0.4));
+}
+.nalea-page-vibe__text {
+  font-size: 0.86rem;
+  letter-spacing: 0.05em;
+  color: var(--nalea-gold);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nalea-page-vibe[data-page="cart"] { border-color: rgba(255, 107, 0, 0.3); }
+.nalea-page-vibe[data-page="search"] { border-color: rgba(201, 168, 76, 0.3); }
+.nalea-page-vibe[data-page="account"] .nalea-page-vibe__text { color: var(--nalea-fire-3); }
+
+/* --------------------------------------------------------------------------
+   25. AMBIENT PARTICLES
+   -------------------------------------------------------------------------- */
+.nalea-particle {
+  position: fixed;
+  bottom: -10px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  filter: blur(0.4px);
+  box-shadow: 0 0 8px currentColor;
+  animation-name: nalea-particle-rise;
+  animation-timing-function: ease-in;
+  animation-iteration-count: infinite;
+}
+
+/* --------------------------------------------------------------------------
+   26. SHIMMER TEXT UTILITY
+   -------------------------------------------------------------------------- */
+.nalea-shimmer {
+  background: linear-gradient(
+    100deg,
+    #c9a84c 20%,
+    #ffd200 40%,
+    #fff6cf 50%,
+    #ffd200 60%,
+    #c9a84c 80%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: nalea-gold-shimmer 4s linear infinite;
+}
+
+/* --------------------------------------------------------------------------
+   27. GLASS PANEL UTILITY
+   -------------------------------------------------------------------------- */
+.nalea-glass {
+  background: var(--nalea-glass);
+  border: 1px solid var(--nalea-glass-border);
+  border-radius: var(--nalea-radius-card);
+  -webkit-backdrop-filter: blur(var(--nalea-blur));
+  backdrop-filter: blur(var(--nalea-blur));
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* --------------------------------------------------------------------------
+   28. FIRE GLOW UTILITY
+   -------------------------------------------------------------------------- */
+.nalea-fire-glow {
+  animation: nalea-border-glow 3s ease-in-out infinite;
+}
+
+/* --------------------------------------------------------------------------
+   29. FIRE CURSOR EMBER
+   -------------------------------------------------------------------------- */
+.nalea-ember {
+  position: fixed;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 6px currentColor;
+  animation: nalea-ember-fade 0.6s ease-out forwards;
+}
+@keyframes nalea-ember-fade {
+  0% { opacity: 0.9; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -120%) scale(0.2); }
+}
+
+/* --------------------------------------------------------------------------
+   30. PAGE TRANSITION
+   -------------------------------------------------------------------------- */
+main.content-for-layout {
+  animation: nalea-page-enter 0.45s ease both;
+}
+main.nalea-page-exit {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+@keyframes nalea-page-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --------------------------------------------------------------------------
+   CART BOUNCE
+   -------------------------------------------------------------------------- */
+.nalea-cart-bounce {
+  animation: nalea-cart-bounce 0.5s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+@keyframes nalea-cart-bounce {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+
+/* ==========================================================================
+   KEYFRAMES
+   ========================================================================== */
+@keyframes nalea-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes nalea-gold-shimmer {
+  to { background-position: 200% center; }
+}
+
+@keyframes nalea-fire-pulse {
+  0%, 100% { filter: drop-shadow(0 0 14px rgba(255, 107, 0, 0.45)); }
+  50% { filter: drop-shadow(0 0 32px rgba(255, 61, 0, 0.7)); }
+}
+
+@keyframes nalea-reveal-up {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nalea-particle-rise {
+  0% { opacity: 0; transform: translateY(0) translateX(0) scale(1); }
+  10% { opacity: 0.85; }
+  50% { transform: translateY(-50vh) translateX(12px) scale(0.9); }
+  90% { opacity: 0.5; }
+  100% { opacity: 0; transform: translateY(-100vh) translateX(-10px) scale(0.4); }
+}
+
+@keyframes nalea-bg-breathe {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+@keyframes nalea-border-glow {
+  0%, 100% { box-shadow: 0 0 12px rgba(255, 107, 0, 0.3), 0 0 4px rgba(255, 61, 0, 0.2); }
+  50% { box-shadow: 0 0 28px rgba(255, 107, 0, 0.6), 0 0 12px rgba(255, 210, 0, 0.4); }
+}
+
+/* ==========================================================================
+   RESPONSIVE  (<= 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  body::before {
+    background:
+      radial-gradient(circle at 20% 10%, rgba(255, 107, 0, 0.06), transparent 45%),
+      radial-gradient(circle at 80% 95%, rgba(255, 61, 0, 0.05), transparent 55%);
+  }
+
+  .nalea-page-vibe {
+    padding: 0.45rem 0.9rem;
+    margin-top: 0.9rem;
+  }
+  .nalea-page-vibe__text {
+    font-size: 0.78rem;
+  }
+
+  .product-card:hover,
+  .card:hover,
+  [class*="product-card"]:hover {
+    transform: none;
+  }
+  .product-card:hover img,
+  .card:hover img {
+    transform: scale(1.03);
+  }
+
+  .facets,
+  .facets__wrapper,
+  .collection-filters {
+    border-radius: 12px;
+  }
+
+  .template-404 h1,
+  .error-404 h1 {
+    font-size: clamp(4rem, 28vw, 7rem) !important;
+  }
+
+  .cart__footer,
+  .cart-summary,
+  .totals {
+    border-radius: 12px;
+  }
+
+  /* Lighter particle load on mobile. */
+  .nalea-particle:nth-child(n + 5) {
+    display: none;
+  }
+
+  ::-webkit-scrollbar {
+    width: 7px;
+  }
+}
+
+/* Reduced motion: respect user preference. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .nalea-particle,
+  .nalea-ember {
+    display: none !important;
+  }
+  .nalea-reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
