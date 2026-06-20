@@ -1,0 +1,319 @@
+{% comment %} NALEA — Product Recommendations (23 styles) {% endcomment %}
+{{ 'nalea-homepage.css' | asset_url | stylesheet_tag }}
+{{ 'nalea-product-page.css' | asset_url | stylesheet_tag }}
+
+{% assign rec_col = collections[section.settings.collection] %}
+{% assign rec_limit = section.settings.limit | default: 8 %}
+{% assign style = section.settings.style %}
+
+{% assign use_slider = false %}
+{% if style == 'customers-bought' or style == 'similar' or style == 'more-explore' or style == 'trending-now' or style == 'new-arrivals' or style == 'bestsellers' or style == 'just-dropped' or style == 'fan-favorites' or style == 'collab-drop' %}
+  {% assign use_slider = true %}
+{% endif %}
+
+{% assign use_freq = false %}
+{% if style == 'freq-bought' %}{% assign use_freq = true %}{% endif %}
+
+{% if rec_col != blank or use_freq %}
+<section class="npr-section" data-recs-type="{{ style }}">
+  <div class="npr-inner">
+
+    <!-- Section header -->
+    <div class="npr-header">
+      <div class="npr-header__icon">
+        {% case style %}
+          {% when 'freq-bought' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+          {% when 'customers-bought' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          {% when 'complete-look' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 2l-4 6h4v12h8V8h4l-4-6M8 2h8"/></svg>
+          {% when 'pair-with' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3m10 0h3a2 2 0 002-2v-3"/></svg>
+          {% when 'recommended' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+          {% when 'similar' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          {% when 'complementary' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          {% when 'must-have' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          {% when 'bundle-save' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          {% when 'related' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="16,18 22,12 16,6"/><polyline points="8,6 2,12 8,18"/></svg>
+          {% when 'shop-look' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+          {% when 'perfect-matches' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+          {% when 'more-explore' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88"/></svg>
+          {% when 'trending-now' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C9 7 5 9 5 14a7 7 0 0014 0c0-5-4-7-7-12z"/></svg>
+          {% when 'new-arrivals' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          {% when 'bestsellers' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+          {% when 'staff-picks' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>
+          {% when 'just-dropped' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/></svg>
+          {% when 'fan-favorites' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+          {% when 'last-chance' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          {% when 'style-edit' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          {% when 'limited-edition' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+          {% when 'collab-drop' %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          {% else %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        {% endcase %}
+      </div>
+      <div class="npr-header__text">
+        <p class="npr-eyebrow">{{ section.settings.eyebrow }}</p>
+        <h2 class="npr-title">{{ section.settings.title }}</h2>
+      </div>
+      <div class="npr-header-line"></div>
+    </div>
+
+    <!-- ── FREQUENTLY BOUGHT TOGETHER (special layout) ── -->
+    {% if use_freq %}
+      <div class="npr-freq-row">
+        {% for product_item in rec_col.products limit: 3 %}
+          {% unless forloop.first %}<div class="npr-freq-plus">+</div>{% endunless %}
+          <div class="npr-card" style="flex:1">
+            <label style="cursor:pointer;display:block">
+              <input class="npr-freq-check" type="checkbox" checked
+                     data-price="{{ product_item.price }}"
+                     data-variant-id="{{ product_item.selected_or_first_available_variant.id }}"
+                     style="position:absolute;top:12px;right:12px;width:18px;height:18px;accent-color:var(--npm-gold);z-index:2">
+              <div class="npr-card__media">
+                {% if product_item.featured_image %}
+                  <img class="npr-card__img" src="{{ product_item.featured_image | image_url: width: 480 }}" alt="{{ product_item.title | escape }}" loading="lazy">
+                {% endif %}
+                <div class="npr-card__glass"></div>
+              </div>
+              <div class="npr-card__body">
+                <a href="{{ product_item.url }}" class="npr-card__name">{{ product_item.title }}</a>
+                <div class="npr-card__prices">
+                  <span class="npr-card__price">{{ product_item.price | money }}</span>
+                  {% if product_item.compare_at_price > product_item.price %}
+                    <span class="npr-card__compare">{{ product_item.compare_at_price | money }}</span>
+                  {% endif %}
+                </div>
+              </div>
+            </label>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="npr-freq-total">
+        <div>
+          <div class="npr-freq-total__price"></div>
+          <div class="npr-freq-total__sub">items selected</div>
+        </div>
+        <button class="npr-freq-atc">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+          Add All to Cart
+        </button>
+      </div>
+
+    <!-- ── SLIDER LAYOUT ── -->
+    {% elsif use_slider %}
+      <div class="npr-slider-wrap">
+        <button class="npr-slider-prev" aria-label="Previous">
+          <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="npr-slider-next" aria-label="Next">
+          <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M5 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="npr-slider-track">
+          {% for product_item in rec_col.products limit: rec_limit %}
+            {% assign item_discount = 0 %}
+            {% if product_item.compare_at_price > product_item.price %}
+              {% assign item_discount = product_item.compare_at_price | minus: product_item.price | times: 100 | divided_by: product_item.compare_at_price %}
+            {% endif %}
+            <div class="npr-card">
+              <div class="npr-card__media">
+                <a href="{{ product_item.url }}">
+                  {% if product_item.featured_image %}
+                    <img class="npr-card__img" src="{{ product_item.featured_image | image_url: width: 480 }}" alt="{{ product_item.title | escape }}" loading="lazy">
+                  {% endif %}
+                </a>
+                <div class="npr-card__glass"></div>
+                {% if item_discount > 0 %}
+                  <span class="npr-card__badge npr-card__badge--sale">-{{ item_discount }}%</span>
+                {% endif %}
+                {% if style == 'bestsellers' %}
+                  <span class="npr-card__rank">{{ forloop.index }}</span>
+                {% endif %}
+              </div>
+              <div class="npr-card__body">
+                <a href="{{ product_item.url }}" class="npr-card__name">{{ product_item.title }}</a>
+                <div class="npr-card__prices">
+                  <span class="npr-card__price">{{ product_item.price | money }}</span>
+                  {% if product_item.compare_at_price > product_item.price %}
+                    <span class="npr-card__compare">{{ product_item.compare_at_price | money }}</span>
+                  {% endif %}
+                </div>
+                <button class="npr-qadd"
+                        data-variant-id="{{ product_item.selected_or_first_available_variant.id }}"
+                        {% unless product_item.available %}disabled style="opacity:.4;cursor:not-allowed"{% endunless %}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+                  Quick Add
+                </button>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    <!-- ── GRID LAYOUT (all other types) ── -->
+    {% else %}
+      {% assign grid_class = 'npr-grid' %}
+      {% if style == 'pair-with' or style == 'must-have' %}{% assign grid_class = 'npr-grid npr-grid--2' %}{% endif %}
+      {% if style == 'freq-bought' or style == 'bundle-save' %}{% assign grid_class = 'npr-grid npr-grid--3' %}{% endif %}
+      <div class="{{ grid_class }}">
+        {% for product_item in rec_col.products limit: rec_limit %}
+          {% assign item_discount = 0 %}
+          {% if product_item.compare_at_price > product_item.price %}
+            {% assign item_discount = product_item.compare_at_price | minus: product_item.price | times: 100 | divided_by: product_item.compare_at_price %}
+          {% endif %}
+          <div class="npr-card">
+            <div class="npr-card__media">
+              <a href="{{ product_item.url }}">
+                {% if product_item.featured_image %}
+                  <img class="npr-card__img" src="{{ product_item.featured_image | image_url: width: 480 }}" alt="{{ product_item.title | escape }}" loading="lazy">
+                {% endif %}
+              </a>
+              <div class="npr-card__glass"></div>
+              {% if item_discount > 0 %}
+                <span class="npr-card__badge npr-card__badge--sale">-{{ item_discount }}%</span>
+              {% elsif style == 'new-arrivals' or style == 'just-dropped' %}
+                <span class="npr-card__badge npr-card__badge--new">New</span>
+              {% elsif style == 'limited-edition' %}
+                <span class="npr-card__badge npr-card__badge--new">Limited</span>
+              {% endif %}
+              {% if style == 'bestsellers' %}
+                <span class="npr-card__rank">{{ forloop.index }}</span>
+              {% endif %}
+            </div>
+            <div class="npr-card__body">
+              <a href="{{ product_item.url }}" class="npr-card__name">{{ product_item.title }}</a>
+              <div class="npr-card__prices">
+                <span class="npr-card__price">{{ product_item.price | money }}</span>
+                {% if product_item.compare_at_price > product_item.price %}
+                  <span class="npr-card__compare">{{ product_item.compare_at_price | money }}</span>
+                {% endif %}
+              </div>
+              <button class="npr-qadd"
+                      data-variant-id="{{ product_item.selected_or_first_available_variant.id }}"
+                      {% unless product_item.available %}disabled style="opacity:.4;cursor:not-allowed"{% endunless %}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+                Quick Add
+              </button>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      {% if style == 'bundle-save' %}
+        <div class="npr-bundle-save-bar">
+          <div>
+            <div style="font-size:.82rem;color:var(--npm-cream);font-weight:600">Bundle any 2 items</div>
+            <div class="npr-bundle-save-label">Save <strong>{{ section.settings.bundle_discount | default: '15' }}%</strong> when you add 2 or more</div>
+          </div>
+          <button class="npr-freq-atc" style="background:linear-gradient(135deg,var(--npm-fire1),var(--npm-fire2))">
+            Shop the Bundle
+          </button>
+        </div>
+      {% endif %}
+    {% endif %}
+
+    <!-- View All link -->
+    {% if section.settings.view_all_url != blank %}
+      <div style="text-align:center;margin-top:36px">
+        <a href="{{ section.settings.view_all_url }}" style="display:inline-flex;align-items:center;gap:8px;color:var(--npm-gold);font-size:.82rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border-bottom:1px solid rgba(201,168,76,.3);padding-bottom:4px">
+          {{ section.settings.view_all_text | default: 'View All' }}
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endif %}
+
+<script src="{{ 'nalea-product-page.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Product Recs",
+  "tag": "section",
+  "class": "nalea-product-recs-section",
+  "settings": [
+    {
+      "type": "select", "id": "style", "label": "Section Style",
+      "options": [
+        {"value":"freq-bought",      "label":"Frequently Bought Together"},
+        {"value":"customers-bought", "label":"Customers Also Bought"},
+        {"value":"complete-look",    "label":"Complete the Look"},
+        {"value":"pair-with",        "label":"Pair It With"},
+        {"value":"recommended",      "label":"Recommended For You"},
+        {"value":"similar",          "label":"Similar Products"},
+        {"value":"complementary",    "label":"Complementary Items"},
+        {"value":"must-have",        "label":"Must-Have Add-ons"},
+        {"value":"bundle-save",      "label":"Bundle & Save"},
+        {"value":"related",          "label":"Related Products"},
+        {"value":"shop-look",        "label":"Shop the Look"},
+        {"value":"perfect-matches",  "label":"Perfect Matches"},
+        {"value":"more-explore",     "label":"More to Explore"},
+        {"value":"trending-now",     "label":"Trending Now"},
+        {"value":"new-arrivals",     "label":"New Arrivals"},
+        {"value":"bestsellers",      "label":"Bestsellers"},
+        {"value":"staff-picks",      "label":"Staff Picks"},
+        {"value":"just-dropped",     "label":"Just Dropped"},
+        {"value":"fan-favorites",    "label":"Fan Favorites"},
+        {"value":"last-chance",      "label":"Last Chance"},
+        {"value":"style-edit",       "label":"The Style Edit"},
+        {"value":"limited-edition",  "label":"Limited Edition"},
+        {"value":"collab-drop",      "label":"Collab Drop"}
+      ],
+      "default": "recommended"
+    },
+    { "type": "collection", "id": "collection",       "label": "Product Collection" },
+    { "type": "text",       "id": "eyebrow",          "label": "Eyebrow Label",  "default": "Just For You" },
+    { "type": "text",       "id": "title",            "label": "Section Title",  "default": "Recommended For You" },
+    { "type": "range",      "id": "limit",            "label": "Product Limit",  "min": 2, "max": 12, "step": 1, "default": 8 },
+    { "type": "text",       "id": "bundle_discount",  "label": "Bundle Discount %", "default": "15" },
+    { "type": "text",       "id": "view_all_text",    "label": "View All Text",  "default": "View All" },
+    { "type": "url",        "id": "view_all_url",     "label": "View All Link" }
+  ],
+  "presets": [
+    { "name": "Frequently Bought Together", "settings": {"style":"freq-bought",     "eyebrow":"Often Bought With",   "title":"Frequently Bought Together"} },
+    { "name": "Customers Also Bought",      "settings": {"style":"customers-bought","eyebrow":"Community Picks",     "title":"Customers Also Bought"} },
+    { "name": "Complete the Look",          "settings": {"style":"complete-look",   "eyebrow":"Style It Up",         "title":"Complete the Look"} },
+    { "name": "Pair It With",               "settings": {"style":"pair-with",       "eyebrow":"Perfect Together",    "title":"Pair It With"} },
+    { "name": "Recommended For You",        "settings": {"style":"recommended",     "eyebrow":"Just For You",        "title":"Recommended For You"} },
+    { "name": "Similar Products",           "settings": {"style":"similar",         "eyebrow":"You May Also Like",   "title":"Similar Products"} },
+    { "name": "Complementary Items",        "settings": {"style":"complementary",   "eyebrow":"Add These Too",       "title":"Complementary Items"} },
+    { "name": "Must-Have Add-ons",          "settings": {"style":"must-have",       "eyebrow":"Don't Miss These",    "title":"Must-Have Add-ons"} },
+    { "name": "Bundle & Save",              "settings": {"style":"bundle-save",     "eyebrow":"Better Together",     "title":"Bundle & Save"} },
+    { "name": "Related Products",           "settings": {"style":"related",         "eyebrow":"Also Available",      "title":"Related Products"} },
+    { "name": "Shop the Look",              "settings": {"style":"shop-look",       "eyebrow":"The Full Look",       "title":"Shop the Look"} },
+    { "name": "Perfect Matches",            "settings": {"style":"perfect-matches", "eyebrow":"Made for Each Other", "title":"Perfect Matches"} },
+    { "name": "More to Explore",            "settings": {"style":"more-explore",    "eyebrow":"Keep Browsing",       "title":"More to Explore"} },
+    { "name": "Trending Now",               "settings": {"style":"trending-now",    "eyebrow":"Hot Right Now",       "title":"Trending Now"} },
+    { "name": "New Arrivals",               "settings": {"style":"new-arrivals",    "eyebrow":"Just Landed",         "title":"New Arrivals"} },
+    { "name": "Bestsellers",               "settings": {"style":"bestsellers",      "eyebrow":"Top Rated",           "title":"Bestsellers"} },
+    { "name": "Staff Picks",               "settings": {"style":"staff-picks",      "eyebrow":"Our Favourites",      "title":"Staff Picks"} },
+    { "name": "Just Dropped",              "settings": {"style":"just-dropped",     "eyebrow":"Brand New",           "title":"Just Dropped"} },
+    { "name": "Fan Favorites",             "settings": {"style":"fan-favorites",    "eyebrow":"Most Loved",          "title":"Fan Favorites"} },
+    { "name": "Last Chance",               "settings": {"style":"last-chance",      "eyebrow":"Almost Gone",         "title":"Last Chance"} },
+    { "name": "The Style Edit",            "settings": {"style":"style-edit",       "eyebrow":"Curated For You",     "title":"The Style Edit"} },
+    { "name": "Limited Edition",           "settings": {"style":"limited-edition",  "eyebrow":"Exclusive Pieces",    "title":"Limited Edition"} },
+    { "name": "Collab Drop",              "settings": {"style":"collab-drop",       "eyebrow":"Special Release",     "title":"Collab Drop"} }
+  ]
+}
+{% endschema %}

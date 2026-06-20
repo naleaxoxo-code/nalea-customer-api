@@ -1,0 +1,90 @@
+{
+  "sections": {
+    "main": {
+      "type": "nalea-main-product",
+      "settings": {
+        "show_rating": true,
+        "rating_score": "4.8",
+        "rating_count": "127",
+        "trust1": "Free shipping on R499+",
+        "trust2": "Secure checkout",
+        "trust3": "7-day easy returns",
+        "trust4": "Handcrafted with love"
+      }
+    },
+    "freq_bought": {
+      "type": "nalea-product-recs",
+      "settings": {
+        "style": "freq-bought",
+        "eyebrow": "Often Bought With",
+        "title": "Frequently Bought Together",
+        "limit": 3
+      }
+    },
+    "customers_bought": {
+      "type": "nalea-product-recs",
+      "settings": {
+        "style": "customers-bought",
+        "eyebrow": "Community Picks",
+        "title": "Customers Also Bought",
+        "limit": 8
+      }
+    },
+    "complete_look": {
+      "type": "nalea-product-recs",
+      "settings": {
+        "style": "complete-look",
+        "eyebrow": "Style It Up",
+        "title": "Complete the Look",
+        "limit": 4
+      }
+    },
+    "recommended": {
+      "type": "nalea-product-recs",
+      "settings": {
+        "style": "recommended",
+        "eyebrow": "Just For You",
+        "title": "Recommended For You",
+        "limit": 8
+      }
+    },
+    "shop_look": {
+      "type": "nalea-product-recs",
+      "settings": {
+        "style": "shop-look",
+        "eyebrow": "The Full Look",
+        "title": "Shop the Look",
+        "limit": 4
+      }
+    },
+    "bundle_save": {
+      "type": "nalea-product-recs",
+      "settings": {
+        "style": "bundle-save",
+        "eyebrow": "Better Together",
+        "title": "Bundle & Save",
+        "limit": 3,
+        "bundle_discount": "15"
+      }
+    },
+    "more_explore": {
+      "type": "nalea-product-recs",
+      "settings": {
+        "style": "more-explore",
+        "eyebrow": "Keep Browsing",
+        "title": "More to Explore",
+        "limit": 8
+      }
+    }
+  },
+  "order": [
+    "main",
+    "freq_bought",
+    "customers_bought",
+    "complete_look",
+    "recommended",
+    "shop_look",
+    "bundle_save",
+    "more_explore"
+  ]
+}

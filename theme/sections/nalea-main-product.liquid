@@ -1,0 +1,237 @@
+{% comment %} NALEA — Main Product Page (Glass Rich Redesign) {% endcomment %}
+{{ 'nalea-homepage.css' | asset_url | stylesheet_tag }}
+{{ 'nalea-product-page.css' | asset_url | stylesheet_tag }}
+
+{% assign current_variant = product.selected_or_first_available_variant %}
+{% assign compare_price   = current_variant.compare_at_price %}
+{% assign sale_price      = current_variant.price %}
+{% if compare_price > sale_price %}
+  {% assign discount = compare_price | minus: sale_price | times: 100 | divided_by: compare_price %}
+{% endif %}
+
+<div class="npm-page">
+
+  <!-- Breadcrumb -->
+  <nav class="npm-breadcrumb">
+    <a href="/">Home</a><span>/</span>
+    {% if collection %}
+      <a href="{{ collection.url }}">{{ collection.title }}</a><span>/</span>
+    {% endif %}
+    <span>{{ product.title }}</span>
+  </nav>
+
+  <div class="npm-wrap">
+
+    <!-- ── IMAGE GALLERY ── -->
+    <div class="npm-gallery">
+      <div class="npm-gallery__main">
+        {% if current_variant.image %}
+          <img class="npm-gallery__main-img"
+               src="{{ current_variant.image | image_url: width: 900 }}"
+               alt="{{ product.title | escape }}"
+               id="npmMainImg">
+        {% elsif product.featured_image %}
+          <img class="npm-gallery__main-img"
+               src="{{ product.featured_image | image_url: width: 900 }}"
+               alt="{{ product.title | escape }}"
+               id="npmMainImg">
+        {% endif %}
+        <div class="npm-gallery__glass"></div>
+        {% if discount > 0 %}
+          <div class="npm-gallery__badge">-{{ discount }}% OFF</div>
+        {% elsif product.tags contains 'new' %}
+          <div class="npm-gallery__badge" style="background:rgba(201,168,76,.15);border-color:rgba(201,168,76,.35);color:var(--npm-gold)">New Arrival</div>
+        {% endif %}
+        <button class="npm-gallery__zoom" aria-label="Zoom">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/></svg>
+        </button>
+      </div>
+
+      <!-- Thumbnails -->
+      {% if product.images.size > 1 %}
+        <div class="npm-gallery__thumbs">
+          {% for image in product.images limit: 6 %}
+            <div class="npm-thumb {% if forloop.first %}active{% endif %}"
+                 data-src="{{ image | image_url: width: 900 }}">
+              <img src="{{ image | image_url: width: 100 }}" alt="{{ image.alt | escape }}" loading="lazy">
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- ── PRODUCT INFO ── -->
+    <div class="npm-info">
+
+      <!-- Core info glass panel -->
+      <div class="npm-info__glass">
+        <p class="npm-eyebrow">{{ product.vendor }}</p>
+        <h1 class="npm-title">{{ product.title }}</h1>
+
+        <!-- Price -->
+        <div class="npm-price-row">
+          <span class="npm-price">{{ sale_price | money }}</span>
+          {% if compare_price > sale_price %}
+            <span class="npm-compare">{{ compare_price | money }}</span>
+            <span class="npm-discount-badge">Save {{ discount }}%</span>
+          {% endif %}
+        </div>
+
+        <!-- Rating -->
+        {% if section.settings.show_rating %}
+          <div class="npm-rating" style="margin-top:12px">
+            <span class="npm-stars">★★★★★</span>
+            <span class="npm-rating-count">{{ section.settings.rating_score | default: '4.8' }}</span>
+            <span>({{ section.settings.rating_count | default: '127' }} reviews)</span>
+          </div>
+        {% endif %}
+
+        <!-- Variants -->
+        {% unless product.has_only_default_variant %}
+          <div class="npm-variants" style="margin-top:24px">
+            {% for option in product.options_with_values %}
+              <div class="npm-variant-group">
+                <p class="npm-variant-label">{{ option.name }}: <strong>{{ option.selected_value }}</strong></p>
+                {% if option.name == 'Color' or option.name == 'Colour' %}
+                  <div class="npm-swatches">
+                    {% for value in option.values %}
+                      {% assign swatch_color = value | downcase | replace: ' ','-' %}
+                      <div class="npm-swatch {% if value == option.selected_value %}active{% endif %}"
+                           style="background:{{ swatch_color }};"
+                           data-option-index="{{ option.position }}"
+                           data-option-value="{{ value }}"
+                           title="{{ value }}"></div>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <div class="npm-pills">
+                    {% for value in option.values %}
+                      <button class="npm-pill {% if value == option.selected_value %}active{% endif %}"
+                              data-option-index="{{ option.position }}"
+                              data-option-value="{{ value }}">{{ value }}</button>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% endunless %}
+
+        <!-- Purchase row -->
+        {% form 'product', product, id: 'npmProductForm' %}
+          <input type="hidden" name="id" value="{{ current_variant.id }}" id="npmVariantId">
+          <div class="npm-purchase-row" style="margin-top:28px">
+            <div class="npm-qty-wrap">
+              <button type="button" class="npm-qty-btn" data-qty="dec">−</button>
+              <input class="npm-qty-num" type="number" name="quantity" value="1" min="1" readonly>
+              <button type="button" class="npm-qty-btn" data-qty="inc">+</button>
+            </div>
+            <button type="submit" class="npm-atc" {% unless current_variant.available %}disabled style="opacity:.4;cursor:not-allowed"{% endunless %}>
+              <div class="npm-atc__sparks">
+                <div class="npm-spark"></div><div class="npm-spark"></div>
+                <div class="npm-spark"></div><div class="npm-spark"></div>
+                <div class="npm-spark"></div><div class="npm-spark"></div>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+              <span class="npm-atc__label">
+                {% if current_variant.available %}Add to Cart{% else %}Sold Out{% endif %}
+              </span>
+              <svg class="npm-atc__tick" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#080808" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>
+            </button>
+            <button type="button" class="npm-wishlist" aria-label="Add to wishlist">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+            </button>
+          </div>
+        {% endform %}
+
+        <!-- Trust badges -->
+        <div class="npm-trust" style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(201,168,76,.1)">
+          <div class="npm-trust-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16,8 20,8 23,11 23,16 16,16 16,8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            <span>{{ section.settings.trust1 | default: 'Free shipping on R499+' }}</span>
+          </div>
+          <div class="npm-trust-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>{{ section.settings.trust2 | default: 'Secure checkout' }}</span>
+          </div>
+          <div class="npm-trust-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            <span>{{ section.settings.trust3 | default: '7-day easy returns' }}</span>
+          </div>
+          <div class="npm-trust-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+            <span>{{ section.settings.trust4 | default: 'Handcrafted with love' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Details accordion panel -->
+      <div class="npm-info__glass">
+        <div class="npm-details">
+          {% if product.description != blank %}
+            <div class="npm-accord open">
+              <button class="npm-accord__toggle">
+                Description
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <div class="npm-accord__body">{{ product.description }}</div>
+            </div>
+          {% endif %}
+          {% if section.settings.care_text != blank %}
+            <div class="npm-accord">
+              <button class="npm-accord__toggle">
+                Care & Materials
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <div class="npm-accord__body">{{ section.settings.care_text }}</div>
+            </div>
+          {% endif %}
+          {% if section.settings.shipping_text != blank %}
+            <div class="npm-accord">
+              <button class="npm-accord__toggle">
+                Shipping & Returns
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <div class="npm-accord__body">{{ section.settings.shipping_text }}</div>
+            </div>
+          {% endif %}
+          {% if section.settings.size_text != blank %}
+            <div class="npm-accord">
+              <button class="npm-accord__toggle">
+                Size Guide
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <div class="npm-accord__body">{{ section.settings.size_text }}</div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="{{ 'nalea-product-page.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Nalèa Product Page",
+  "tag": "section",
+  "class": "nalea-main-product-section",
+  "settings": [
+    { "type": "checkbox", "id": "show_rating",    "label": "Show Rating",        "default": true },
+    { "type": "text",     "id": "rating_score",   "label": "Rating Score",       "default": "4.8" },
+    { "type": "text",     "id": "rating_count",   "label": "Review Count",       "default": "127" },
+    { "type": "header",   "content": "Trust Badges" },
+    { "type": "text",     "id": "trust1", "label": "Badge 1", "default": "Free shipping on R499+" },
+    { "type": "text",     "id": "trust2", "label": "Badge 2", "default": "Secure checkout" },
+    { "type": "text",     "id": "trust3", "label": "Badge 3", "default": "7-day easy returns" },
+    { "type": "text",     "id": "trust4", "label": "Badge 4", "default": "Handcrafted with love" },
+    { "type": "header",   "content": "Accordion Content" },
+    { "type": "richtext", "id": "care_text",     "label": "Care & Materials" },
+    { "type": "richtext", "id": "shipping_text", "label": "Shipping & Returns" },
+    { "type": "richtext", "id": "size_text",     "label": "Size Guide" }
+  ],
+  "presets": [{ "name": "Nalèa Product Page" }]
+}
+{% endschema %}
