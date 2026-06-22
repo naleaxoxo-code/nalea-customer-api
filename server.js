@@ -746,5 +746,96 @@ app.post('/profile/emoji', async (req, res) => {
   }
 });
 
+// ===== PRODUCT REVIEWS (verified buyers only) =====
+// POST /apps/nalea/reviews  { product_id, rating, title, body }
+app.post('/reviews', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(401).json({ error: 'Please log in to write a review.' });
+
+  const { product_id, rating, title, body } = req.body || {};
+  const r = parseInt(rating);
+  if (!product_id || !r || r < 1 || r > 5) return res.status(400).json({ error: 'Please provide a star rating.' });
+
+  const adminHeaders = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const jsonHeaders  = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const apiBase = `https://${SHOPIFY_STORE}/admin/api/2024-04`;
+  const pid = String(product_id).replace(/[^0-9]/g, '');
+
+  try {
+    // 1) Verify the customer actually purchased this product
+    const ordRes  = await fetch(`${apiBase}/customers/${customerId}/orders.json?status=any&limit=250`, { headers: adminHeaders });
+    const ordData = await ordRes.json();
+    const bought  = (ordData.orders || []).some(o => (o.line_items || []).some(li => String(li.product_id) === pid));
+    if (!bought) return res.status(403).json({ error: 'Only verified buyers can review this product.' });
+
+    // 2) Build display name (First L.)
+    const custRes = await fetch(`${apiBase}/customers/${customerId}.json?fields=first_name,last_name`, { headers: adminHeaders });
+    const cust    = (await custRes.json()).customer || {};
+    const name    = ((cust.first_name || 'Customer') + ' ' + (cust.last_name ? cust.last_name.charAt(0) + '.' : '')).trim();
+
+    // 3) Read existing reviews metafield
+    const mfRes    = await fetch(`${apiBase}/products/${pid}/metafields.json?namespace=custom&key=reviews`, { headers: adminHeaders });
+    const existing = (await mfRes.json()).metafields?.[0];
+    let reviews = [];
+    if (existing) { try { reviews = JSON.parse(existing.value); } catch { reviews = []; } }
+
+    // one review per customer per product (latest wins)
+    reviews = reviews.filter(rv => String(rv.cid) !== String(customerId));
+    reviews.unshift({
+      cid:      String(customerId),
+      name,
+      rating:   r,
+      title:    (title || '').toString().slice(0, 80),
+      body:     (body  || '').toString().slice(0, 600),
+      verified: true,
+      date:     new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'short', day: 'numeric' })
+    });
+
+    // 4) Persist
+    let saveRes;
+    if (existing) {
+      saveRes = await fetch(`${apiBase}/metafields/${existing.id}.json`, {
+        method: 'PUT', headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { id: existing.id, type: 'json', value: JSON.stringify(reviews) } })
+      });
+    } else {
+      saveRes = await fetch(`${apiBase}/products/${pid}/metafields.json`, {
+        method: 'POST', headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'reviews', type: 'json', value: JSON.stringify(reviews) } })
+      });
+    }
+    if (!saveRes.ok) {
+      const t = await saveRes.text();
+      console.error('Review save failed:', saveRes.status, t.slice(0, 300));
+      return res.status(500).json({ error: 'Could not save your review.' });
+    }
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('Review exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /apps/nalea/reviews?product_id=...  (optional — theme also reads the metafield directly)
+app.get('/reviews', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const pid = String(req.query.product_id || '').replace(/[^0-9]/g, '');
+  if (!pid) return res.status(400).json({ error: 'product_id required' });
+  const adminHeaders = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const apiBase = `https://${SHOPIFY_STORE}/admin/api/2024-04`;
+  try {
+    const mf = (await (await fetch(`${apiBase}/products/${pid}/metafields.json?namespace=custom&key=reviews`, { headers: adminHeaders })).json()).metafields?.[0];
+    let reviews = [];
+    if (mf) { try { reviews = JSON.parse(mf.value); } catch {} }
+    const count = reviews.length;
+    const average = count ? Math.round((reviews.reduce((s, r) => s + (r.rating || 0), 0) / count) * 10) / 10 : 0;
+    return res.json({ success: true, count, average, reviews: reviews.map(({ cid, ...rest }) => rest) });
+  } catch (err) {
+    console.error('Review GET exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nalea API listening on port ${PORT}`));
