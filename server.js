@@ -1181,5 +1181,141 @@ app.post('/personalization/photo', upload.single('photo'), async (req, res) => {
   }
 });
 
+// ===== SECURITY PASSWORD (OTP-verified, stored on our side) =====
+// This does NOT change how customers log into Shopify (the store keeps passwordless
+// Customer Accounts). It lets a customer set a password that we verify ourselves,
+// confirmed by an emailed one-time code, for the "Change" button on my-profile.
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const OTP_SECRET = SHOPIFY_CLIENT_SECRET;
+
+function hashWithSecret(value) {
+  return crypto.createHmac('sha256', OTP_SECRET).update(String(value)).digest('hex');
+}
+
+async function sendOtpEmail(toEmail, code) {
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${RESEND_API_KEY}`
+    },
+    body: JSON.stringify({
+      from: 'Nalèa XoXo <noreply@naleaxoxo.com>',
+      to: toEmail,
+      subject: 'Your Nalèa XoXo verification code',
+      html: `<p>Your verification code is:</p><h2 style="letter-spacing:4px;">${code}</h2><p>This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>`
+    })
+  });
+  if (!response.ok) {
+    const errBody = await response.text();
+    throw new Error(`Resend send failed: ${response.status} ${errBody.substring(0, 300)}`);
+  }
+}
+
+app.post('/security/request-otp', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const jsonHeaders = { 'Content-Type': 'application/json', ...headers };
+  const base = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+
+  try {
+    const custRes = await fetch(`https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}.json`, { headers });
+    const custData = await custRes.json();
+    const email = custData.customer?.email;
+    if (!email) return res.status(404).json({ error: 'Customer not found' });
+
+    const code = String(crypto.randomInt(100000, 999999));
+    const expires = Date.now() + 10 * 60 * 1000;
+    const value = JSON.stringify({ hash: hashWithSecret(code), expires });
+
+    const listRes = await fetch(`${base}.json?namespace=custom&key=security_otp`, { headers });
+    const listData = await listRes.json();
+    const mfId = listData.metafields?.[0]?.id || null;
+
+    const saveRes = mfId
+      ? await fetch(`${base}/${mfId}.json`, {
+          method: 'PUT', headers: jsonHeaders,
+          body: JSON.stringify({ metafield: { id: mfId, value, type: 'json' } })
+        })
+      : await fetch(`${base}.json`, {
+          method: 'POST', headers: jsonHeaders,
+          body: JSON.stringify({ metafield: { namespace: 'custom', key: 'security_otp', value, type: 'json' } })
+        });
+
+    if (!saveRes.ok) {
+      console.error('OTP metafield save failed:', saveRes.status, await saveRes.text());
+      return res.status(500).json({ error: 'Failed to generate code' });
+    }
+
+    await sendOtpEmail(email, code);
+    return res.json({ success: true, email });
+  } catch (err) {
+    console.error('request-otp exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/security/verify-otp', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+
+  const { code, new_password } = req.body;
+  if (!code || !new_password || new_password.length < 8) {
+    return res.status(400).json({ error: 'Code and a password (min 8 characters) are required' });
+  }
+
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const jsonHeaders = { 'Content-Type': 'application/json', ...headers };
+  const base = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+
+  try {
+    const listRes = await fetch(`${base}.json?namespace=custom&key=security_otp`, { headers });
+    const listData = await listRes.json();
+    const mf = listData.metafields?.[0];
+    if (!mf) return res.status(400).json({ error: 'No code was requested' });
+
+    let stored;
+    try { stored = JSON.parse(mf.value); } catch { stored = null; }
+    if (!stored || Date.now() > stored.expires) {
+      return res.status(400).json({ error: 'Code expired — request a new one' });
+    }
+    if (hashWithSecret(code) !== stored.hash) {
+      return res.status(400).json({ error: 'Incorrect code' });
+    }
+
+    const pwListRes = await fetch(`${base}.json?namespace=custom&key=account_password_hash`, { headers });
+    const pwListData = await pwListRes.json();
+    const pwMfId = pwListData.metafields?.[0]?.id || null;
+    const pwValue = hashWithSecret(new_password);
+
+    const pwSaveRes = pwMfId
+      ? await fetch(`${base}/${pwMfId}.json`, {
+          method: 'PUT', headers: jsonHeaders,
+          body: JSON.stringify({ metafield: { id: pwMfId, value: pwValue, type: 'single_line_text_field' } })
+        })
+      : await fetch(`${base}.json`, {
+          method: 'POST', headers: jsonHeaders,
+          body: JSON.stringify({ metafield: { namespace: 'custom', key: 'account_password_hash', value: pwValue, type: 'single_line_text_field' } })
+        });
+
+    if (!pwSaveRes.ok) {
+      console.error('Password save failed:', pwSaveRes.status, await pwSaveRes.text());
+      return res.status(500).json({ error: 'Failed to save password' });
+    }
+
+    // Clear the used code
+    await fetch(`${base}/${mf.id}.json`, { method: 'DELETE', headers }).catch(() => {});
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('verify-otp exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nalea API listening on port ${PORT}`));
