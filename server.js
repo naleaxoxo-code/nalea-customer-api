@@ -103,14 +103,64 @@ async function updatePublicRegistry(customerId, isPublic) {
   }
 }
 
+// ===== GAME COUPONS — append a won coupon to the customer's coupon wallet =====
+async function saveGameCoupon(customerId, coupon) {
+  const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const jsonHeaders = { 'Content-Type': 'application/json', ...headers };
+
+  const listRes  = await fetch(`${base}.json?namespace=custom&key=game_coupons`, { headers });
+  const listData = await listRes.json();
+  let coupons = [];
+  let mfId = null;
+  if (listData.metafields?.length > 0) {
+    mfId = listData.metafields[0].id;
+    try { coupons = JSON.parse(listData.metafields[0].value); } catch { coupons = []; }
+  }
+  coupons.unshift({
+    code: coupon.code,
+    tier: coupon.tier,
+    isNewSignup: !!coupon.isNewSignup,
+    date: new Date().toISOString()
+  });
+
+  const value = JSON.stringify(coupons);
+  if (mfId) {
+    return fetch(`${base}/${mfId}.json`, {
+      method: 'PUT', headers: jsonHeaders,
+      body: JSON.stringify({ metafield: { id: mfId, value, type: 'json' } })
+    });
+  }
+  return fetch(`${base}.json`, {
+    method: 'POST', headers: jsonHeaders,
+    body: JSON.stringify({ metafield: { namespace: 'custom', key: 'game_coupons', value, type: 'json' } })
+  });
+}
+
 // ===== METAFIELDS (personal info, contact, style) =====
 app.post('/customer', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.status(400).json({ error: 'No customer ID' });
 
-  const { namespace = 'custom', metafields, customer_fields } = req.body;
-  if (!metafields || !Array.isArray(metafields)) return res.status(400).json({ error: 'metafields array required' });
+  const { namespace = 'custom', metafields, customer_fields, game_coupon } = req.body;
+
+  if (game_coupon) {
+    try {
+      const saveRes = await saveGameCoupon(customerId, game_coupon);
+      if (!saveRes.ok) {
+        const errBody = await saveRes.text();
+        console.error('Game coupon save FAILED:', saveRes.status, errBody.substring(0, 300));
+        return res.status(saveRes.status).json({ error: 'Failed to save coupon' });
+      }
+    } catch (err) {
+      console.error('Game coupon save exception:', err.message);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  if (!metafields) return res.json({ success: true });
+  if (!Array.isArray(metafields)) return res.status(400).json({ error: 'metafields array required' });
 
   const payload = {
     customer: {
@@ -139,6 +189,31 @@ app.post('/customer', async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     console.error('Customer metafield exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ===== GAME COUPONS — GET (for profile page display) =====
+app.get('/game-coupons', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.json({ success: true, coupons: [] });
+
+  const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=game_coupons`, { headers });
+    const listData = await listRes.json();
+    if (listData.metafields?.length > 0) {
+      try {
+        const coupons = JSON.parse(listData.metafields[0].value);
+        return res.json({ success: true, coupons: Array.isArray(coupons) ? coupons : [] });
+      } catch(e) { return res.json({ success: true, coupons: [] }); }
+    }
+    return res.json({ success: true, coupons: [] });
+  } catch (err) {
+    console.error('Game coupons GET error:', err.message);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
