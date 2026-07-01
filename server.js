@@ -1192,7 +1192,55 @@ function hashWithSecret(value) {
   return crypto.createHmac('sha256', OTP_SECRET).update(String(value)).digest('hex');
 }
 
-async function sendOtpEmail(toEmail, code) {
+const NALEA_LOGO_URL = 'https://cdn.shopify.com/s/files/1/0789/2166/2696/files/Logo_Trans.png?v=1782117318';
+
+async function lookupLocation(ip) {
+  if (!ip || ip === '::1' || ip.startsWith('127.') || ip.startsWith('10.') || ip.startsWith('192.168.')) return 'your usual location';
+  try {
+    const r = await fetch(`https://ipapi.co/${ip}/json/`, { headers: { 'User-Agent': 'nalea-api' } });
+    const d = await r.json();
+    if (d && d.city && d.country_name) return `${d.city}, ${d.country_name}`;
+    if (d && d.country_name) return d.country_name;
+  } catch {}
+  return 'an unknown location';
+}
+
+async function sendOtpEmail(toEmail, code, firstName, deviceLabel, location) {
+  const greetName = firstName ? firstName : 'there';
+  const html = `
+  <div style="background:#faf6f8;padding:40px 16px;font-family:Helvetica,Arial,sans-serif;">
+    <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+      <div style="background:linear-gradient(135deg,#f7cdd8,#bfe6d4);padding:28px 0;text-align:center;">
+        <img src="${NALEA_LOGO_URL}" alt="Nalèa XoXo" style="height:56px;">
+      </div>
+      <div style="padding:32px;">
+        <p style="font-size:16px;color:#3a2233;margin:0 0 4px;">Hi ${greetName} 💗</p>
+        <h1 style="font-size:20px;color:#3a2233;margin:0 0 20px;">Verify it's you</h1>
+        <p style="font-size:14px;color:#6b5a63;line-height:1.5;margin:0 0 24px;">
+          Use the code below to change your password. It expires in 10 minutes.
+        </p>
+        <div style="background:#faf1f4;border:1px dashed #e79ab5;border-radius:12px;padding:20px;text-align:center;margin-bottom:24px;">
+          <span style="font-size:32px;font-weight:700;letter-spacing:10px;color:#c85c86;">${code}</span>
+        </div>
+        <div style="background:#f4f9f7;border-radius:10px;padding:14px 16px;margin-bottom:24px;">
+          <p style="font-size:12px;color:#7a8f87;margin:0;line-height:1.5;">
+            🔒 Requested from <strong>${deviceLabel}</strong><br>
+            📍 Near <strong>${location}</strong>
+          </p>
+        </div>
+        <p style="font-size:12px;color:#a99aa1;line-height:1.5;margin:0 0 20px;">
+          If you didn't request this, you can safely ignore this email — your password won't change without the code above.
+        </p>
+        <div style="text-align:center;">
+          <a href="https://naleaxoxo.com" style="display:inline-block;background:#3a2233;color:#ffffff;text-decoration:none;font-size:13px;padding:12px 28px;border-radius:999px;">Back to Nalèa XoXo</a>
+        </div>
+      </div>
+      <div style="background:#3a2233;padding:18px;text-align:center;">
+        <p style="color:#e7c9d5;font-size:11px;margin:0;">Nalèa XoXo · naleaxoxo.com</p>
+      </div>
+    </div>
+  </div>`;
+
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -1202,8 +1250,8 @@ async function sendOtpEmail(toEmail, code) {
     body: JSON.stringify({
       from: 'Nalèa XoXo <noreply@naleaxoxo.com>',
       to: toEmail,
-      subject: 'Your Nalèa XoXo verification code',
-      html: `<p>Your verification code is:</p><h2 style="letter-spacing:4px;">${code}</h2><p>This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>`
+      subject: `${code} is your Nalèa XoXo verification code`,
+      html
     })
   });
   if (!response.ok) {
@@ -1226,6 +1274,11 @@ app.post('/security/request-otp', async (req, res) => {
     const custData = await custRes.json();
     const email = custData.customer?.email;
     if (!email) return res.status(404).json({ error: 'Customer not found' });
+    const firstName = custData.customer?.first_name || '';
+
+    const deviceLabel = parseUserAgent(req.get('User-Agent'));
+    const clientIp = (req.get('X-Forwarded-For') || req.ip || '').split(',')[0].trim();
+    const location = await lookupLocation(clientIp);
 
     const code = String(crypto.randomInt(100000, 999999));
     const expires = Date.now() + 10 * 60 * 1000;
@@ -1250,7 +1303,7 @@ app.post('/security/request-otp', async (req, res) => {
       return res.status(500).json({ error: 'Failed to generate code' });
     }
 
-    await sendOtpEmail(email, code);
+    await sendOtpEmail(email, code, firstName, deviceLabel, location);
     return res.json({ success: true, email });
   } catch (err) {
     console.error('request-otp exception:', err.message);
