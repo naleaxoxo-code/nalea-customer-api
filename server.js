@@ -327,6 +327,131 @@ app.get('/gift-cards', async (req, res) => {
   }
 });
 
+// ===== DEVICES — lightweight "active sessions" approximation =====
+// Shopify does not expose real customer login sessions via any API, so this tracks
+// browser/device fingerprints the customer's own client reports while logged in.
+function parseUserAgent(ua) {
+  ua = ua || '';
+  let browser = 'Unknown browser';
+  if (/Edg\//.test(ua)) browser = 'Edge';
+  else if (/OPR\//.test(ua)) browser = 'Opera';
+  else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = 'Chrome';
+  else if (/Safari\//.test(ua) && !/Chrome/.test(ua)) browser = 'Safari';
+  else if (/Firefox\//.test(ua)) browser = 'Firefox';
+
+  let os = 'Unknown device';
+  if (/iPhone|iPad/.test(ua)) os = 'iOS';
+  else if (/Android/.test(ua)) os = 'Android';
+  else if (/Macintosh/.test(ua)) os = 'Mac';
+  else if (/Windows/.test(ua)) os = 'Windows';
+  else if (/Linux/.test(ua)) os = 'Linux';
+
+  return `${browser} on ${os}`;
+}
+
+app.post('/devices/ping', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+
+  const { device_id } = req.body;
+  if (!device_id) return res.status(400).json({ error: 'device_id required' });
+
+  const label = parseUserAgent(req.get('User-Agent'));
+  const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const jsonHeaders = { 'Content-Type': 'application/json', ...headers };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=devices`, { headers });
+    const listData = await listRes.json();
+    let devices = [];
+    let mfId = null;
+    if (listData.metafields?.length > 0) {
+      mfId = listData.metafields[0].id;
+      try { devices = JSON.parse(listData.metafields[0].value); } catch { devices = []; }
+    }
+
+    devices = devices.filter(d => d.id !== device_id);
+    devices.unshift({ id: device_id, label, lastSeen: new Date().toISOString() });
+    devices = devices.slice(0, 10);
+
+    const value = JSON.stringify(devices);
+    if (mfId) {
+      await fetch(`${base}/${mfId}.json`, {
+        method: 'PUT', headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { id: mfId, value, type: 'json' } })
+      });
+    } else {
+      await fetch(`${base}.json`, {
+        method: 'POST', headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'devices', value, type: 'json' } })
+      });
+    }
+    return res.json({ success: true, devices });
+  } catch (err) {
+    console.error('Devices ping error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/devices', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.json({ success: true, devices: [] });
+
+  const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=devices`, { headers });
+    const listData = await listRes.json();
+    if (listData.metafields?.length > 0) {
+      try {
+        const devices = JSON.parse(listData.metafields[0].value);
+        return res.json({ success: true, devices: Array.isArray(devices) ? devices : [] });
+      } catch(e) { return res.json({ success: true, devices: [] }); }
+    }
+    return res.json({ success: true, devices: [] });
+  } catch (err) {
+    console.error('Devices GET error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/devices/remove', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+
+  const { device_id } = req.body;
+  if (!device_id) return res.status(400).json({ error: 'device_id required' });
+
+  const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const jsonHeaders = { 'Content-Type': 'application/json', ...headers };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=devices`, { headers });
+    const listData = await listRes.json();
+    if (!listData.metafields?.length) return res.json({ success: true, devices: [] });
+
+    const mfId = listData.metafields[0].id;
+    let devices = [];
+    try { devices = JSON.parse(listData.metafields[0].value); } catch { devices = []; }
+    devices = devices.filter(d => d.id !== device_id);
+
+    await fetch(`${base}/${mfId}.json`, {
+      method: 'PUT', headers: jsonHeaders,
+      body: JSON.stringify({ metafield: { id: mfId, value: JSON.stringify(devices), type: 'json' } })
+    });
+    return res.json({ success: true, devices });
+  } catch (err) {
+    console.error('Devices remove error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ===== ADDRESSES (add / edit / delete / set default) =====
 app.post('/address', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
