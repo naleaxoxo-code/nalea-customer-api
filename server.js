@@ -6,7 +6,7 @@ const multer  = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const app = express();
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({ limit: '5mb', verify: (req, res, buf) => { req.rawBody = buf; } }));
 app.use(express.urlencoded({ extended: true }));
 
 const SHOPIFY_STORE         = process.env.SHOPIFY_STORE;
@@ -30,6 +30,15 @@ function verifyProxySignature(query) {
     const h2 = crypto.createHmac('sha256', SHOPIFY_CLIENT_SECRET).update(params).digest('hex');
     return crypto.timingSafeEqual(Buffer.from(h1), Buffer.from(signature)) ||
            crypto.timingSafeEqual(Buffer.from(h2), Buffer.from(signature));
+  } catch { return false; }
+}
+
+function verifyWebhookHmac(req) {
+  const header = req.get('X-Shopify-Hmac-Sha256');
+  if (!header || !req.rawBody) return false;
+  try {
+    const digest = crypto.createHmac('sha256', SHOPIFY_CLIENT_SECRET).update(req.rawBody).digest('base64');
+    return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(header));
   } catch { return false; }
 }
 
@@ -214,6 +223,106 @@ app.get('/game-coupons', async (req, res) => {
     return res.json({ success: true, coupons: [] });
   } catch (err) {
     console.error('Game coupons GET error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ===== LOYALTY POINTS — GET balance =====
+app.get('/loyalty', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.json({ success: true, points: 0 });
+
+  const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=loyalty_points`, { headers });
+    const listData = await listRes.json();
+    const points = listData.metafields?.[0]?.value ? parseInt(listData.metafields[0].value, 10) || 0 : 0;
+    return res.json({ success: true, points });
+  } catch (err) {
+    console.error('Loyalty GET error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ===== LOYALTY POINTS — awarded automatically via the orders/paid webhook =====
+// 1 point per whole currency unit spent (e.g. R1 = 1 point). Register this webhook in
+// Shopify Admin > Settings > Notifications > Webhooks, event "Order payment", pointing at
+// https://<your-api-host>/webhooks/orders-paid
+app.post('/webhooks/orders-paid', async (req, res) => {
+  if (!verifyWebhookHmac(req)) return res.status(401).send('Unauthorized');
+  res.status(200).send('ok'); // ack immediately, Shopify expects a fast response
+
+  try {
+    const order = req.body;
+    const customerId = order?.customer?.id;
+    const total = parseFloat(order?.total_price || '0');
+    if (!customerId || !total) return;
+    const pointsEarned = Math.floor(total);
+    if (pointsEarned <= 0) return;
+
+    const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+    const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+    const jsonHeaders = { 'Content-Type': 'application/json', ...headers };
+
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=loyalty_points`, { headers });
+    const listData = await listRes.json();
+    const mfId = listData.metafields?.[0]?.id || null;
+    const current = mfId ? (parseInt(listData.metafields[0].value, 10) || 0) : 0;
+    const newValue = String(current + pointsEarned);
+
+    if (mfId) {
+      await fetch(`${base}/${mfId}.json`, {
+        method: 'PUT', headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { id: mfId, value: newValue, type: 'number_integer' } })
+      });
+    } else {
+      await fetch(`${base}.json`, {
+        method: 'POST', headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'loyalty_points', value: newValue, type: 'number_integer' } })
+      });
+    }
+    console.log(`Awarded ${pointsEarned} loyalty points to customer ${customerId} (order total ${total})`);
+  } catch (err) {
+    console.error('Loyalty points award exception:', err.message);
+  }
+});
+
+// ===== GIFT CARDS — GET (Shopify's native gift cards issued to this customer) =====
+app.get('/gift-cards', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.json({ success: true, giftCards: [] });
+
+  const graphqlUrl = `https://${SHOPIFY_STORE}/admin/api/2024-04/graphql.json`;
+  const jsonHeaders = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const gqlRes = await fetch(graphqlUrl, {
+      method: 'POST', headers: jsonHeaders,
+      body: JSON.stringify({
+        query: `query giftCardsForCustomer($query: String!) {
+          giftCards(first: 20, query: $query) {
+            nodes {
+              lastCharacters
+              maskedCode
+              balance { amount currencyCode }
+              initialValue { amount currencyCode }
+              expiresOn
+              enabled
+            }
+          }
+        }`,
+        variables: { query: `customer_id:${customerId}` }
+      })
+    });
+    const gqlData = await gqlRes.json();
+    const giftCards = gqlData?.data?.giftCards?.nodes || [];
+    return res.json({ success: true, giftCards });
+  } catch (err) {
+    console.error('Gift cards GET error:', err.message);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
