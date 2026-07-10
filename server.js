@@ -1370,5 +1370,108 @@ app.post('/security/verify-otp', async (req, res) => {
   }
 });
 
+// ===== AUTO-SEO — AI-generated SEO title/description/tags/type on new products =====
+// Fires from the Shopify "Product creation" webhook. Register it in Shopify Admin >
+// Settings > Notifications > Webhooks, event "Product creation", pointing at
+// https://<your-api-host>/webhooks/products-create. Requires ANTHROPIC_API_KEY.
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+
+async function generateProductSEO(title, bodyHtml) {
+  const plainDescription = (bodyHtml || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 2000);
+
+  const prompt = `You are writing SEO metadata for a Shopify product in an online store.
+
+Product title: ${title}
+Product description: ${plainDescription || '(no description provided)'}
+
+Write:
+- "seo_title": a compelling SEO title, natural and keyword-rich, 50-60 characters max (no store name suffix).
+- "seo_description": an SEO meta description, 140-160 characters max, written to earn clicks in Google search results.
+- "product_type": a short, standard e-commerce product category (2-4 words, e.g. "Women's Watches", "Braiding Hair Extensions").
+- "tags": an array of 4-6 lowercase search-relevant tags (single words or short phrases).
+
+Respond with ONLY a JSON object with exactly these keys: seo_title, seo_description, product_type, tags. No markdown, no explanation.`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!response.ok) {
+    const errBody = await response.text();
+    throw new Error(`Anthropic API error: ${response.status} ${errBody.substring(0, 300)}`);
+  }
+
+  const data = await response.json();
+  const text = data?.content?.[0]?.text || '';
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error(`Could not parse SEO JSON from model response: ${text.substring(0, 200)}`);
+
+  const parsed = JSON.parse(jsonMatch[0]);
+  if (!parsed.seo_title || !parsed.seo_description) throw new Error('Model response missing required fields');
+  return {
+    seo_title: String(parsed.seo_title).slice(0, 70),
+    seo_description: String(parsed.seo_description).slice(0, 320),
+    product_type: parsed.product_type ? String(parsed.product_type).slice(0, 60) : '',
+    tags: Array.isArray(parsed.tags) ? parsed.tags.map(t => String(t).trim()).filter(Boolean).slice(0, 8) : []
+  };
+}
+
+app.post('/webhooks/products-create', async (req, res) => {
+  if (!verifyWebhookHmac(req)) return res.status(401).send('Unauthorized');
+  res.status(200).send('ok'); // ack immediately, Shopify expects a fast response
+
+  try {
+    const product = req.body;
+    const productId = product?.id;
+    if (!productId) return;
+
+    // Don't overwrite SEO fields someone already filled in manually before this ran.
+    if (product.metafields_global_title_tag || product.metafields_global_description_tag) {
+      console.log(`Auto-SEO skipped for product ${productId} — SEO fields already set`);
+      return;
+    }
+
+    const seo = await generateProductSEO(product.title, product.body_html);
+
+    const existingTags = (product.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+    const mergedTags = Array.from(new Set([...existingTags, ...seo.tags]));
+
+    const payload = {
+      product: {
+        id: productId,
+        metafields_global_title_tag: seo.seo_title,
+        metafields_global_description_tag: seo.seo_description,
+        tags: mergedTags.join(', '),
+        ...(product.product_type ? {} : { product_type: seo.product_type })
+      }
+    };
+
+    const response = await fetch(`https://${SHOPIFY_STORE}/admin/api/2024-04/products/${productId}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error(`Auto-SEO save failed for product ${productId}:`, response.status, errBody.substring(0, 300));
+      return;
+    }
+    console.log(`Auto-SEO applied to product ${productId}: "${seo.seo_title}"`);
+  } catch (err) {
+    console.error('Auto-SEO webhook exception:', err.message);
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nalea API listening on port ${PORT}`));
