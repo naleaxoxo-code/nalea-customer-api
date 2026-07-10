@@ -1506,5 +1506,88 @@ async function applyAutoImageAlt(productId, title, images) {
   }
 }
 
+// ===== REVIEW REQUEST — sent automatically when an order is fulfilled =====
+// Register this webhook in Shopify Admin > Settings > Notifications > Webhooks,
+// event "Order fulfillment", pointing at https://<your-api-host>/webhooks/orders-fulfilled
+app.post('/webhooks/orders-fulfilled', async (req, res) => {
+  if (!verifyWebhookHmac(req)) return res.status(401).send('Unauthorized');
+  res.status(200).send('ok');
+
+  try {
+    const order = req.body;
+    const email = order?.email;
+    const firstName = order?.customer?.first_name || order?.shipping_address?.first_name || 'there';
+    const lineItems = Array.isArray(order?.line_items) ? order.line_items : [];
+    if (!email || !lineItems.length || !RESEND_API_KEY) return;
+
+    await sendReviewRequestEmail(email, firstName, lineItems);
+    console.log(`Review request sent to ${email} for order ${order?.name}`);
+  } catch (err) {
+    console.error('Review request webhook exception:', err.message);
+  }
+});
+
+async function sendReviewRequestEmail(toEmail, firstName, lineItems) {
+  const itemsHtml = lineItems.slice(0, 5).map(item => {
+    const handle = (item.title || '').toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const url = `https://naleaxoxo.com/products/${handle}`;
+    const image = item.image_url || (item.properties || []).find(p => p.name === '_image')?.value || '';
+    return `
+      <tr>
+        <td style="padding:12px 0;border-bottom:1px solid rgba(201,168,76,.1);">
+          <table cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+              <td width="56" valign="top">
+                ${image ? `<img src="${image}" width="56" height="56" style="border-radius:8px;border:1px solid rgba(201,168,76,.25);object-fit:cover;display:block;">` : ''}
+              </td>
+              <td valign="top" style="padding-left:14px;">
+                <div style="font-size:13px;color:#f0ece4;font-weight:600;margin-bottom:8px;">${item.title}</div>
+                <a href="${url}#reviews" style="display:inline-block;padding:8px 16px;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);color:#c9a84c;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;border-radius:8px;">★ Leave a Review</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>`;
+  }).join('');
+
+  const html = `
+  <div style="background:#0a0a0f;padding:32px 12px;font-family:'DM Sans',Helvetica,Arial,sans-serif;">
+    <div style="max-width:600px;margin:0 auto;background:#111118;border:1px solid rgba(201,168,76,.35);border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.5);">
+      <div style="background:linear-gradient(135deg,#1a1420,#0d0a12);padding:36px 28px 28px;text-align:center;border-bottom:1px solid rgba(201,168,76,.25);">
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;letter-spacing:.06em;color:#f5f0e8;margin-bottom:4px;">Nalèa XoXo</div>
+        <div style="font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#c9a84c;">How Did We Do?</div>
+      </div>
+      <div style="padding:32px 28px 8px;text-align:center;">
+        <div style="font-size:38px;line-height:1;margin-bottom:14px;">★</div>
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;color:#f5f0e8;margin-bottom:10px;">Hi ${firstName}, how's your order?</div>
+        <p style="font-size:13px;color:#999;line-height:1.7;max-width:420px;margin:0 auto 20px;">We hope you're loving it! A quick review helps other shoppers and means the world to our small business.</p>
+      </div>
+      <div style="padding:0 28px;">
+        <table width="100%" cellpadding="0" cellspacing="0">${itemsHtml}</table>
+      </div>
+      <div style="padding:20px 28px 28px;border-top:1px solid rgba(201,168,76,.12);text-align:center;margin-top:8px;">
+        <p style="font-size:11px;color:#666;line-height:1.7;margin:0 0 12px;">Any issues with your order? Reply to this email or contact us at<br><a href="mailto:hello@naleaxoxo.com" style="color:#c9a84c;text-decoration:none;">hello@naleaxoxo.com</a></p>
+        <a href="https://wa.me/27632294414" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#3fd97a;text-decoration:none;font-weight:600;">💬 Chat with us on WhatsApp</a>
+      </div>
+    </div>
+  </div>`;
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_API_KEY}` },
+    body: JSON.stringify({
+      from: 'Nalèa XoXo <noreply@naleaxoxo.com>',
+      to: toEmail,
+      subject: 'How did we do? Leave a review ★',
+      html
+    })
+  });
+  if (!response.ok) {
+    const errBody = await response.text();
+    throw new Error(`Resend send failed: ${response.status} ${errBody.substring(0, 300)}`);
+  }
+}
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nalea API listening on port ${PORT}`));
