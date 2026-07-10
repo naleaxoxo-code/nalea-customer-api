@@ -1,7 +1,8 @@
-const express = require('express');
-const crypto  = require('crypto');
-const fetch   = (...args) => import('node-fetch').then(({ default: f }) => f(...args));
-const multer  = require('multer');
+const express  = require('express');
+const crypto   = require('crypto');
+const fetch    = (...args) => import('node-fetch').then(({ default: f }) => f(...args));
+const multer   = require('multer');
+const FormDataNode = require('form-data');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -750,10 +751,10 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
       return res.status(500).json({ error: 'Failed to create staged upload' });
     }
 
-    const form = new FormData();
+    const form = new FormDataNode();
     for (const { name, value } of target.parameters) form.append(name, value);
-    form.append('file', new Blob([Uint8Array.from(buffer)], { type: mimetype }), originalname || 'photo.jpg');
-    const uploadRes = await fetch(target.url, { method: 'POST', body: form });
+    form.append('file', buffer, { filename: originalname || 'photo.jpg', contentType: mimetype });
+    const uploadRes = await fetch(target.url, { method: 'POST', body: form, headers: form.getHeaders() });
     if (!uploadRes.ok) {
       const text = await uploadRes.text();
       console.error('S3 upload error:', uploadRes.status, text);
@@ -1149,10 +1150,10 @@ app.post('/personalization/photo', upload.single('photo'), async (req, res) => {
     }
 
     // Upload file bytes to GCS
-    const form = new FormData();
+    const form = new FormDataNode();
     for (const { name, value } of target.parameters) form.append(name, value);
-    form.append('file', new Blob([Uint8Array.from(buffer)], { type: mimetype }), originalname || 'photo.jpg');
-    const uploadRes = await fetch(target.url, { method: 'POST', body: form });
+    form.append('file', buffer, { filename: originalname || 'photo.jpg', contentType: mimetype });
+    const uploadRes = await fetch(target.url, { method: 'POST', body: form, headers: form.getHeaders() });
     if (!uploadRes.ok) {
       console.error('Personalization GCS upload error:', uploadRes.status);
       return res.status(500).json({ error: 'Photo upload failed' });
