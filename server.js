@@ -1468,10 +1468,43 @@ app.post('/webhooks/products-create', async (req, res) => {
       return;
     }
     console.log(`Auto-SEO applied to product ${productId}: "${seo.seo_title}"`);
+
+    await applyAutoImageAlt(productId, product.title, product.images);
   } catch (err) {
     console.error('Auto-SEO webhook exception:', err.message);
   }
 });
+
+// ===== AUTO ALT TEXT — descriptive alt text for every image on a new product =====
+// Cheap templated alt text (no AI call) matching the style used in the bulk fix:
+// "{title} – front view", "{title} – close-up detail", "{title} – alternate angle", cycling per image.
+const ALT_DESCRIPTORS = ['front view', 'close-up detail', 'alternate angle', 'additional view'];
+
+async function applyAutoImageAlt(productId, title, images) {
+  const list = Array.isArray(images) ? images : [];
+  if (!list.length) return;
+
+  const headers = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  for (let i = 0; i < list.length; i++) {
+    const image = list[i];
+    if (!image?.id || image.alt) continue; // skip images that already have alt text
+
+    const alt = list.length > 1 ? `${title} – ${ALT_DESCRIPTORS[i % ALT_DESCRIPTORS.length]}` : title;
+
+    const response = await fetch(`https://${SHOPIFY_STORE}/admin/api/2024-04/products/${productId}/images/${image.id}.json`, {
+      method: 'PUT', headers,
+      body: JSON.stringify({ image: { id: image.id, alt } })
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error(`Auto-alt failed for product ${productId} image ${image.id}:`, response.status, errBody.substring(0, 300));
+      continue;
+    }
+    console.log(`Auto-alt applied to product ${productId} image ${image.id}: "${alt}"`);
+  }
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nalea API listening on port ${PORT}`));
