@@ -752,7 +752,7 @@ app.post('/profile/photo', upload.single('photo'), async (req, res) => {
 
     const form = new FormData();
     for (const { name, value } of target.parameters) form.append(name, value);
-    form.append('file', new Blob([buffer], { type: mimetype }), originalname || 'photo.jpg');
+    form.append('file', new Blob([Uint8Array.from(buffer)], { type: mimetype }), originalname || 'photo.jpg');
     const uploadRes = await fetch(target.url, { method: 'POST', body: form });
     if (!uploadRes.ok) {
       const text = await uploadRes.text();
@@ -1151,7 +1151,7 @@ app.post('/personalization/photo', upload.single('photo'), async (req, res) => {
     // Upload file bytes to GCS
     const form = new FormData();
     for (const { name, value } of target.parameters) form.append(name, value);
-    form.append('file', new Blob([buffer], { type: mimetype }), originalname || 'photo.jpg');
+    form.append('file', new Blob([Uint8Array.from(buffer)], { type: mimetype }), originalname || 'photo.jpg');
     const uploadRes = await fetch(target.url, { method: 'POST', body: form });
     if (!uploadRes.ok) {
       console.error('Personalization GCS upload error:', uploadRes.status);
