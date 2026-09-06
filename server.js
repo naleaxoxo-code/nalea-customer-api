@@ -1434,6 +1434,7 @@ Respond with ONLY a JSON object with exactly these keys: seo_title, seo_descript
 // custom.sku_counters (JSON: { "JWL": 1004, "KIT": 1002, ... }). Never overwrites a SKU
 // someone already typed in manually.
 const SKU_START_NUMBER = 1001;
+const SKU_STORE_PREFIX = 'NX'; // Nalea XoXo — every SKU is branded NX-<CATEGORY>-<NUMBER>
 
 // Keyword → 3-letter category prefix. Checked against product_type first, then tags,
 // then the title, in that order — first match wins. Add new keywords here as the
@@ -1512,7 +1513,9 @@ async function applyAutoSku(productId, productType, tags, title, variants) {
   for (let i = 0; i < list.length; i++) {
     const variant = list[i];
     if (variant.sku && String(variant.sku).trim()) continue; // never overwrite a manual SKU
-    const sku = multiVariant ? `${prefix}-${number}-${i + 1}` : `${prefix}-${number}`;
+    const sku = multiVariant
+      ? `${SKU_STORE_PREFIX}-${prefix}-${number}-${i + 1}`
+      : `${SKU_STORE_PREFIX}-${prefix}-${number}`;
 
     const response = await fetch(`${base}/variants/${variant.id}.json`, {
       method: 'PUT', headers,
