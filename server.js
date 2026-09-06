@@ -1427,6 +1427,107 @@ Respond with ONLY a JSON object with exactly these keys: seo_title, seo_descript
   };
 }
 
+// ===== AUTO-SKU — category-coded, sequential SKUs on new products =====
+// Format: <PREFIX>-<NNNN> for a single-variant product, <PREFIX>-<NNNN>-<n> per variant
+// when a product has more than one variant (n = 1-indexed variant position).
+// Sequence starts at 1001 and is tracked per category prefix in the shop metafield
+// custom.sku_counters (JSON: { "JWL": 1004, "KIT": 1002, ... }). Never overwrites a SKU
+// someone already typed in manually.
+const SKU_START_NUMBER = 1001;
+
+// Keyword → 3-letter category prefix. Checked against product_type first, then tags,
+// then the title, in that order — first match wins. Add new keywords here as the
+// catalogue grows; anything unmatched falls back to GEN.
+const SKU_CATEGORY_RULES = [
+  { prefix: 'JWL', keywords: ['jewelry', 'jewellery', 'necklace', 'earring', 'bracelet', 'ring', 'pendant', 'anklet'] },
+  { prefix: 'WAT', keywords: ['watch', 'watches', 'timepiece'] },
+  { prefix: 'KIT', keywords: ['kitchen', 'cutlery', 'cookware', 'scrubber', 'cutter', 'grater', 'spatula', 'bottle', 'container'] },
+  { prefix: 'HOM', keywords: ['home', 'decor', 'décor', 'candle', 'diffuser', 'fragrance', 'vase', 'dreamcatcher', 'pebble', 'shell'] },
+  { prefix: 'BEA', keywords: ['beauty', 'nail', 'polish', 'lash', 'brow', 'makeup', 'cosmetic', 'skincare', 'hair'] },
+  { prefix: 'BAG', keywords: ['bag', 'handbag', 'purse', 'backpack', 'wallet', 'crossbody'] },
+  { prefix: 'CLO', keywords: ['clothing', 'apparel', 'dress', 'shorts', 'shirt', 'underwear', 'sock', 'robe'] },
+  { prefix: 'CUS', keywords: ['custom', 'personalis', 'personaliz', 'engrav', 'nameplate', 'monogram'] },
+  { prefix: 'ACC', keywords: ['accessory', 'accessories', 'keychain', 'sunglasses'] }
+];
+
+function categoryPrefixFor(productType, tags, title) {
+  const haystacks = [
+    (productType || '').toLowerCase(),
+    (tags || '').toLowerCase(),
+    (title || '').toLowerCase()
+  ];
+  for (const { prefix, keywords } of SKU_CATEGORY_RULES) {
+    if (haystacks.some(h => keywords.some(kw => h.includes(kw)))) return prefix;
+  }
+  return 'GEN';
+}
+
+// Reads custom.sku_counters, bumps the count for `prefix`, writes it back, returns the
+// number to use. Read-then-write like the loyalty-points counter above — fine at this
+// store's order-of-magnitude of product creation (rarely more than one at a time).
+async function getNextSkuNumber(prefix) {
+  const headers = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const base = `https://${SHOPIFY_STORE}/admin/api/2024-04`;
+
+  const listRes = await fetch(`${base}/metafields.json?namespace=custom&key=sku_counters`, { headers });
+  const listData = await listRes.json();
+  const mfId = listData.metafields?.[0]?.id || null;
+  let counters = {};
+  if (listData.metafields?.[0]?.value) {
+    try { counters = JSON.parse(listData.metafields[0].value); } catch { counters = {}; }
+  }
+
+  const next = (counters[prefix] || (SKU_START_NUMBER - 1)) + 1;
+  counters[prefix] = next;
+  const value = JSON.stringify(counters);
+
+  if (mfId) {
+    await fetch(`${base}/metafields/${mfId}.json`, {
+      method: 'PUT', headers,
+      body: JSON.stringify({ metafield: { id: mfId, value, type: 'json' } })
+    });
+  } else {
+    await fetch(`${base}/metafields.json`, {
+      method: 'POST', headers,
+      body: JSON.stringify({ metafield: { namespace: 'custom', key: 'sku_counters', value, type: 'json' } })
+    });
+  }
+  return next;
+}
+
+async function applyAutoSku(productId, productType, tags, title, variants) {
+  const list = Array.isArray(variants) ? variants : [];
+  const needsSku = list.filter(v => !v.sku || !String(v.sku).trim());
+  if (!needsSku.length) {
+    console.log(`Auto-SKU skipped for product ${productId} — all variants already have a SKU`);
+    return;
+  }
+
+  const prefix = categoryPrefixFor(productType, tags, title);
+  const number = await getNextSkuNumber(prefix);
+  const base = `https://${SHOPIFY_STORE}/admin/api/2024-04`;
+  const headers = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const multiVariant = list.length > 1;
+
+  for (let i = 0; i < list.length; i++) {
+    const variant = list[i];
+    if (variant.sku && String(variant.sku).trim()) continue; // never overwrite a manual SKU
+    const sku = multiVariant ? `${prefix}-${number}-${i + 1}` : `${prefix}-${number}`;
+
+    const response = await fetch(`${base}/variants/${variant.id}.json`, {
+      method: 'PUT', headers,
+      body: JSON.stringify({ variant: { id: variant.id, sku } })
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error(`Auto-SKU failed for variant ${variant.id}:`, response.status, errBody.substring(0, 300));
+      continue;
+    }
+    console.log(`Auto-SKU applied to product ${productId} variant ${variant.id}: "${sku}"`);
+  }
+}
+
 app.post('/webhooks/products-create', async (req, res) => {
   if (!verifyWebhookHmac(req)) return res.status(401).send('Unauthorized');
   res.status(200).send('ok'); // ack immediately, Shopify expects a fast response
@@ -1437,42 +1538,45 @@ app.post('/webhooks/products-create', async (req, res) => {
     if (!productId) return;
 
     // Don't overwrite SEO fields someone already filled in manually before this ran.
+    let resolvedProductType = product.product_type;
     if (product.metafields_global_title_tag || product.metafields_global_description_tag) {
       console.log(`Auto-SEO skipped for product ${productId} — SEO fields already set`);
-      return;
-    }
+    } else {
+      const seo = await generateProductSEO(product.title, product.body_html);
 
-    const seo = await generateProductSEO(product.title, product.body_html);
+      const existingTags = (product.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+      const mergedTags = Array.from(new Set([...existingTags, ...seo.tags]));
+      resolvedProductType = product.product_type || seo.product_type;
 
-    const existingTags = (product.tags || '').split(',').map(t => t.trim()).filter(Boolean);
-    const mergedTags = Array.from(new Set([...existingTags, ...seo.tags]));
+      const payload = {
+        product: {
+          id: productId,
+          metafields_global_title_tag: seo.seo_title,
+          metafields_global_description_tag: seo.seo_description,
+          tags: mergedTags.join(', '),
+          ...(product.product_type ? {} : { product_type: seo.product_type })
+        }
+      };
 
-    const payload = {
-      product: {
-        id: productId,
-        metafields_global_title_tag: seo.seo_title,
-        metafields_global_description_tag: seo.seo_description,
-        tags: mergedTags.join(', '),
-        ...(product.product_type ? {} : { product_type: seo.product_type })
+      const response = await fetch(`https://${SHOPIFY_STORE}/admin/api/2024-04/products/${productId}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errBody = await response.text();
+        console.error(`Auto-SEO save failed for product ${productId}:`, response.status, errBody.substring(0, 300));
+      } else {
+        console.log(`Auto-SEO applied to product ${productId}: "${seo.seo_title}"`);
       }
-    };
 
-    const response = await fetch(`https://${SHOPIFY_STORE}/admin/api/2024-04/products/${productId}.json`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errBody = await response.text();
-      console.error(`Auto-SEO save failed for product ${productId}:`, response.status, errBody.substring(0, 300));
-      return;
+      await applyAutoImageAlt(productId, product.title, product.images);
     }
-    console.log(`Auto-SEO applied to product ${productId}: "${seo.seo_title}"`);
 
-    await applyAutoImageAlt(productId, product.title, product.images);
+    await applyAutoSku(productId, resolvedProductType, product.tags, product.title, product.variants);
   } catch (err) {
-    console.error('Auto-SEO webhook exception:', err.message);
+    console.error('Auto-SEO/SKU webhook exception:', err.message);
   }
 });
 
