@@ -1542,8 +1542,12 @@ app.post('/security/verify-otp', async (req, res) => {
 // you" screen right after a customer signs in, unless their device is already trusted.
 // Reuses the same OTP-email pattern as the password-change flow above, under its own
 // metafield keys so the two features never collide.
-const TWO_FA_DEVICE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const MAX_TRUSTED_DEVICES = 5;
+const TWO_FA_DURATION_MS = {
+  week: 7 * 24 * 60 * 60 * 1000,
+  month: 30 * 24 * 60 * 60 * 1000,
+  permanent: 100 * 365 * 24 * 60 * 60 * 1000 // effectively forever
+};
 
 app.post('/security/2fa/send-code', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
@@ -1721,14 +1725,16 @@ app.post('/security/2fa/verify-login', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.status(400).json({ error: 'No customer ID' });
-  const { code, remember } = req.body;
+  // duration: 'once' (default, no device remembered) | 'week' | 'month' | 'permanent'
+  const { code, duration } = req.body;
   if (!code) return res.status(400).json({ error: 'Code is required' });
 
   try {
     const result = await verify2faCode(customerId, code);
     if (!result.ok) return res.status(400).json({ error: result.error });
 
-    if (!remember) return res.json({ success: true });
+    const ttl = TWO_FA_DURATION_MS[duration];
+    if (!ttl) return res.json({ success: true });
 
     const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
     const jsonHeaders = { 'Content-Type': 'application/json', ...headers };
@@ -1742,7 +1748,7 @@ app.post('/security/2fa/verify-login', async (req, res) => {
     devices = devices.filter(d => Date.now() < d.expires);
 
     const deviceToken = crypto.randomBytes(24).toString('hex');
-    devices.push({ hash: hashWithSecret(deviceToken), expires: Date.now() + TWO_FA_DEVICE_TTL_MS });
+    devices.push({ hash: hashWithSecret(deviceToken), expires: Date.now() + ttl });
     if (devices.length > MAX_TRUSTED_DEVICES) devices = devices.slice(-MAX_TRUSTED_DEVICES);
 
     const value = JSON.stringify(devices);
