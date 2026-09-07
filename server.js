@@ -51,13 +51,14 @@ function wrapName(name) {
 }
 
 async function generateLabelPng(sku, productName) {
-  const W = 480, H = 600;
-  const qrBuffer = await QRCode.toBuffer(STORE_QR_URL, { type: 'png', width: 200, margin: 0, color: { dark: '#1a1a1a', light: '#ffffffff' } });
+  // 24-up label sheet size (Amazon/Uline standard): 2in x 2.5in @ 300dpi
+  const W = 600, H = 750;
+  const qrBuffer = await QRCode.toBuffer(STORE_QR_URL, { type: 'png', width: 250, margin: 0, color: { dark: '#1a1a1a', light: '#ffffffff' } });
   const qrDataUri = `data:image/png;base64,${qrBuffer.toString('base64')}`;
 
   const nameLines = wrapName(productName || '');
   const nameSvg = nameLines.map((line, i) =>
-    `<text x="${W / 2}" y="${168 + i * 26}" text-anchor="middle" font-family="Georgia, 'DejaVu Serif', serif" font-size="20" fill="#444444">${xmlEscape(line)}</text>`
+    `<text x="${W / 2}" y="${210 + i * 32.5}" text-anchor="middle" font-family="Georgia, 'DejaVu Serif', serif" font-size="25" fill="#444444">${xmlEscape(line)}</text>`
   ).join('');
 
   const svg = `
@@ -73,24 +74,24 @@ async function generateLabelPng(sku, productName) {
     </linearGradient>
   </defs>
 
-  <rect x="0" y="0" width="${W}" height="${H}" rx="14" fill="#ffffff"/>
-  <rect x="6" y="6" width="${W - 12}" height="${H - 12}" rx="10" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+  <rect x="0" y="0" width="${W}" height="${H}" rx="17.5" fill="#ffffff"/>
+  <rect x="7.5" y="7.5" width="${W - 15}" height="${H - 15}" rx="12.5" fill="none" stroke="#1a1a1a" stroke-width="3.75"/>
 
-  <circle cx="${W / 2}" cy="80" r="46" fill="url(#holo)" stroke="#1a1a1a" stroke-width="3"/>
-  <circle cx="${W / 2}" cy="80" r="38" fill="#ffffff"/>
-  <text x="${W / 2}" y="92" text-anchor="middle" font-family="Georgia, 'DejaVu Serif', serif" font-weight="bold" font-size="30" fill="#1a1a1a">NX</text>
+  <circle cx="${W / 2}" cy="100" r="57.5" fill="url(#holo)" stroke="#1a1a1a" stroke-width="3.75"/>
+  <circle cx="${W / 2}" cy="100" r="47.5" fill="#ffffff"/>
+  <text x="${W / 2}" y="115" text-anchor="middle" font-family="Georgia, 'DejaVu Serif', serif" font-weight="bold" font-size="37.5" fill="#1a1a1a">NX</text>
 
   ${nameSvg}
 
-  <rect x="${W / 2 - 150}" y="230" width="300" height="60" rx="6" fill="#ffffff" stroke="#1a1a1a" stroke-width="2.5"/>
-  <circle cx="${W / 2 - 118}" cy="252" r="7" fill="url(#holo)"/>
-  <text x="${W / 2 - 100}" y="258" font-family="'DejaVu Sans', Arial, sans-serif" font-weight="bold" font-size="17" letter-spacing="2" fill="#1a1a1a">VERIFIED SKU</text>
-  <text x="${W / 2}" y="280" text-anchor="middle" font-family="'DejaVu Sans Mono', 'Courier New', monospace" font-weight="bold" font-size="17" fill="#1a1a1a">${xmlEscape(sku)}</text>
+  <rect x="${W / 2 - 187.5}" y="287.5" width="375" height="75" rx="7.5" fill="#ffffff" stroke="#1a1a1a" stroke-width="3.125"/>
+  <circle cx="${W / 2 - 147.5}" cy="315" r="8.75" fill="url(#holo)"/>
+  <text x="${W / 2 - 125}" y="322.5" font-family="'DejaVu Sans', Arial, sans-serif" font-weight="bold" font-size="21.25" letter-spacing="2.5" fill="#1a1a1a">VERIFIED SKU</text>
+  <text x="${W / 2}" y="350" text-anchor="middle" font-family="'DejaVu Sans Mono', 'Courier New', monospace" font-weight="bold" font-size="21.25" fill="#1a1a1a">${xmlEscape(sku)}</text>
 
-  <image x="${W / 2 - 100}" y="330" width="200" height="200" href="${qrDataUri}"/>
-  <rect x="${W / 2 - 102}" y="328" width="204" height="204" rx="6" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+  <image x="${W / 2 - 125}" y="412.5" width="250" height="250" href="${qrDataUri}"/>
+  <rect x="${W / 2 - 127.5}" y="410" width="255" height="255" rx="7.5" fill="none" stroke="#1a1a1a" stroke-width="2.5"/>
 
-  <text x="${W / 2}" y="565" text-anchor="middle" font-family="'DejaVu Sans', Arial, sans-serif" font-size="13" letter-spacing="3" fill="#888888">NALÈA XOXO · AUTHENTICATED</text>
+  <text x="${W / 2}" y="706.25" text-anchor="middle" font-family="'DejaVu Sans', Arial, sans-serif" font-size="16.25" letter-spacing="3.75" fill="#888888">NALÈA XOXO · AUTHENTICATED</text>
 </svg>`.trim();
 
   return sharp(Buffer.from(svg)).png().toBuffer();
