@@ -1774,6 +1774,101 @@ app.post('/security/2fa/verify-login', async (req, res) => {
   }
 });
 
+// ===== CONNECTED ACCOUNTS — Google (verification only, not a login method) =====
+// Confirms the customer owns a Gmail/Google account and records its email on their
+// profile. Uses Google Identity Services on the frontend (returns a signed ID token,
+// no client secret needed) — this endpoint verifies that token server-side via
+// Google's tokeninfo endpoint before trusting the email in it.
+const GOOGLE_CLIENT_ID = '826848794709-ptbpjkts2qp52tkqgvpcgguu2ls5ve49p.apps.googleusercontent.com';
+
+app.post('/security/google/link', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+  const { id_token } = req.body;
+  if (!id_token) return res.status(400).json({ error: 'Missing Google credential' });
+
+  try {
+    const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(id_token)}`);
+    if (!verifyRes.ok) return res.status(400).json({ error: 'Could not verify Google account' });
+    const payload = await verifyRes.json();
+
+    if (payload.aud !== GOOGLE_CLIENT_ID) return res.status(400).json({ error: 'Invalid Google credential' });
+    if (payload.email_verified !== 'true' && payload.email_verified !== true) {
+      return res.status(400).json({ error: 'That Google email is not verified' });
+    }
+    const googleEmail = payload.email;
+    if (!googleEmail) return res.status(400).json({ error: 'Google account has no email' });
+
+    const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+    const jsonHeaders = { 'Content-Type': 'application/json', ...headers };
+    const base = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+
+    const listRes = await fetch(`${base}.json?namespace=custom&key=linked_google_email`, { headers });
+    const listData = await listRes.json();
+    const mfId = listData.metafields?.[0]?.id || null;
+
+    const saveRes = mfId
+      ? await fetch(`${base}/${mfId}.json`, {
+          method: 'PUT', headers: jsonHeaders,
+          body: JSON.stringify({ metafield: { id: mfId, value: googleEmail, type: 'single_line_text_field' } })
+        })
+      : await fetch(`${base}.json`, {
+          method: 'POST', headers: jsonHeaders,
+          body: JSON.stringify({ metafield: { namespace: 'custom', key: 'linked_google_email', value: googleEmail, type: 'single_line_text_field' } })
+        });
+
+    if (!saveRes.ok) {
+      console.error('linked_google_email save failed:', saveRes.status, await saveRes.text());
+      return res.status(500).json({ error: 'Failed to save linked account' });
+    }
+
+    return res.json({ success: true, email: googleEmail });
+  } catch (err) {
+    console.error('google/link exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/security/google/unlink', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const base = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+
+  try {
+    const listRes = await fetch(`${base}.json?namespace=custom&key=linked_google_email`, { headers });
+    const listData = await listRes.json();
+    const mf = listData.metafields?.[0];
+    if (mf) await fetch(`${base}/${mf.id}.json`, { method: 'DELETE', headers }).catch(() => {});
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('google/unlink exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/security/google/status', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const base = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+
+  try {
+    const listRes = await fetch(`${base}.json?namespace=custom&key=linked_google_email`, { headers });
+    const listData = await listRes.json();
+    const email = listData.metafields?.[0]?.value || null;
+    return res.json({ linked: !!email, email, clientId: GOOGLE_CLIENT_ID });
+  } catch (err) {
+    console.error('google/status exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ===== AUTO-SEO — AI-generated SEO title/description/tags/type on new products =====
 // Fires from the Shopify "Product creation" webhook. Register it in Shopify Admin >
 // Settings > Notifications > Webhooks, event "Product creation", pointing at
