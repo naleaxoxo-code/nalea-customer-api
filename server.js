@@ -1536,6 +1536,238 @@ app.post('/security/verify-otp', async (req, res) => {
   }
 });
 
+// ===== TWO-FACTOR AUTH (app-level gate, email code) =====
+// Shopify's own login screen (accounts.shopify.com) can't be modified by us, so this
+// sits on top of it: once enabled, the theme shows our own "enter the code we emailed
+// you" screen right after a customer signs in, unless their device is already trusted.
+// Reuses the same OTP-email pattern as the password-change flow above, under its own
+// metafield keys so the two features never collide.
+const TWO_FA_DEVICE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const MAX_TRUSTED_DEVICES = 5;
+
+app.post('/security/2fa/send-code', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const jsonHeaders = { 'Content-Type': 'application/json', ...headers };
+  const base = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+
+  try {
+    const custRes = await fetch(`https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}.json`, { headers });
+    const custData = await custRes.json();
+    const email = custData.customer?.email;
+    if (!email) return res.status(404).json({ error: 'Customer not found' });
+    const firstName = custData.customer?.first_name || '';
+
+    const deviceLabel = parseUserAgent(req.get('User-Agent'));
+    const clientIp = (req.get('X-Forwarded-For') || req.ip || '').split(',')[0].trim();
+    const location = await lookupLocation(clientIp);
+
+    const code = String(crypto.randomInt(100000, 999999));
+    const expires = Date.now() + 10 * 60 * 1000;
+    const value = JSON.stringify({ hash: hashWithSecret(code), expires });
+
+    const listRes = await fetch(`${base}.json?namespace=custom&key=security_otp_2fa`, { headers });
+    const listData = await listRes.json();
+    const mfId = listData.metafields?.[0]?.id || null;
+
+    const saveRes = mfId
+      ? await fetch(`${base}/${mfId}.json`, {
+          method: 'PUT', headers: jsonHeaders,
+          body: JSON.stringify({ metafield: { id: mfId, value, type: 'json' } })
+        })
+      : await fetch(`${base}.json`, {
+          method: 'POST', headers: jsonHeaders,
+          body: JSON.stringify({ metafield: { namespace: 'custom', key: 'security_otp_2fa', value, type: 'json' } })
+        });
+
+    if (!saveRes.ok) {
+      console.error('2FA OTP metafield save failed:', saveRes.status, await saveRes.text());
+      return res.status(500).json({ error: 'Failed to generate code' });
+    }
+
+    await sendOtpEmail(email, code, firstName, deviceLabel, location);
+    return res.json({ success: true, email });
+  } catch (err) {
+    console.error('2fa/send-code exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+async function verify2faCode(customerId, code) {
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const base = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+
+  const listRes = await fetch(`${base}.json?namespace=custom&key=security_otp_2fa`, { headers });
+  const listData = await listRes.json();
+  const mf = listData.metafields?.[0];
+  if (!mf) return { ok: false, error: 'No code was requested' };
+
+  let stored;
+  try { stored = JSON.parse(mf.value); } catch { stored = null; }
+  if (!stored || Date.now() > stored.expires) return { ok: false, error: 'Code expired — request a new one' };
+  if (hashWithSecret(code) !== stored.hash) return { ok: false, error: 'Incorrect code' };
+
+  await fetch(`${base}/${mf.id}.json`, { method: 'DELETE', headers }).catch(() => {});
+  return { ok: true };
+}
+
+async function setTwoFactorEnabled(customerId, enabled) {
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const jsonHeaders = { 'Content-Type': 'application/json', ...headers };
+  const base = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+
+  const listRes = await fetch(`${base}.json?namespace=custom&key=two_factor_enabled`, { headers });
+  const listData = await listRes.json();
+  const mfId = listData.metafields?.[0]?.id || null;
+  const value = enabled ? 'true' : 'false';
+
+  const saveRes = mfId
+    ? await fetch(`${base}/${mfId}.json`, {
+        method: 'PUT', headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { id: mfId, value, type: 'single_line_text_field' } })
+      })
+    : await fetch(`${base}.json`, {
+        method: 'POST', headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'two_factor_enabled', value, type: 'single_line_text_field' } })
+      });
+  return saveRes.ok;
+}
+
+app.post('/security/2fa/enable', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: 'Code is required' });
+
+  try {
+    const result = await verify2faCode(customerId, code);
+    if (!result.ok) return res.status(400).json({ error: result.error });
+
+    const saved = await setTwoFactorEnabled(customerId, true);
+    if (!saved) return res.status(500).json({ error: 'Failed to enable two-factor authentication' });
+
+    return res.json({ success: true, enabled: true });
+  } catch (err) {
+    console.error('2fa/enable exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/security/2fa/disable', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+
+  try {
+    const saved = await setTwoFactorEnabled(customerId, false);
+    if (!saved) return res.status(500).json({ error: 'Failed to disable two-factor authentication' });
+
+    // Also clear any trusted devices so re-enabling later starts fresh.
+    const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+    const base = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+    const listRes = await fetch(`${base}.json?namespace=custom&key=trusted_devices`, { headers });
+    const listData = await listRes.json();
+    const mf = listData.metafields?.[0];
+    if (mf) await fetch(`${base}/${mf.id}.json`, { method: 'DELETE', headers }).catch(() => {});
+
+    return res.json({ success: true, enabled: false });
+  } catch (err) {
+    console.error('2fa/disable exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Called right after Shopify login completes. Tells the theme whether to show the
+// code-entry gate: only if the customer has 2FA on AND this browser isn't a
+// remembered device (device_token from localStorage, if any).
+app.get('/security/2fa/status', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+  const deviceToken = req.query.device_token || '';
+
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const base = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+
+  try {
+    const enabledRes = await fetch(`${base}.json?namespace=custom&key=two_factor_enabled`, { headers });
+    const enabledData = await enabledRes.json();
+    const enabled = enabledData.metafields?.[0]?.value === 'true';
+    if (!enabled) return res.json({ enabled: false, needsVerification: false });
+
+    let trusted = false;
+    if (deviceToken) {
+      const devRes = await fetch(`${base}.json?namespace=custom&key=trusted_devices`, { headers });
+      const devData = await devRes.json();
+      const mf = devData.metafields?.[0];
+      let devices = [];
+      if (mf) { try { devices = JSON.parse(mf.value) || []; } catch { devices = []; } }
+      const tokenHash = hashWithSecret(deviceToken);
+      trusted = devices.some(d => d.hash === tokenHash && Date.now() < d.expires);
+    }
+
+    return res.json({ enabled: true, needsVerification: !trusted });
+  } catch (err) {
+    console.error('2fa/status exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/security/2fa/verify-login', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+  const { code, remember } = req.body;
+  if (!code) return res.status(400).json({ error: 'Code is required' });
+
+  try {
+    const result = await verify2faCode(customerId, code);
+    if (!result.ok) return res.status(400).json({ error: result.error });
+
+    if (!remember) return res.json({ success: true });
+
+    const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+    const jsonHeaders = { 'Content-Type': 'application/json', ...headers };
+    const base = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+
+    const listRes = await fetch(`${base}.json?namespace=custom&key=trusted_devices`, { headers });
+    const listData = await listRes.json();
+    const mf = listData.metafields?.[0];
+    let devices = [];
+    if (mf) { try { devices = JSON.parse(mf.value) || []; } catch { devices = []; } }
+    devices = devices.filter(d => Date.now() < d.expires);
+
+    const deviceToken = crypto.randomBytes(24).toString('hex');
+    devices.push({ hash: hashWithSecret(deviceToken), expires: Date.now() + TWO_FA_DEVICE_TTL_MS });
+    if (devices.length > MAX_TRUSTED_DEVICES) devices = devices.slice(-MAX_TRUSTED_DEVICES);
+
+    const value = JSON.stringify(devices);
+    const saveRes = mf
+      ? await fetch(`${base}/${mf.id}.json`, {
+          method: 'PUT', headers: jsonHeaders,
+          body: JSON.stringify({ metafield: { id: mf.id, value, type: 'json' } })
+        })
+      : await fetch(`${base}.json`, {
+          method: 'POST', headers: jsonHeaders,
+          body: JSON.stringify({ metafield: { namespace: 'custom', key: 'trusted_devices', value, type: 'json' } })
+        });
+
+    if (!saveRes.ok) {
+      console.error('trusted_devices save failed:', saveRes.status, await saveRes.text());
+      return res.json({ success: true }); // code was still valid — don't fail login over this
+    }
+
+    return res.json({ success: true, deviceToken });
+  } catch (err) {
+    console.error('2fa/verify-login exception:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ===== AUTO-SEO — AI-generated SEO title/description/tags/type on new products =====
 // Fires from the Shopify "Product creation" webhook. Register it in Shopify Admin >
 // Settings > Notifications > Webhooks, event "Product creation", pointing at
