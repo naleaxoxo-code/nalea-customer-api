@@ -3,7 +3,8 @@ const crypto   = require('crypto');
 const fetch    = (...args) => import('node-fetch').then(({ default: f }) => f(...args));
 const multer   = require('multer');
 const FormDataNode = require('form-data');
-const bwipjs   = require('bwip-js');
+const QRCode   = require('qrcode');
+const sharp    = require('sharp');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -17,17 +18,82 @@ const SHOPIFY_PROXY_SECRET  = process.env.SHOPIFY_PROXY_SECRET;
 const SHOPIFY_CLIENT_ID     = process.env.SHOPIFY_CLIENT_ID;
 const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET;
 
-// ===== BARCODE IMAGES — real barcode PNGs attached directly to the product as a metafield =====
+// ===== BARCODE IMAGES — "Verified SKU" seal labels attached directly to the product as a metafield =====
 // Renders in Shopify admin's built-in image-gallery metafield UI, on the product page, no
-// external link or app needed — open the metafield, click a barcode thumbnail, print it.
+// external link or app needed — open the metafield, click a label thumbnail, print it.
+// Matches the print-sheet design: white card, black ink, NX crest + holographic accent, QR code.
 
-function skuToBarcodePng(sku) {
-  return new Promise((resolve, reject) => {
-    bwipjs.toBuffer({
-      bcid: 'code128', text: sku, scale: 3, height: 10,
-      includetext: true, textxalign: 'center', backgroundcolor: 'FFFFFF'
-    }, (err, png) => { if (err) reject(err); else resolve(png); });
-  });
+const STORE_QR_URL = process.env.STORE_QR_URL || 'https://naleaxoxo.com';
+
+function xmlEscape(str) {
+  return String(str).replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]));
+}
+
+// Word-wraps a product name onto up to 2 lines of ~28 chars, truncating with an ellipsis if needed.
+function wrapName(name) {
+  const words = String(name).split(/\s+/);
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    if ((line + ' ' + w).trim().length > 28) {
+      if (line) lines.push(line.trim());
+      line = w;
+      if (lines.length === 2) break;
+    } else {
+      line = (line + ' ' + w).trim();
+    }
+  }
+  if (lines.length < 2 && line) lines.push(line.trim());
+  if (lines.length === 2 && words.join(' ').length > lines.join(' ').length) {
+    lines[1] = lines[1].replace(/.{0,3}$/, '…');
+  }
+  return lines.slice(0, 2);
+}
+
+async function generateLabelPng(sku, productName) {
+  const W = 480, H = 600;
+  const qrBuffer = await QRCode.toBuffer(STORE_QR_URL, { type: 'png', width: 200, margin: 0, color: { dark: '#1a1a1a', light: '#ffffffff' } });
+  const qrDataUri = `data:image/png;base64,${qrBuffer.toString('base64')}`;
+
+  const nameLines = wrapName(productName || '');
+  const nameSvg = nameLines.map((line, i) =>
+    `<text x="${W / 2}" y="${168 + i * 26}" text-anchor="middle" font-family="Georgia, 'DejaVu Serif', serif" font-size="20" fill="#444444">${xmlEscape(line)}</text>`
+  ).join('');
+
+  const svg = `
+<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="holo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff8a8a"/>
+      <stop offset="20%" stop-color="#ffd58a"/>
+      <stop offset="40%" stop-color="#a8f0c6"/>
+      <stop offset="60%" stop-color="#8ad4ff"/>
+      <stop offset="80%" stop-color="#c6a8ff"/>
+      <stop offset="100%" stop-color="#ff8ad0"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="${W}" height="${H}" rx="14" fill="#ffffff"/>
+  <rect x="6" y="6" width="${W - 12}" height="${H - 12}" rx="10" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+
+  <circle cx="${W / 2}" cy="80" r="46" fill="url(#holo)" stroke="#1a1a1a" stroke-width="3"/>
+  <circle cx="${W / 2}" cy="80" r="38" fill="#ffffff"/>
+  <text x="${W / 2}" y="92" text-anchor="middle" font-family="Georgia, 'DejaVu Serif', serif" font-weight="bold" font-size="30" fill="#1a1a1a">NX</text>
+
+  ${nameSvg}
+
+  <rect x="${W / 2 - 150}" y="230" width="300" height="60" rx="6" fill="#ffffff" stroke="#1a1a1a" stroke-width="2.5"/>
+  <circle cx="${W / 2 - 118}" cy="252" r="7" fill="url(#holo)"/>
+  <text x="${W / 2 - 100}" y="258" font-family="'DejaVu Sans', Arial, sans-serif" font-weight="bold" font-size="17" letter-spacing="2" fill="#1a1a1a">VERIFIED SKU</text>
+  <text x="${W / 2}" y="280" text-anchor="middle" font-family="'DejaVu Sans Mono', 'Courier New', monospace" font-weight="bold" font-size="17" fill="#1a1a1a">${xmlEscape(sku)}</text>
+
+  <image x="${W / 2 - 100}" y="330" width="200" height="200" href="${qrDataUri}"/>
+  <rect x="${W / 2 - 102}" y="328" width="204" height="204" rx="6" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+
+  <text x="${W / 2}" y="565" text-anchor="middle" font-family="'DejaVu Sans', Arial, sans-serif" font-size="13" letter-spacing="3" fill="#888888">NALÈA XOXO · AUTHENTICATED</text>
+</svg>`.trim();
+
+  return sharp(Buffer.from(svg)).png().toBuffer();
 }
 
 async function uploadPngToShopifyFiles(pngBuffer, filename) {
@@ -75,14 +141,15 @@ async function uploadPngToShopifyFiles(pngBuffer, filename) {
 }
 
 // productId: numeric Shopify product id. skus: array of non-empty SKU strings (one per variant).
-async function attachBarcodeImagesToProduct(productId, skus) {
+// productName: used on the label card, purely cosmetic.
+async function attachBarcodeImagesToProduct(productId, skus, productName) {
   const uniqueSkus = [...new Set(skus.filter(sku => sku && String(sku).trim()))];
   if (!uniqueSkus.length) return;
 
   const fileGids = [];
   for (const sku of uniqueSkus) {
     try {
-      const png = await skuToBarcodePng(sku);
+      const png = await generateLabelPng(sku, productName);
       const safeName = String(sku).replace(/[^a-zA-Z0-9-]+/g, '_').slice(0, 60);
       const gid = await uploadPngToShopifyFiles(png, `barcode-${safeName}.png`);
       fileGids.push(gid);
@@ -1684,7 +1751,7 @@ app.post('/webhooks/products-create', async (req, res) => {
     const finalSkus = await applyAutoSku(productId, resolvedProductType, product.tags, product.title, product.variants);
 
     try {
-      await attachBarcodeImagesToProduct(productId, finalSkus || []);
+      await attachBarcodeImagesToProduct(productId, finalSkus || [], product.title);
     } catch (err) {
       console.error('Barcode image attach exception:', err.message);
     }
