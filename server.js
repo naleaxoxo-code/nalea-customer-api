@@ -1640,11 +1640,50 @@ async function setTwoFactorEnabled(customerId, enabled) {
   return saveRes.ok;
 }
 
+async function issueTrustedDeviceToken(customerId, duration) {
+  const ttl = TWO_FA_DURATION_MS[duration];
+  if (!ttl) return null;
+
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const jsonHeaders = { 'Content-Type': 'application/json', ...headers };
+  const base = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+
+  const listRes = await fetch(`${base}.json?namespace=custom&key=trusted_devices`, { headers });
+  const listData = await listRes.json();
+  const mf = listData.metafields?.[0];
+  let devices = [];
+  if (mf) { try { devices = JSON.parse(mf.value) || []; } catch { devices = []; } }
+  devices = devices.filter(d => Date.now() < d.expires);
+
+  const deviceToken = crypto.randomBytes(24).toString('hex');
+  devices.push({ hash: hashWithSecret(deviceToken), expires: Date.now() + ttl });
+  if (devices.length > MAX_TRUSTED_DEVICES) devices = devices.slice(-MAX_TRUSTED_DEVICES);
+
+  const value = JSON.stringify(devices);
+  const saveRes = mf
+    ? await fetch(`${base}/${mf.id}.json`, {
+        method: 'PUT', headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { id: mf.id, value, type: 'json' } })
+      })
+    : await fetch(`${base}.json`, {
+        method: 'POST', headers: jsonHeaders,
+        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'trusted_devices', value, type: 'json' } })
+      });
+
+  if (!saveRes.ok) {
+    console.error('trusted_devices save failed:', saveRes.status, await saveRes.text());
+    return null;
+  }
+  return deviceToken;
+}
+
 app.post('/security/2fa/enable', async (req, res) => {
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.status(400).json({ error: 'No customer ID' });
-  const { code } = req.body;
+  // duration: 'once' (default) | 'week' | 'month' | 'permanent' — remembers THIS device
+  // so the post-login gate doesn't ask again until it expires.
+  const { code, duration } = req.body;
   if (!code) return res.status(400).json({ error: 'Code is required' });
 
   try {
@@ -1654,7 +1693,8 @@ app.post('/security/2fa/enable', async (req, res) => {
     const saved = await setTwoFactorEnabled(customerId, true);
     if (!saved) return res.status(500).json({ error: 'Failed to enable two-factor authentication' });
 
-    return res.json({ success: true, enabled: true });
+    const deviceToken = await issueTrustedDeviceToken(customerId, duration);
+    return res.json({ success: true, enabled: true, deviceToken: deviceToken || undefined });
   } catch (err) {
     console.error('2fa/enable exception:', err.message);
     return res.status(500).json({ error: 'Internal server error' });
@@ -1733,41 +1773,8 @@ app.post('/security/2fa/verify-login', async (req, res) => {
     const result = await verify2faCode(customerId, code);
     if (!result.ok) return res.status(400).json({ error: result.error });
 
-    const ttl = TWO_FA_DURATION_MS[duration];
-    if (!ttl) return res.json({ success: true });
-
-    const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
-    const jsonHeaders = { 'Content-Type': 'application/json', ...headers };
-    const base = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
-
-    const listRes = await fetch(`${base}.json?namespace=custom&key=trusted_devices`, { headers });
-    const listData = await listRes.json();
-    const mf = listData.metafields?.[0];
-    let devices = [];
-    if (mf) { try { devices = JSON.parse(mf.value) || []; } catch { devices = []; } }
-    devices = devices.filter(d => Date.now() < d.expires);
-
-    const deviceToken = crypto.randomBytes(24).toString('hex');
-    devices.push({ hash: hashWithSecret(deviceToken), expires: Date.now() + ttl });
-    if (devices.length > MAX_TRUSTED_DEVICES) devices = devices.slice(-MAX_TRUSTED_DEVICES);
-
-    const value = JSON.stringify(devices);
-    const saveRes = mf
-      ? await fetch(`${base}/${mf.id}.json`, {
-          method: 'PUT', headers: jsonHeaders,
-          body: JSON.stringify({ metafield: { id: mf.id, value, type: 'json' } })
-        })
-      : await fetch(`${base}.json`, {
-          method: 'POST', headers: jsonHeaders,
-          body: JSON.stringify({ metafield: { namespace: 'custom', key: 'trusted_devices', value, type: 'json' } })
-        });
-
-    if (!saveRes.ok) {
-      console.error('trusted_devices save failed:', saveRes.status, await saveRes.text());
-      return res.json({ success: true }); // code was still valid — don't fail login over this
-    }
-
-    return res.json({ success: true, deviceToken });
+    const deviceToken = await issueTrustedDeviceToken(customerId, duration);
+    return res.json({ success: true, deviceToken: deviceToken || undefined });
   } catch (err) {
     console.error('2fa/verify-login exception:', err.message);
     return res.status(500).json({ error: 'Internal server error' });
