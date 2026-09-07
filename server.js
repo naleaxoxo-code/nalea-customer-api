@@ -16,6 +16,51 @@ const SHOPIFY_PROXY_SECRET  = process.env.SHOPIFY_PROXY_SECRET;
 const SHOPIFY_CLIENT_ID     = process.env.SHOPIFY_CLIENT_ID;
 const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET;
 
+// Printable barcode sheet — supports ?skus=SKU1,SKU2&order=1049 to land pre-filtered
+// and pre-checked on exactly one order's items (see attachBarcodeLink below).
+const BARCODE_SHEET_URL = process.env.BARCODE_SHEET_URL
+  || 'https://claude.ai/code/artifact/4f278f7b-da91-4f67-aff1-adc0a97fa197';
+
+function buildBarcodeLink(order) {
+  const skus = (order.line_items || [])
+    .map(li => li.sku)
+    .filter(sku => sku && String(sku).trim());
+  if (!skus.length) return null;
+  const params = new URLSearchParams();
+  params.set('skus', skus.join(','));
+  if (order.order_number != null) params.set('order', order.order_number);
+  return `${BARCODE_SHEET_URL}?${params.toString()}`;
+}
+
+// Attaches a one-click "print barcodes for this order" link to the order:
+//  - as an order metafield (custom.barcode_print_link) — always retrievable via API/admin metafields panel
+//  - appended to the order note — visible directly in the Notes card in the admin sidebar
+async function attachBarcodeLink(order) {
+  const link = buildBarcodeLink(order);
+  if (!link) return;
+
+  const base = `https://${SHOPIFY_STORE}/admin/api/2024-04`;
+  const jsonHeaders = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  await fetch(`${base}/orders/${order.id}/metafields.json`, {
+    method: 'POST', headers: jsonHeaders,
+    body: JSON.stringify({ metafield: { namespace: 'custom', key: 'barcode_print_link', value: link, type: 'url' } })
+  });
+
+  const orderRes = await fetch(`${base}/orders/${order.id}.json?fields=id,note`, { headers: jsonHeaders });
+  const orderData = await orderRes.json();
+  const existingNote = orderData?.order?.note || '';
+  if (existingNote.includes(BARCODE_SHEET_URL)) return; // already attached, don't duplicate on repeat webhooks
+
+  const newNote = existingNote
+    ? `${existingNote}\n\n🏷️ Print barcodes for this order: ${link}`
+    : `🏷️ Print barcodes for this order: ${link}`;
+  await fetch(`${base}/orders/${order.id}.json`, {
+    method: 'PUT', headers: jsonHeaders,
+    body: JSON.stringify({ order: { id: order.id, note: newNote } })
+  });
+}
+
 app.get('/', (req, res) => res.json({ status: 'Nalea Customer API running ✅' }));
 
 function verifyProxySignature(query) {
@@ -256,8 +301,15 @@ app.post('/webhooks/orders-paid', async (req, res) => {
   if (!verifyWebhookHmac(req)) return res.status(401).send('Unauthorized');
   res.status(200).send('ok'); // ack immediately, Shopify expects a fast response
 
+  const order = req.body;
+
   try {
-    const order = req.body;
+    await attachBarcodeLink(order);
+  } catch (err) {
+    console.error('Barcode link attach exception:', err.message);
+  }
+
+  try {
     const customerId = order?.customer?.id;
     const total = parseFloat(order?.total_price || '0');
     if (!customerId || !total) return;
