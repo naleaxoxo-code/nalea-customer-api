@@ -3,6 +3,7 @@ const crypto   = require('crypto');
 const fetch    = (...args) => import('node-fetch').then(({ default: f }) => f(...args));
 const multer   = require('multer');
 const FormDataNode = require('form-data');
+const bwipjs   = require('bwip-js');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -59,6 +60,99 @@ async function attachBarcodeLink(order) {
     method: 'PUT', headers: jsonHeaders,
     body: JSON.stringify({ order: { id: order.id, note: newNote } })
   });
+}
+
+// ===== BARCODE IMAGES — real barcode PNGs attached directly to the order as a metafield =====
+// Renders in Shopify admin's built-in image-gallery metafield UI, no external link or app needed.
+
+function skuToBarcodePng(sku) {
+  return new Promise((resolve, reject) => {
+    bwipjs.toBuffer({
+      bcid: 'code128', text: sku, scale: 3, height: 10,
+      includetext: true, textxalign: 'center', backgroundcolor: 'FFFFFF'
+    }, (err, png) => { if (err) reject(err); else resolve(png); });
+  });
+}
+
+async function uploadPngToShopifyFiles(pngBuffer, filename) {
+  const graphqlUrl = `https://${SHOPIFY_STORE}/admin/api/2024-04/graphql.json`;
+  const jsonHeaders = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  const stagedRes = await fetch(graphqlUrl, {
+    method: 'POST', headers: jsonHeaders,
+    body: JSON.stringify({
+      query: `mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
+        stagedUploadsCreate(input: $input) {
+          stagedTargets { url resourceUrl parameters { name value } }
+          userErrors { field message }
+        }
+      }`,
+      variables: { input: [{ resource: 'FILE', filename, mimeType: 'image/png', httpMethod: 'POST', fileSize: String(pngBuffer.length) }] }
+    })
+  });
+  const stagedData = await stagedRes.json();
+  const target = stagedData?.data?.stagedUploadsCreate?.stagedTargets?.[0];
+  if (!target) throw new Error('stagedUploadsCreate failed: ' + JSON.stringify(stagedData));
+
+  const form = new FormDataNode();
+  target.parameters.forEach(p => form.append(p.name, p.value));
+  form.append('file', pngBuffer, { filename, contentType: 'image/png' });
+  const uploadRes = await fetch(target.url, { method: 'POST', body: form });
+  if (!uploadRes.ok) throw new Error(`Staged upload POST failed: ${uploadRes.status}`);
+
+  const fileCreateRes = await fetch(graphqlUrl, {
+    method: 'POST', headers: jsonHeaders,
+    body: JSON.stringify({
+      query: `mutation fileCreate($files: [FileCreateInput!]!) {
+        fileCreate(files: $files) {
+          files { id fileStatus }
+          userErrors { field message }
+        }
+      }`,
+      variables: { files: [{ originalSource: target.resourceUrl, contentType: 'IMAGE', filename }] }
+    })
+  });
+  const fileData = await fileCreateRes.json();
+  const file = fileData?.data?.fileCreate?.files?.[0];
+  if (!file) throw new Error('fileCreate failed: ' + JSON.stringify(fileData));
+  return file.id; // gid://shopify/MediaImage/...
+}
+
+async function attachBarcodeImagesToOrder(order) {
+  const items = (order.line_items || []).filter(li => li.sku && String(li.sku).trim());
+  if (!items.length) return;
+
+  const fileGids = [];
+  for (const li of items) {
+    try {
+      const png = await skuToBarcodePng(li.sku);
+      const safeName = String(li.sku).replace(/[^a-zA-Z0-9-]+/g, '_').slice(0, 60);
+      const gid = await uploadPngToShopifyFiles(png, `barcode-${safeName}.png`);
+      fileGids.push(gid);
+    } catch (err) {
+      console.error(`Barcode image generation failed for SKU ${li.sku}:`, err.message);
+    }
+  }
+  if (!fileGids.length) return;
+
+  const graphqlUrl = `https://${SHOPIFY_STORE}/admin/api/2024-04/graphql.json`;
+  const jsonHeaders = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const mfRes = await fetch(graphqlUrl, {
+    method: 'POST', headers: jsonHeaders,
+    body: JSON.stringify({
+      query: `mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafields) { userErrors { field message } }
+      }`,
+      variables: { metafields: [{
+        ownerId: `gid://shopify/Order/${order.id}`,
+        namespace: 'custom', key: 'barcode_images', type: 'list.file_reference',
+        value: JSON.stringify(fileGids)
+      }] }
+    })
+  });
+  const mfData = await mfRes.json();
+  const errs = mfData?.data?.metafieldsSet?.userErrors;
+  if (errs?.length) console.error('barcode_images metafieldsSet userErrors:', JSON.stringify(errs));
 }
 
 app.get('/', (req, res) => res.json({ status: 'Nalea Customer API running ✅' }));
@@ -307,6 +401,12 @@ app.post('/webhooks/orders-paid', async (req, res) => {
     await attachBarcodeLink(order);
   } catch (err) {
     console.error('Barcode link attach exception:', err.message);
+  }
+
+  try {
+    await attachBarcodeImagesToOrder(order);
+  } catch (err) {
+    console.error('Barcode image attach exception:', err.message);
   }
 
   try {
