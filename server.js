@@ -2132,6 +2132,97 @@ async function applyAutoImageAlt(productId, title, images) {
   }
 }
 
+// ===== BACKFILL — one-off catch-up for SEO + SKU + barcode image on products that predate the auto webhook =====
+// POST /admin/backfill-seo-sku, header X-Admin-Secret: <BACKFILL_ADMIN_SECRET>. Paginates every
+// product in the store, and for each one applies the same "skip if already set" SEO/SKU/barcode-image
+// logic the products-create webhook uses — safe to re-run, never touches a product that already has
+// SEO, SKUs, or a barcode image on file (which is what flips the storefront's "Verified SKU" badge
+// off "Pending").
+const BACKFILL_ADMIN_SECRET = process.env.BACKFILL_ADMIN_SECRET;
+
+app.post('/admin/backfill-seo-sku', async (req, res) => {
+  if (!BACKFILL_ADMIN_SECRET) return res.status(503).send('BACKFILL_ADMIN_SECRET not configured');
+  if (req.headers['x-admin-secret'] !== BACKFILL_ADMIN_SECRET) return res.status(401).send('Unauthorized');
+  res.status(200).json({ status: 'started' }); // this can take a while across a full catalog; run it in the background
+
+  const base = `https://${SHOPIFY_STORE}/admin/api/2024-04`;
+  const headers = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  let url = `${base}/products.json?limit=250`;
+  let seoApplied = 0, skuApplied = 0, barcodeApplied = 0, scanned = 0, errors = 0;
+
+  try {
+    while (url) {
+      const listRes = await fetch(url, { headers });
+      if (!listRes.ok) {
+        console.error('Backfill: product list fetch failed', listRes.status, await listRes.text());
+        break;
+      }
+      const { products } = await listRes.json();
+      const linkHeader = listRes.headers.get('link') || '';
+      const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+      url = nextMatch ? nextMatch[1] : null;
+
+      for (const product of products || []) {
+        scanned++;
+        const productId = product.id;
+        try {
+          let resolvedProductType = product.product_type;
+
+          if (!product.metafields_global_title_tag && !product.metafields_global_description_tag) {
+            const seo = await generateProductSEO(product.title, product.body_html);
+            const existingTags = (product.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+            const mergedTags = Array.from(new Set([...existingTags, ...seo.tags]));
+            resolvedProductType = product.product_type || seo.product_type;
+
+            const payload = {
+              product: {
+                id: productId,
+                metafields_global_title_tag: seo.seo_title,
+                metafields_global_description_tag: seo.seo_description,
+                tags: mergedTags.join(', '),
+                ...(product.product_type ? {} : { product_type: seo.product_type })
+              }
+            };
+            const putRes = await fetch(`${base}/products/${productId}.json`, {
+              method: 'PUT', headers, body: JSON.stringify(payload)
+            });
+            if (putRes.ok) {
+              seoApplied++;
+              console.log(`Backfill SEO applied to product ${productId}: "${seo.seo_title}"`);
+            } else {
+              console.error(`Backfill SEO save failed for product ${productId}:`, putRes.status, (await putRes.text()).substring(0, 300));
+            }
+          }
+
+          const variants = product.variants || [];
+          const needsSku = variants.some(v => !v.sku || !String(v.sku).trim());
+          let finalSkus = variants.map(v => (v.sku && String(v.sku).trim()) ? String(v.sku).trim() : null);
+          if (needsSku) {
+            finalSkus = await applyAutoSku(productId, resolvedProductType, product.tags, product.title, variants);
+            skuApplied++;
+          }
+
+          // Skip products that already have a "Verified SKU" barcode image on file.
+          const barcodeMfRes = await fetch(`${base}/products/${productId}/metafields.json?namespace=custom&key=barcode_images`, { headers });
+          const barcodeMfData = await barcodeMfRes.json();
+          const hasBarcodeImages = !!barcodeMfData.metafields?.[0]?.value;
+          if (!hasBarcodeImages && finalSkus.some(Boolean)) {
+            await attachBarcodeImagesToProduct(productId, finalSkus, product.title);
+            barcodeApplied++;
+          }
+        } catch (err) {
+          errors++;
+          console.error(`Backfill exception for product ${productId}:`, err.message);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Backfill fatal exception:', err.message);
+  }
+
+  console.log(`Backfill complete: scanned ${scanned}, SEO applied ${seoApplied}, SKU applied ${skuApplied}, barcode images applied ${barcodeApplied}, errors ${errors}`);
+});
+
 // ===== REVIEW REQUEST — sent automatically when an order is fulfilled =====
 // Register this webhook in Shopify Admin > Settings > Notifications > Webhooks,
 // event "Order fulfillment", pointing at https://<your-api-host>/webhooks/orders-fulfilled
