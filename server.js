@@ -2132,10 +2132,12 @@ async function applyAutoImageAlt(productId, title, images) {
   }
 }
 
-// ===== BACKFILL — one-off catch-up for SEO + SKU on products that predate the auto webhook =====
+// ===== BACKFILL — one-off catch-up for SEO + SKU + barcode image on products that predate the auto webhook =====
 // POST /admin/backfill-seo-sku, header X-Admin-Secret: <BACKFILL_ADMIN_SECRET>. Paginates every
-// product in the store, and for each one applies the same "skip if already set" SEO/SKU logic the
-// products-create webhook uses — safe to re-run, never touches a product that already has SEO or SKUs.
+// product in the store, and for each one applies the same "skip if already set" SEO/SKU/barcode-image
+// logic the products-create webhook uses — safe to re-run, never touches a product that already has
+// SEO, SKUs, or a barcode image on file (which is what flips the storefront's "Verified SKU" badge
+// off "Pending").
 const BACKFILL_ADMIN_SECRET = process.env.BACKFILL_ADMIN_SECRET;
 
 app.post('/admin/backfill-seo-sku', async (req, res) => {
@@ -2146,7 +2148,7 @@ app.post('/admin/backfill-seo-sku', async (req, res) => {
   const base = `https://${SHOPIFY_STORE}/admin/api/2024-04`;
   const headers = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
   let url = `${base}/products.json?limit=250`;
-  let seoApplied = 0, skuApplied = 0, scanned = 0, errors = 0;
+  let seoApplied = 0, skuApplied = 0, barcodeApplied = 0, scanned = 0, errors = 0;
 
   try {
     while (url) {
@@ -2192,10 +2194,21 @@ app.post('/admin/backfill-seo-sku', async (req, res) => {
             }
           }
 
-          const needsSku = (product.variants || []).some(v => !v.sku || !String(v.sku).trim());
+          const variants = product.variants || [];
+          const needsSku = variants.some(v => !v.sku || !String(v.sku).trim());
+          let finalSkus = variants.map(v => (v.sku && String(v.sku).trim()) ? String(v.sku).trim() : null);
           if (needsSku) {
-            await applyAutoSku(productId, resolvedProductType, product.tags, product.title, product.variants);
+            finalSkus = await applyAutoSku(productId, resolvedProductType, product.tags, product.title, variants);
             skuApplied++;
+          }
+
+          // Skip products that already have a "Verified SKU" barcode image on file.
+          const barcodeMfRes = await fetch(`${base}/products/${productId}/metafields.json?namespace=custom&key=barcode_images`, { headers });
+          const barcodeMfData = await barcodeMfRes.json();
+          const hasBarcodeImages = !!barcodeMfData.metafields?.[0]?.value;
+          if (!hasBarcodeImages && finalSkus.some(Boolean)) {
+            await attachBarcodeImagesToProduct(productId, finalSkus, product.title);
+            barcodeApplied++;
           }
         } catch (err) {
           errors++;
@@ -2207,7 +2220,7 @@ app.post('/admin/backfill-seo-sku', async (req, res) => {
     console.error('Backfill fatal exception:', err.message);
   }
 
-  console.log(`Backfill complete: scanned ${scanned}, SEO applied ${seoApplied}, SKU applied ${skuApplied}, errors ${errors}`);
+  console.log(`Backfill complete: scanned ${scanned}, SEO applied ${seoApplied}, SKU applied ${skuApplied}, barcode images applied ${barcodeApplied}, errors ${errors}`);
 });
 
 // ===== REVIEW REQUEST — sent automatically when an order is fulfilled =====
