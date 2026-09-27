@@ -1,0 +1,310 @@
+{% comment %}
+  NALEA MORPH HERO — scroll-morph product hero (ported from 21st.dev "Scroll Morph Hero").
+  Cards scatter -> line -> circle, then morph into an arc as the visitor scrolls over the hero.
+  Products are pulled from the whole catalog and shuffled in the browser on every visit.
+{% endcomment %}
+
+{%- liquid
+  assign mh_intro_title = hero.morph_intro_title | default: 'Discover Something New Every Visit.'
+  assign mh_intro_sub = hero.morph_intro_sub | default: 'Scroll To Explore'
+  assign mh_arc_title = hero.morph_arc_title | default: 'From Your Kitchen To Her Gift Box'
+  assign mh_arc_text = hero.morph_arc_text | default: "Kitchen essentials, personalised gifts, jewellery and more — shuffled fresh just for you. Scroll to explore today's picks."
+  assign mh_cta_text = hero.morph_cta_text | default: 'Shop All'
+  assign mh_cta_url = hero.morph_cta_url | default: '/collections/all'
+  assign mh_pill1_text = hero.morph_pill_1_text | default: 'Kitchen Corner'
+  assign mh_pill2_text = hero.morph_pill_2_text | default: 'Personalised Gifts'
+  assign mh_pill1_col = hero.morph_pill_1_collection | default: collections['kitchen-corner-sa-home-edit']
+  assign mh_pill2_col = hero.morph_pill_2_collection | default: collections['personalized-gifts']
+-%}
+
+<section class="nmh" id="nalea-morph-hero" aria-label="Featured products">
+  <div class="nmh__glow" aria-hidden="true"></div>
+
+  <div class="nmh__intro" aria-hidden="false">
+    <h1 class="nmh__intro-title">{{ mh_intro_title }}</h1>
+    <p class="nmh__intro-sub">{{ mh_intro_sub }}</p>
+  </div>
+
+  <div class="nmh__arc-content">
+    <h2 class="nmh__arc-title">{{ mh_arc_title }}</h2>
+    <p class="nmh__arc-text">{{ mh_arc_text }}</p>
+    <div class="nmh__ctas">
+      <a class="nmh__cta" href="{{ mh_cta_url }}">
+        {{ mh_cta_text }}
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      {%- if mh_pill1_text != blank -%}
+        <a class="nmh__pill" href="{{ mh_pill1_col.url | default: '/collections/all' }}">{{ mh_pill1_text }}</a>
+      {%- endif -%}
+      {%- if mh_pill2_text != blank -%}
+        <a class="nmh__pill" href="{{ mh_pill2_col.url | default: '/collections/all' }}">{{ mh_pill2_text }}</a>
+      {%- endif -%}
+    </div>
+  </div>
+
+  <div class="nmh__stage" data-nmh-stage></div>
+
+  <div class="nmh__hint" aria-hidden="true">
+    <div class="nmh__hint-line"></div>
+    <span>Scroll</span>
+  </div>
+
+  {%- comment -%} Product pool: whole catalog, shuffled client-side per visit {%- endcomment -%}
+  <script type="application/json" data-nmh-pool>
+    [
+    {%- paginate collections.all.products by 250 -%}
+      {%- assign mh_first = true -%}
+      {%- for p in collections.all.products -%}
+        {%- if p.featured_image != blank and p.available -%}
+          {%- unless mh_first -%},{%- endunless -%}
+          {"t":{{ p.title | json }},"u":{{ p.url | json }},"i":{{ p.featured_image | image_url: width: 360 | json }},"p":{{ p.price | money | strip_html | json }}}
+          {%- assign mh_first = false -%}
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endpaginate -%}
+    ]
+  </script>
+</section>
+
+<style>
+  .nmh{position:relative;width:100%;height:100vh;height:100svh;min-height:560px;overflow:hidden;
+    background:radial-gradient(ellipse at 50% 55%,#2a1a0c 0%,#120a05 45%,#070403 100%);color:#f5ecd9;
+    perspective:1000px;touch-action:pan-x}
+  .nmh__glow{position:absolute;left:50%;top:50%;width:70vmin;height:70vmin;transform:translate(-50%,-50%);
+    border-radius:50%;background:radial-gradient(circle,rgba(212,175,85,.18),transparent 65%);pointer-events:none}
+  .nmh__intro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;pointer-events:none;z-index:1;padding:0 18%}
+  .nmh__intro-title{margin:0;font-family:var(--font-heading--family,var(--font-heading-family,Georgia,serif));
+    font-size:clamp(1.4rem,3.2vw,2.6rem);font-weight:500;letter-spacing:-.01em;line-height:1.15;
+    background:linear-gradient(180deg,#fff5dc,#d4af55);-webkit-background-clip:text;background-clip:text;color:transparent;
+    opacity:0;filter:blur(10px);transform:translateY(20px);transition:opacity 1s,filter 1s,transform 1s}
+  .nmh__intro-sub{margin:16px 0 0;font-size:11px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:#bfa36a;
+    opacity:0;transition:opacity 1s .2s}
+  .nmh.is-circle .nmh__intro-title{opacity:1;filter:blur(0);transform:none}
+  .nmh.is-circle .nmh__intro-sub{opacity:.7}
+  .nmh__arc-content{position:absolute;top:9%;left:0;right:0;z-index:3;display:flex;flex-direction:column;align-items:center;
+    text-align:center;padding:0 16px;opacity:0;pointer-events:none;will-change:opacity,transform}
+  .nmh__arc-content.is-live{pointer-events:auto}
+  .nmh__arc-title{margin:0 0 14px;font-family:var(--font-heading--family,var(--font-heading-family,Georgia,serif));
+    font-size:clamp(1.8rem,4.4vw,3.4rem);font-weight:600;letter-spacing:-.02em;line-height:1.05;
+    background:linear-gradient(180deg,#fff5dc,#d4af55);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .nmh__arc-text{margin:0 auto;max-width:540px;font-size:clamp(.85rem,1.2vw,1rem);line-height:1.6;color:rgba(245,236,217,.7)}
+  .nmh__ctas{margin-top:22px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+  .nmh__cta{display:inline-flex;align-items:center;gap:10px;padding:13px 30px;border-radius:999px;
+    background:linear-gradient(135deg,#e8c56a,#b8913a);color:#1a1206;font-size:12px;font-weight:700;letter-spacing:.2em;
+    text-transform:uppercase;text-decoration:none;box-shadow:0 8px 30px rgba(212,175,85,.35);transition:transform .25s,box-shadow .25s}
+  .nmh__cta:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(212,175,85,.5)}
+  .nmh__pill{display:inline-flex;align-items:center;padding:12px 22px;border-radius:999px;font-size:12px;font-weight:600;
+    letter-spacing:.12em;text-transform:uppercase;text-decoration:none;color:#f5ecd9;background:rgba(255,255,255,.06);
+    border:1px solid rgba(212,175,85,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:background .25s,border-color .25s}
+  .nmh__pill:hover{background:rgba(212,175,85,.15);border-color:rgba(212,175,85,.7)}
+  .nmh__stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none}
+  .nmh__card{position:absolute;left:50%;top:50%;width:60px;height:85px;margin:-42.5px 0 0 -30px;transform-style:preserve-3d;
+    perspective:1000px;opacity:0;will-change:transform,opacity;pointer-events:auto;display:block;text-decoration:none}
+  .nmh__card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;
+    transition:transform .6s cubic-bezier(.34,1.56,.64,1)}
+  .nmh__card:hover .nmh__card-inner,.nmh__card:focus-visible .nmh__card-inner{transform:rotateY(180deg)}
+  .nmh__face{position:absolute;inset:0;border-radius:10px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  .nmh__face--front{background:#f3eee6;border:1px solid rgba(212,175,85,.25)}
+  .nmh__face--front img{width:100%;height:100%;object-fit:cover;display:block}
+  .nmh__face--front::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.08);transition:background .3s}
+  .nmh__card:hover .nmh__face--front::after{background:transparent}
+  .nmh__face--back{transform:rotateY(180deg);background:linear-gradient(160deg,#1c130a,#0b0705);border:1px solid rgba(212,175,85,.5);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px;text-align:center;gap:2px}
+  .nmh__back-kicker{font-size:6px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#d4af55}
+  .nmh__back-name{font-size:6.5px;line-height:1.2;color:#f5ecd9;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .nmh__back-price{font-size:7px;font-weight:700;color:#e8c56a}
+  .nmh__hint{position:absolute;left:32px;bottom:28px;z-index:3;display:flex;flex-direction:column;align-items:center;gap:10px;
+    font-size:10px;letter-spacing:.35em;text-transform:uppercase;color:rgba(245,236,217,.5);pointer-events:none;transition:opacity .4s}
+  .nmh__hint-line{width:1px;height:44px;background:linear-gradient(transparent,rgba(212,175,85,.8))}
+  .nmh.is-done .nmh__hint{opacity:0}
+  @media (max-width:767px){.nmh__intro{padding:0 22%}.nmh__hint{left:50%;transform:translateX(-50%);bottom:16px}}
+  @media (prefers-reduced-motion:reduce){.nmh__card-inner{transition:none}}
+</style>
+
+<script>
+(function () {
+  'use strict';
+  var root = document.getElementById('nalea-morph-hero');
+  if (!root || root.dataset.ready) return;
+  root.dataset.ready = '1';
+
+  var TOTAL = 20, MAX_SCROLL = 3000, IMG_W = 60, IMG_H = 85;
+  var stage = root.querySelector('[data-nmh-stage]');
+  var arcContent = root.querySelector('.nmh__arc-content');
+  var pool = [];
+  try { pool = JSON.parse(root.querySelector('[data-nmh-pool]').textContent) || []; } catch (e) {}
+  if (!pool.length) return;
+
+  // Fisher-Yates shuffle -> a different mix on every visit
+  for (var s = pool.length - 1; s > 0; s--) {
+    var r = Math.floor(Math.random() * (s + 1)), tmp = pool[s]; pool[s] = pool[r]; pool[r] = tmp;
+  }
+  var items = pool.slice(0, TOTAL);
+  while (items.length < TOTAL) items.push(pool[items.length % pool.length]);
+
+  function esc(str) { var d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+  // --- Build cards ---
+  var cards = items.map(function (p, i) {
+    var a = document.createElement('a');
+    a.className = 'nmh__card';
+    a.href = p.u;
+    a.setAttribute('aria-label', p.t);
+    a.innerHTML =
+      '<div class="nmh__card-inner">' +
+        '<div class="nmh__face nmh__face--front"><img src="' + esc(p.i) + '" alt="' + esc(p.t) + '" loading="' + (i < 10 ? 'eager' : 'lazy') + '" width="60" height="85"></div>' +
+        '<div class="nmh__face nmh__face--back"><span class="nmh__back-kicker">View</span><span class="nmh__back-name">' + esc(p.t) + '</span><span class="nmh__back-price">' + esc(p.p) + '</span></div>' +
+      '</div>';
+    stage.appendChild(a);
+    var sc = {
+      x: (Math.random() - 0.5) * 1500, y: (Math.random() - 0.5) * 1000,
+      rotation: (Math.random() - 0.5) * 180, scale: 0.6, opacity: 0
+    };
+    return {
+      el: a, scatter: sc,
+      // current animated values + velocities (spring: stiffness 40, damping 15)
+      v: { x: sc.x, y: sc.y, rotation: sc.rotation, scale: sc.scale, opacity: 0 },
+      vel: { x: 0, y: 0, rotation: 0, scale: 0, opacity: 0 }
+    };
+  });
+
+  // --- Springs ---
+  function Spring(k, c, val) { this.k = k; this.c = c; this.x = val; this.v = 0; this.target = val; }
+  Spring.prototype.step = function (dt) {
+    var f = -this.k * (this.x - this.target) - this.c * this.v;
+    this.v += f * dt; this.x += this.v * dt;
+  };
+  var morph = new Spring(40, 20, 0);
+  var rotate = new Spring(40, 20, 0);
+  var parallax = new Spring(30, 20, 0);
+
+  // --- Size ---
+  var W = root.clientWidth, H = root.clientHeight;
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(function () { W = root.clientWidth; H = root.clientHeight; }).observe(root);
+  } else {
+    window.addEventListener('resize', function () { W = root.clientWidth; H = root.clientHeight; });
+  }
+
+  // --- Virtual scroll (wheel / touch captured inside the hero) ---
+  var vScroll = 0;
+  function setScroll(next) {
+    vScroll = Math.min(Math.max(next, 0), MAX_SCROLL);
+    morph.target = Math.min(vScroll / 600, 1);
+    rotate.target = Math.min(Math.max((vScroll - 600) / 2400, 0), 1) * 360;
+    root.classList.toggle('is-done', vScroll >= MAX_SCROLL);
+  }
+  // Only hijack while the hero is pinned at the top of the viewport, and let the page
+  // continue scrolling once the animation reaches its end (or the start when scrolling up).
+  function shouldCapture(delta) {
+    var top = root.getBoundingClientRect().top;
+    if (top < -10 || top > window.innerHeight * 0.3) return false;
+    if (delta > 0 && vScroll >= MAX_SCROLL) return false;
+    if (delta < 0 && vScroll <= 0) return false;
+    return true;
+  }
+  root.addEventListener('wheel', function (e) {
+    if (!shouldCapture(e.deltaY)) return;
+    e.preventDefault();
+    setScroll(vScroll + e.deltaY);
+  }, { passive: false });
+
+  var touchY = 0;
+  root.addEventListener('touchstart', function (e) { touchY = e.touches[0].clientY; }, { passive: true });
+  root.addEventListener('touchmove', function (e) {
+    var y = e.touches[0].clientY, d = (touchY - y) * 1.6;
+    touchY = y;
+    if (!shouldCapture(d)) return;
+    e.preventDefault();
+    setScroll(vScroll + d);
+  }, { passive: false });
+
+  // --- Mouse parallax ---
+  root.addEventListener('mousemove', function (e) {
+    var rect = root.getBoundingClientRect();
+    parallax.target = (((e.clientX - rect.left) / rect.width) * 2 - 1) * 100;
+  });
+
+  // --- Intro sequence ---
+  var phase = 'scatter';
+  setTimeout(function () { phase = 'line'; }, 500);
+  setTimeout(function () { phase = 'circle'; root.classList.add('is-circle'); }, 2500);
+
+  function lerp(a, b, t) { return a * (1 - t) + b * t; }
+
+  function targetFor(i) {
+    if (phase === 'scatter') return cards[i].scatter;
+    if (phase === 'line') {
+      var spacing = W < 768 ? Math.min(70, (W - 20) / TOTAL) : 70;
+      return { x: i * spacing - (TOTAL * spacing) / 2 + spacing / 2, y: 0, rotation: 0, scale: 1, opacity: 1 };
+    }
+    var m = morph.x, isMobile = W < 768, minDim = Math.min(W, H);
+    var cR = Math.min(minDim * 0.35, 350);
+    var cA = (i / TOTAL) * 360, cRad = cA * Math.PI / 180;
+    var circle = { x: Math.cos(cRad) * cR, y: Math.sin(cRad) * cR, rotation: cA + 90 };
+
+    var arcR = Math.min(W, H * 1.5) * (isMobile ? 1.4 : 1.1);
+    var apexY = H * (isMobile ? 0.35 : 0.25);
+    var centerY = apexY + arcR;
+    var spread = isMobile ? 100 : 130;
+    var start = -90 - spread / 2, step = spread / (TOTAL - 1);
+    var prog = Math.min(Math.max(rotate.x / 360, 0), 1);
+    var ang = start + i * step - prog * spread * 0.8;
+    var aRad = ang * Math.PI / 180;
+    var arc = {
+      x: Math.cos(aRad) * arcR + parallax.x,
+      y: Math.sin(aRad) * arcR + centerY,
+      rotation: ang + 90,
+      scale: isMobile ? 1.4 : 1.8
+    };
+    return {
+      x: lerp(circle.x, arc.x, m), y: lerp(circle.y, arc.y, m),
+      rotation: lerp(circle.rotation, arc.rotation, m),
+      scale: lerp(1, arc.scale, m), opacity: 1
+    };
+  }
+
+  var KEYS = ['x', 'y', 'rotation', 'scale', 'opacity'];
+  var last = performance.now(), visible = true;
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (en) { visible = en[0].isIntersecting; }).observe(root);
+  }
+
+  function frame(now) {
+    var dt = Math.min((now - last) / 1000, 1 / 30);
+    last = now;
+    if (visible) {
+      // sub-step for stable springs
+      for (var sub = 0; sub < 2; sub++) {
+        var h = dt / 2;
+        morph.step(h); rotate.step(h); parallax.step(h);
+        for (var i = 0; i < TOTAL; i++) {
+          var c = cards[i], t = targetFor(i);
+          for (var k = 0; k < 5; k++) {
+            var key = KEYS[k];
+            var f = -40 * (c.v[key] - t[key]) - 15 * c.vel[key];
+            c.vel[key] += f * h; c.v[key] += c.vel[key] * h;
+          }
+        }
+      }
+      for (var j = 0; j < TOTAL; j++) {
+        var cv = cards[j].v;
+        cards[j].el.style.transform = 'translate3d(' + cv.x.toFixed(1) + 'px,' + cv.y.toFixed(1) + 'px,0) rotate(' + cv.rotation.toFixed(2) + 'deg) scale(' + cv.scale.toFixed(3) + ')';
+        cards[j].el.style.opacity = Math.max(0, Math.min(1, cv.opacity)).toFixed(3);
+      }
+      // intro text fades out as morph begins; arc content fades in near the end of the morph
+      var m = morph.x;
+      var intro = root.querySelector('.nmh__intro');
+      intro.style.opacity = phase === 'circle' ? Math.max(0, 1 - m * 2) : 1;
+      var co = Math.min(Math.max((m - 0.8) / 0.2, 0), 1);
+      arcContent.style.opacity = co;
+      arcContent.style.transform = 'translateY(' + ((1 - co) * 20) + 'px)';
+      arcContent.classList.toggle('is-live', co > 0.5);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
