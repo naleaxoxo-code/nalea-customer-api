@@ -1,7 +1,8 @@
 {% comment %}
-  NALEA MORPH HERO — scroll-morph product hero (ported from 21st.dev "Scroll Morph Hero").
+  NALEA MORPH HERO v2 — scroll-morph product hero (inspired by 21st.dev "Scroll Morph Hero").
   Cards scatter -> line -> circle, then morph into an arc as the visitor scrolls over the hero.
-  Products are pulled from the whole catalog and shuffled in the browser on every visit.
+  v2: short scroll + fast-flick auto-finish + smart skip, light/dark (html[data-nx-theme]),
+  balanced category mix, spotlight card, gold shimmer + particles, quick add, re-shuffle.
 {% endcomment %}
 
 {%- liquid
@@ -18,9 +19,10 @@
 -%}
 
 <section class="nmh" id="nalea-morph-hero" aria-label="Featured products">
+  <canvas class="nmh__dust" aria-hidden="true"></canvas>
   <div class="nmh__glow" aria-hidden="true"></div>
 
-  <div class="nmh__intro" aria-hidden="false">
+  <div class="nmh__intro">
     <h1 class="nmh__intro-title">{{ mh_intro_title }}</h1>
     <p class="nmh__intro-sub">{{ mh_intro_sub }}</p>
   </div>
@@ -39,25 +41,45 @@
       {%- if mh_pill2_text != blank -%}
         <a class="nmh__pill" href="{{ mh_pill2_col.url | default: '/collections/all' }}">{{ mh_pill2_text }}</a>
       {%- endif -%}
+      <button class="nmh__pill nmh__shuffle" type="button" data-nmh-shuffle aria-label="Shuffle products">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+        Shuffle
+      </button>
     </div>
   </div>
 
   <div class="nmh__stage" data-nmh-stage></div>
+
+  <div class="nmh__spot" data-nmh-spot aria-live="polite">
+    <span class="nmh__spot-name"></span>
+    <span class="nmh__spot-price"></span>
+  </div>
+
+  <div class="nmh__progress" aria-hidden="true"><span data-nmh-bar></span></div>
+
+  <button class="nmh__skip" type="button" data-nmh-skip>
+    <span class="nmh__skip-q">In a hurry?</span>
+    <span class="nmh__skip-a">Skip to shopping
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1v12M2 8l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
+  </button>
 
   <div class="nmh__hint" aria-hidden="true">
     <div class="nmh__hint-line"></div>
     <span>Scroll</span>
   </div>
 
-  {%- comment -%} Product pool: whole catalog, shuffled client-side per visit {%- endcomment -%}
+  <div class="nmh__toast" data-nmh-toast role="status"></div>
+
   <script type="application/json" data-nmh-pool>
     [
     {%- paginate collections.all.products by 250 -%}
       {%- assign mh_first = true -%}
       {%- for p in collections.all.products -%}
         {%- if p.featured_image != blank and p.available -%}
+          {%- assign v = p.selected_or_first_available_variant -%}
           {%- unless mh_first -%},{%- endunless -%}
-          {"t":{{ p.title | json }},"u":{{ p.url | json }},"i":{{ p.featured_image | image_url: width: 360 | json }},"p":{{ p.price | money | strip_html | json }}}
+          {"t":{{ p.title | json }},"u":{{ p.url | json }},"i":{{ p.featured_image | image_url: width: 400 | json }},"p":{{ p.price | money | strip_html | json }},"c":{% if p.compare_at_price > p.price %}{{ p.compare_at_price | money | strip_html | json }}{% else %}null{% endif %},"d":{% if p.compare_at_price > p.price %}{{ p.compare_at_price | minus: p.price | times: 100 | divided_by: p.compare_at_price }}{% else %}0{% endif %},"k":{{ p.type | default: p.vendor | json }},"v":{{ v.id | json }},"o":{% if p.has_only_default_variant %}1{% else %}0{% endif %}}
           {%- assign mh_first = false -%}
         {%- endif -%}
       {%- endfor -%}
@@ -67,60 +89,122 @@
 </section>
 
 <style>
-  .nmh{position:relative;width:100%;height:100vh;height:100svh;min-height:560px;overflow:hidden;
-    background:radial-gradient(ellipse at 50% 55%,#2a1a0c 0%,#120a05 45%,#070403 100%);color:#f5ecd9;
-    perspective:1000px;touch-action:pan-x}
-  .nmh__glow{position:absolute;left:50%;top:50%;width:70vmin;height:70vmin;transform:translate(-50%,-50%);
-    border-radius:50%;background:radial-gradient(circle,rgba(212,175,85,.18),transparent 65%);pointer-events:none}
+  .nmh{
+    --nmh-bg:radial-gradient(ellipse at 50% 55%,#2a1a0c 0%,#120a05 45%,#070403 100%);
+    --nmh-ink:#f5ecd9;--nmh-muted:rgba(245,236,217,.7);--nmh-gold:#d4af55;--nmh-gold-2:#e8c56a;--nmh-gold-deep:#b8913a;
+    --nmh-title:linear-gradient(180deg,#fff5dc,#d4af55);--nmh-glow:rgba(212,175,85,.18);
+    --nmh-card-shadow:0 10px 28px rgba(0,0,0,.55);--nmh-front-bg:#f3eee6;
+    --nmh-back-bg:linear-gradient(160deg,#1c130a,#0b0705);--nmh-glass:rgba(255,255,255,.06);--nmh-glass-line:rgba(212,175,85,.35);
+    --nmh-dust:212,175,85;
+    position:relative;width:100%;height:100vh;height:100svh;min-height:560px;overflow:hidden;
+    background:var(--nmh-bg);color:var(--nmh-ink);perspective:1000px;transition:background .6s,color .6s}
+  html[data-nx-theme="light"] .nmh{
+    --nmh-bg:radial-gradient(ellipse at 50% 55%,#fff4dc 0%,#fffaf0 50%,#f6eedc 100%);
+    --nmh-ink:#201a10;--nmh-muted:#5c5243;--nmh-gold:#8a6a1f;--nmh-gold-2:#b88f35;--nmh-gold-deep:#8a6a1f;
+    --nmh-title:linear-gradient(180deg,#3a2c12,#8a6a1f);--nmh-glow:rgba(201,168,76,.22);
+    --nmh-card-shadow:0 10px 26px rgba(120,90,20,.18);--nmh-front-bg:#fff;
+    --nmh-back-bg:linear-gradient(160deg,#fffdf7,#f5ead2);--nmh-glass:rgba(255,255,255,.7);--nmh-glass-line:rgba(160,120,48,.3);
+    --nmh-dust:160,120,48}
+  .nmh__dust{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+  .nmh__glow{position:absolute;left:50%;top:50%;width:70vmin;height:70vmin;transform:translate(-50%,-50%);border-radius:50%;
+    background:radial-gradient(circle,var(--nmh-glow),transparent 65%);pointer-events:none;animation:nmhBreathe 6s ease-in-out infinite}
+  @keyframes nmhBreathe{50%{transform:translate(-50%,-50%) scale(1.12);opacity:.8}}
   .nmh__intro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
     text-align:center;pointer-events:none;z-index:1;padding:0 18%}
-  .nmh__intro-title{margin:0;font-family:var(--font-heading--family,var(--font-heading-family,Georgia,serif));
-    font-size:clamp(1.4rem,3.2vw,2.6rem);font-weight:500;letter-spacing:-.01em;line-height:1.15;
-    background:linear-gradient(180deg,#fff5dc,#d4af55);-webkit-background-clip:text;background-clip:text;color:transparent;
+  .nmh__intro-title,.nmh__arc-title{font-family:var(--font-heading--family,var(--font-heading-family,Georgia,serif));
+    background:var(--nmh-title);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .nmh__intro-title{margin:0;font-size:clamp(1.4rem,3.2vw,2.6rem);font-weight:500;letter-spacing:-.01em;line-height:1.15;
     opacity:0;filter:blur(10px);transform:translateY(20px);transition:opacity 1s,filter 1s,transform 1s}
-  .nmh__intro-sub{margin:16px 0 0;font-size:11px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:#bfa36a;
+  .nmh__intro-sub{margin:16px 0 0;font-size:11px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--nmh-gold);
     opacity:0;transition:opacity 1s .2s}
   .nmh.is-circle .nmh__intro-title{opacity:1;filter:blur(0);transform:none}
-  .nmh.is-circle .nmh__intro-sub{opacity:.7}
-  .nmh__arc-content{position:absolute;top:9%;left:0;right:0;z-index:3;display:flex;flex-direction:column;align-items:center;
-    text-align:center;padding:0 16px;opacity:0;pointer-events:none;will-change:opacity,transform}
+  .nmh.is-circle .nmh__intro-sub{opacity:.75}
+  .nmh__arc-content{position:absolute;top:9%;left:0;right:0;z-index:4;display:flex;flex-direction:column;align-items:center;
+    text-align:center;padding:0 16px;opacity:0;pointer-events:none}
   .nmh__arc-content.is-live{pointer-events:auto}
-  .nmh__arc-title{margin:0 0 14px;font-family:var(--font-heading--family,var(--font-heading-family,Georgia,serif));
-    font-size:clamp(1.8rem,4.4vw,3.4rem);font-weight:600;letter-spacing:-.02em;line-height:1.05;
-    background:linear-gradient(180deg,#fff5dc,#d4af55);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .nmh__arc-text{margin:0 auto;max-width:540px;font-size:clamp(.85rem,1.2vw,1rem);line-height:1.6;color:rgba(245,236,217,.7)}
+  .nmh__arc-title{margin:0 0 14px;font-size:clamp(1.8rem,4.4vw,3.4rem);font-weight:600;letter-spacing:-.02em;line-height:1.05}
+  .nmh__arc-text{margin:0 auto;max-width:540px;font-size:clamp(.85rem,1.2vw,1rem);line-height:1.6;color:var(--nmh-muted)}
   .nmh__ctas{margin-top:22px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
   .nmh__cta{display:inline-flex;align-items:center;gap:10px;padding:13px 30px;border-radius:999px;
-    background:linear-gradient(135deg,#e8c56a,#b8913a);color:#1a1206;font-size:12px;font-weight:700;letter-spacing:.2em;
+    background:linear-gradient(135deg,var(--nmh-gold-2),var(--nmh-gold-deep));color:#1a1206;font-size:12px;font-weight:700;letter-spacing:.2em;
     text-transform:uppercase;text-decoration:none;box-shadow:0 8px 30px rgba(212,175,85,.35);transition:transform .25s,box-shadow .25s}
+  html[data-nx-theme="light"] .nmh__cta{color:#fffaf0}
   .nmh__cta:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(212,175,85,.5)}
-  .nmh__pill{display:inline-flex;align-items:center;padding:12px 22px;border-radius:999px;font-size:12px;font-weight:600;
-    letter-spacing:.12em;text-transform:uppercase;text-decoration:none;color:#f5ecd9;background:rgba(255,255,255,.06);
-    border:1px solid rgba(212,175,85,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:background .25s,border-color .25s}
-  .nmh__pill:hover{background:rgba(212,175,85,.15);border-color:rgba(212,175,85,.7)}
-  .nmh__stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none}
+  .nmh__pill{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:999px;font:inherit;font-size:12px;font-weight:600;
+    letter-spacing:.12em;text-transform:uppercase;text-decoration:none;color:var(--nmh-ink);background:var(--nmh-glass);cursor:pointer;
+    border:1px solid var(--nmh-glass-line);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:background .25s,border-color .25s}
+  .nmh__pill:hover{background:rgba(212,175,85,.15);border-color:var(--nmh-gold)}
+  .nmh__shuffle svg{transition:transform .6s}
+  .nmh__shuffle:hover svg{transform:rotate(-180deg)}
+  .nmh__stage{position:absolute;inset:0;z-index:2;pointer-events:none}
+
+  /* Cards */
   .nmh__card{position:absolute;left:50%;top:50%;width:60px;height:85px;margin:-42.5px 0 0 -30px;transform-style:preserve-3d;
-    perspective:1000px;opacity:0;will-change:transform,opacity;pointer-events:auto;display:block;text-decoration:none}
-  .nmh__card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;
-    transition:transform .6s cubic-bezier(.34,1.56,.64,1)}
-  .nmh__card:hover .nmh__card-inner,.nmh__card:focus-visible .nmh__card-inner{transform:rotateY(180deg)}
+    opacity:0;will-change:transform,opacity;pointer-events:auto;cursor:pointer}
+  .nmh__card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.34,1.56,.64,1)}
+  @media (hover:hover){.nmh__card:hover .nmh__card-inner{transform:rotateY(180deg)}}
+  .nmh__card.is-flipped .nmh__card-inner,.nmh__card:focus-within .nmh__card-inner{transform:rotateY(180deg)}
   .nmh__face{position:absolute;inset:0;border-radius:10px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;
-    box-shadow:0 8px 24px rgba(0,0,0,.5)}
-  .nmh__face--front{background:#f3eee6;border:1px solid rgba(212,175,85,.25)}
+    box-shadow:var(--nmh-card-shadow);transition:box-shadow .4s}
+  .nmh__card.is-spot .nmh__face{box-shadow:0 0 0 1px var(--nmh-gold),0 0 28px rgba(212,175,85,.55),var(--nmh-card-shadow)}
+  .nmh__face--front{background:var(--nmh-front-bg);border:1px solid rgba(212,175,85,.25)}
   .nmh__face--front img{width:100%;height:100%;object-fit:cover;display:block}
-  .nmh__face--front::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.08);transition:background .3s}
-  .nmh__card:hover .nmh__face--front::after{background:transparent}
-  .nmh__face--back{transform:rotateY(180deg);background:linear-gradient(160deg,#1c130a,#0b0705);border:1px solid rgba(212,175,85,.5);
+  .nmh__face--front::after{content:"";position:absolute;inset:-50%;
+    background:linear-gradient(115deg,transparent 42%,rgba(255,236,180,.55) 50%,transparent 58%);
+    transform:translateX(-60%);animation:nmhShine 7s ease-in-out infinite;animation-delay:var(--d,0s);pointer-events:none}
+  @keyframes nmhShine{0%,70%{transform:translateX(-60%)}85%,100%{transform:translateX(60%)}}
+  .nmh__sale{position:absolute;top:3px;left:3px;padding:1px 3px;border-radius:3px;background:#c0392b;color:#fff;
+    font-size:5px;font-weight:800;letter-spacing:.05em;z-index:1}
+  .nmh__face--back{transform:rotateY(180deg);background:var(--nmh-back-bg);border:1px solid var(--nmh-glass-line);color:var(--nmh-ink);
     display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px;text-align:center;gap:2px}
-  .nmh__back-kicker{font-size:6px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#d4af55}
-  .nmh__back-name{font-size:6.5px;line-height:1.2;color:#f5ecd9;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-  .nmh__back-price{font-size:7px;font-weight:700;color:#e8c56a}
+  .nmh__back-name{font-size:5.5px;line-height:1.2;color:inherit;text-decoration:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .nmh__back-price{font-size:7px;font-weight:800;color:var(--nmh-gold)}
+  .nmh__back-was{font-size:5px;text-decoration:line-through;opacity:.55}
+  .nmh__add{margin-top:2px;padding:2px 5px;border:0;border-radius:99px;background:linear-gradient(135deg,var(--nmh-gold-2),var(--nmh-gold-deep));
+    color:#1a1206;font:inherit;font-size:5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+  .nmh__add[disabled]{opacity:.6}
+  .nmh__view{font-size:4.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--nmh-gold);text-decoration:none}
+
+  /* Spotlight label */
+  .nmh__spot{position:absolute;left:50%;z-index:3;transform:translate(-50%,0);display:flex;flex-direction:column;align-items:center;gap:2px;
+    pointer-events:none;opacity:0;transition:opacity .35s;text-align:center;max-width:70vw}
+  .nmh__spot.is-on{opacity:1}
+  .nmh__spot-name{font-size:13px;font-weight:600;color:var(--nmh-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70vw}
+  .nmh__spot-price{font-size:12px;font-weight:700;color:var(--nmh-gold);letter-spacing:.05em}
+
+  /* Progress, skip, hint, toast */
+  .nmh__progress{position:absolute;right:28px;top:50%;width:2px;height:120px;margin-top:-60px;background:var(--nmh-glass-line);z-index:4;border-radius:2px;opacity:0;transition:opacity .4s}
+  .nmh.is-circle .nmh__progress{opacity:1}
+  .nmh__progress span{display:block;width:100%;height:0;background:var(--nmh-gold);border-radius:2px}
+  .nmh__skip{position:absolute;right:24px;bottom:24px;z-index:5;display:flex;flex-direction:column;align-items:flex-end;gap:2px;
+    padding:10px 16px;border-radius:16px;border:1px solid var(--nmh-glass-line);background:var(--nmh-glass);color:var(--nmh-ink);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font:inherit;cursor:pointer;
+    opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .45s,transform .45s,border-color .25s}
+  .nmh__skip.is-on{opacity:1;transform:none;pointer-events:auto}
+  .nmh__skip:hover{border-color:var(--nmh-gold)}
+  .nmh__skip-q{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--nmh-muted)}
+  .nmh__skip-a{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--nmh-gold)}
+  .nmh__skip-a svg{animation:nmhBob 1.6s ease-in-out infinite}
+  @keyframes nmhBob{50%{transform:translateY(3px)}}
   .nmh__hint{position:absolute;left:32px;bottom:28px;z-index:3;display:flex;flex-direction:column;align-items:center;gap:10px;
-    font-size:10px;letter-spacing:.35em;text-transform:uppercase;color:rgba(245,236,217,.5);pointer-events:none;transition:opacity .4s}
-  .nmh__hint-line{width:1px;height:44px;background:linear-gradient(transparent,rgba(212,175,85,.8))}
+    font-size:10px;letter-spacing:.35em;text-transform:uppercase;color:var(--nmh-muted);pointer-events:none;transition:opacity .4s}
+  .nmh__hint-line{width:1px;height:44px;background:linear-gradient(transparent,var(--nmh-gold))}
   .nmh.is-done .nmh__hint{opacity:0}
-  @media (max-width:767px){.nmh__intro{padding:0 22%}.nmh__hint{left:50%;transform:translateX(-50%);bottom:16px}}
-  @media (prefers-reduced-motion:reduce){.nmh__card-inner{transition:none}}
+  .nmh__toast{position:absolute;left:50%;bottom:28px;z-index:6;transform:translate(-50%,20px);padding:12px 18px;border-radius:999px;
+    background:var(--nmh-glass);border:1px solid var(--nmh-glass-line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    color:var(--nmh-ink);font-size:13px;opacity:0;pointer-events:none;transition:opacity .35s,transform .35s;white-space:nowrap}
+  .nmh__toast.is-on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .nmh__toast a{color:var(--nmh-gold);font-weight:700;margin-left:8px}
+  @media (max-width:767px){
+    .nmh__intro{padding:0 22%}
+    .nmh__hint{display:none}
+    .nmh__progress{right:12px;height:80px;margin-top:-40px}
+    .nmh__skip{right:12px;bottom:14px;padding:8px 12px}
+    .nmh__pill{padding:10px 16px;font-size:11px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .nmh__card-inner{transition:none}.nmh__face--front::after,.nmh__glow,.nmh__skip-a svg{animation:none}
+  }
 </style>
 
 <script>
@@ -130,96 +214,230 @@
   if (!root || root.dataset.ready) return;
   root.dataset.ready = '1';
 
-  var TOTAL = 20, MAX_SCROLL = 3000, IMG_W = 60, IMG_H = 85;
+  var TOTAL = 20, MORPH_END = 350, MAX_SCROLL = 1000;
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var stage = root.querySelector('[data-nmh-stage]');
   var arcContent = root.querySelector('.nmh__arc-content');
+  var introEl = root.querySelector('.nmh__intro');
+  var spotEl = root.querySelector('[data-nmh-spot]');
+  var spotName = spotEl.querySelector('.nmh__spot-name');
+  var spotPrice = spotEl.querySelector('.nmh__spot-price');
+  var skipBtn = root.querySelector('[data-nmh-skip]');
+  var bar = root.querySelector('[data-nmh-bar]');
+  var toast = root.querySelector('[data-nmh-toast]');
+
   var pool = [];
   try { pool = JSON.parse(root.querySelector('[data-nmh-pool]').textContent) || []; } catch (e) {}
   if (!pool.length) return;
 
-  // Fisher-Yates shuffle -> a different mix on every visit
-  for (var s = pool.length - 1; s > 0; s--) {
-    var r = Math.floor(Math.random() * (s + 1)), tmp = pool[s]; pool[s] = pool[r]; pool[r] = tmp;
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
   }
-  var items = pool.slice(0, TOTAL);
-  while (items.length < TOTAL) items.push(pool[items.length % pool.length]);
 
-  function esc(str) { var d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+  // Balanced mix: group by product type, shuffle each group, then deal round-robin across
+  // shuffled groups so categories alternate. Sale items get a gentle boost within their group.
+  var used = {};
+  function dealSet() {
+    var groups = {}, keys = [];
+    pool.forEach(function (p) {
+      if (used[p.u]) return;
+      var k = p.k || 'Other';
+      if (!groups[k]) { groups[k] = []; keys.push(k); }
+      groups[k].push(p);
+    });
+    if (keys.length === 0 || Object.keys(used).length > pool.length - TOTAL) { used = {}; return dealSet(); }
+    keys.forEach(function (k) {
+      // weighted shuffle: sale items get a gentle nudge forward, not a takeover
+      groups[k] = groups[k].map(function (p) { return { p: p, w: Math.random() * (p.d > 0 ? 0.75 : 1) }; })
+        .sort(function (a, b) { return a.w - b.w; }).map(function (x) { return x.p; });
+    });
+    shuffle(keys);
+    var out = [], idx = 0;
+    while (out.length < TOTAL && keys.length) {
+      var k2 = keys[idx % keys.length];
+      if (groups[k2].length) out.push(groups[k2].shift());
+      else { keys.splice(idx % keys.length, 1); continue; }
+      idx++;
+    }
+    while (out.length < TOTAL) out.push(pool[out.length % pool.length]);
+    out.forEach(function (p) { used[p.u] = 1; });
+    return out;
+  }
 
-  // --- Build cards ---
+  function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+
+  function cardHTML(p, i) {
+    var sale = p.d > 0 ? '<span class="nmh__sale">-' + p.d + '%</span>' : '';
+    var was = p.c ? '<span class="nmh__back-was">' + esc(p.c) + '</span>' : '';
+    var add = p.o === 1 && p.v
+      ? '<button class="nmh__add" type="button" data-add="' + p.v + '">Add to bag</button>'
+      : '<a class="nmh__add" href="' + esc(p.u) + '" style="text-decoration:none">Choose</a>';
+    return '<div class="nmh__card-inner">' +
+      '<div class="nmh__face nmh__face--front">' + sale +
+        '<img src="' + esc(p.i) + '" alt="' + esc(p.t) + '" loading="' + (i < 12 ? 'eager' : 'lazy') + '" width="60" height="85" draggable="false"></div>' +
+      '<div class="nmh__face nmh__face--back">' +
+        '<a class="nmh__back-name" href="' + esc(p.u) + '">' + esc(p.t) + '</a>' +
+        '<span class="nmh__back-price">' + esc(p.p) + '</span>' + was + add +
+        '<a class="nmh__view" href="' + esc(p.u) + '">View</a>' +
+      '</div></div>';
+  }
+
+  function scatterPos() {
+    return { x: (Math.random() - 0.5) * 1500, y: (Math.random() - 0.5) * 1000, rotation: (Math.random() - 0.5) * 180, scale: 0.6, opacity: 0 };
+  }
+
+  var items = dealSet();
   var cards = items.map(function (p, i) {
-    var a = document.createElement('a');
-    a.className = 'nmh__card';
-    a.href = p.u;
-    a.setAttribute('aria-label', p.t);
-    a.innerHTML =
-      '<div class="nmh__card-inner">' +
-        '<div class="nmh__face nmh__face--front"><img src="' + esc(p.i) + '" alt="' + esc(p.t) + '" loading="' + (i < 10 ? 'eager' : 'lazy') + '" width="60" height="85"></div>' +
-        '<div class="nmh__face nmh__face--back"><span class="nmh__back-kicker">View</span><span class="nmh__back-name">' + esc(p.t) + '</span><span class="nmh__back-price">' + esc(p.p) + '</span></div>' +
-      '</div>';
-    stage.appendChild(a);
-    var sc = {
-      x: (Math.random() - 0.5) * 1500, y: (Math.random() - 0.5) * 1000,
-      rotation: (Math.random() - 0.5) * 180, scale: 0.6, opacity: 0
-    };
-    return {
-      el: a, scatter: sc,
-      // current animated values + velocities (spring: stiffness 40, damping 15)
+    var el = document.createElement('div');
+    el.className = 'nmh__card';
+    el.tabIndex = 0;
+    el.setAttribute('role', 'group');
+    el.setAttribute('aria-label', p.t);
+    el.style.setProperty('--d', (i * 0.35).toFixed(2) + 's');
+    el.innerHTML = cardHTML(p, i);
+    stage.appendChild(el);
+    var sc = scatterPos();
+    return { el: el, p: p, scatter: sc,
       v: { x: sc.x, y: sc.y, rotation: sc.rotation, scale: sc.scale, opacity: 0 },
-      vel: { x: 0, y: 0, rotation: 0, scale: 0, opacity: 0 }
-    };
+      vel: { x: 0, y: 0, rotation: 0, scale: 0, opacity: 0 } };
+  });
+
+  // Tap to flip on touch; tap on the front with a mouse opens the product
+  var isTouch = window.matchMedia && window.matchMedia('(hover: none)').matches;
+  stage.addEventListener('click', function (e) {
+    var card = e.target.closest('.nmh__card');
+    if (!card) return;
+    if (e.target.closest('a,button')) return;
+    var c = cards.filter(function (x) { return x.el === card; })[0];
+    if (isTouch) {
+      cards.forEach(function (x) { if (x.el !== card) x.el.classList.remove('is-flipped'); });
+      card.classList.toggle('is-flipped');
+    } else if (c) {
+      window.location.href = c.p.u;
+    }
+  });
+
+  // Quick add to bag (Shopify AJAX cart)
+  var toastTimer;
+  function showToast(html) {
+    toast.innerHTML = html;
+    toast.classList.add('is-on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove('is-on'); }, 3500);
+  }
+  stage.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-add]');
+    if (!btn) return;
+    e.preventDefault(); e.stopPropagation();
+    btn.disabled = true; btn.textContent = 'Adding…';
+    var root_ = (window.Shopify && Shopify.routes && Shopify.routes.root) || '/';
+    fetch(root_ + 'cart/add.js', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ items: [{ id: Number(btn.dataset.add), quantity: 1 }] })
+    }).then(function (r) { if (!r.ok) throw r; return r.json(); })
+      .then(function () {
+        btn.textContent = 'Added ✓';
+        showToast('Added to your bag <a href="' + root_ + 'cart">View bag</a>');
+        document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
+        document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true }));
+        fetch(root_ + 'cart.js').then(function (r) { return r.json(); }).then(function (cart) {
+          document.querySelectorAll('.cart-count-bubble span[aria-hidden], [data-cart-count], .cart-count').forEach(function (n) { n.textContent = cart.item_count; });
+        }).catch(function () {});
+        setTimeout(function () { btn.disabled = false; btn.textContent = 'Add to bag'; }, 2200);
+      })
+      .catch(function () {
+        btn.disabled = false; btn.textContent = 'Add to bag';
+        showToast('Sorry, that one just sold out.');
+      });
   });
 
   // --- Springs ---
   function Spring(k, c, val) { this.k = k; this.c = c; this.x = val; this.v = 0; this.target = val; }
-  Spring.prototype.step = function (dt) {
-    var f = -this.k * (this.x - this.target) - this.c * this.v;
-    this.v += f * dt; this.x += this.v * dt;
-  };
-  var morph = new Spring(40, 20, 0);
-  var rotate = new Spring(40, 20, 0);
-  var parallax = new Spring(30, 20, 0);
+  Spring.prototype.step = function (dt) { var f = -this.k * (this.x - this.target) - this.c * this.v; this.v += f * dt; this.x += this.v * dt; };
+  var morph = new Spring(55, 18, 0), rotate = new Spring(45, 18, 0), parallax = new Spring(30, 20, 0);
 
-  // --- Size ---
   var W = root.clientWidth, H = root.clientHeight;
-  if ('ResizeObserver' in window) {
-    new ResizeObserver(function () { W = root.clientWidth; H = root.clientHeight; }).observe(root);
-  } else {
-    window.addEventListener('resize', function () { W = root.clientWidth; H = root.clientHeight; });
-  }
+  function measure() { W = root.clientWidth; H = root.clientHeight; sizeDust(); }
+  if ('ResizeObserver' in window) new ResizeObserver(measure).observe(root);
+  else window.addEventListener('resize', measure);
 
-  // --- Virtual scroll (wheel / touch captured inside the hero) ---
-  var vScroll = 0;
+  // --- Virtual scroll: short range, fast-flick auto-finish, release page at the ends ---
+  var vScroll = 0, autoTo = null;
   function setScroll(next) {
     vScroll = Math.min(Math.max(next, 0), MAX_SCROLL);
-    morph.target = Math.min(vScroll / 600, 1);
-    rotate.target = Math.min(Math.max((vScroll - 600) / 2400, 0), 1) * 360;
+    morph.target = Math.min(vScroll / MORPH_END, 1);
+    rotate.target = Math.min(Math.max((vScroll - MORPH_END) / (MAX_SCROLL - MORPH_END), 0), 1);
     root.classList.toggle('is-done', vScroll >= MAX_SCROLL);
+    bar.style.height = (vScroll / MAX_SCROLL * 100).toFixed(1) + '%';
   }
-  // Only hijack while the hero is pinned at the top of the viewport, and let the page
-  // continue scrolling once the animation reaches its end (or the start when scrolling up).
+  function heroAtTop() { var top = root.getBoundingClientRect().top; return top > -10 && top < window.innerHeight * 0.3; }
   function shouldCapture(delta) {
-    var top = root.getBoundingClientRect().top;
-    if (top < -10 || top > window.innerHeight * 0.3) return false;
+    if (!heroAtTop()) return false;
     if (delta > 0 && vScroll >= MAX_SCROLL) return false;
     if (delta < 0 && vScroll <= 0) return false;
     return true;
   }
-  root.addEventListener('wheel', function (e) {
-    if (!shouldCapture(e.deltaY)) return;
-    e.preventDefault();
-    setScroll(vScroll + e.deltaY);
-  }, { passive: false });
+  // Rolling window of recent deltas; a burst of >700px in 180ms counts as "in a hurry"
+  var recent = [];
+  function isFlick(delta) {
+    var now = performance.now();
+    recent.push({ t: now, d: delta });
+    while (recent.length && now - recent[0].t > 180) recent.shift();
+    var sum = recent.reduce(function (s, r) { return s + r.d; }, 0);
+    return Math.abs(sum) > 700;
+  }
+  function autoFinish(dir) { autoTo = dir > 0 ? MAX_SCROLL : 0; recent = []; }
+  function feed(delta) {
+    if (autoTo !== null) return;
+    if (isFlick(delta)) { autoFinish(delta); return; }
+    setScroll(vScroll + delta);
+    nudgeSkip();
+  }
 
-  var touchY = 0;
-  root.addEventListener('touchstart', function (e) { touchY = e.touches[0].clientY; }, { passive: true });
-  root.addEventListener('touchmove', function (e) {
-    var y = e.touches[0].clientY, d = (touchY - y) * 1.6;
-    touchY = y;
+  root.addEventListener('wheel', function (e) {
+    var d = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY;
     if (!shouldCapture(d)) return;
     e.preventDefault();
-    setScroll(vScroll + d);
+    feed(d);
   }, { passive: false });
+
+  var touchY = 0, touchT = 0, touchV = 0;
+  root.addEventListener('touchstart', function (e) { touchY = e.touches[0].clientY; touchT = performance.now(); touchV = 0; }, { passive: true });
+  root.addEventListener('touchmove', function (e) {
+    var y = e.touches[0].clientY, now = performance.now(), d = (touchY - y) * 1.4;
+    touchV = d / Math.max(now - touchT, 1);
+    touchY = y; touchT = now;
+    if (!shouldCapture(d)) return;
+    e.preventDefault();
+    if (autoTo === null) { setScroll(vScroll + d); nudgeSkip(); }
+  }, { passive: false });
+  root.addEventListener('touchend', function () {
+    // quick swipe (> ~1.2px/ms) finishes the animation in that direction
+    if (Math.abs(touchV) > 1.2 && heroAtTop() && autoTo === null) autoFinish(touchV);
+  }, { passive: true });
+
+  window.addEventListener('keydown', function (e) {
+    if (!heroAtTop()) return;
+    var k = e.key;
+    if ((k === 'ArrowDown' || k === 'PageDown' || k === ' ') && vScroll < MAX_SCROLL && !/^(input|textarea|select|button|a)$/i.test(e.target.tagName)) {
+      e.preventDefault(); setScroll(vScroll + (k === 'ArrowDown' ? 120 : 400));
+    }
+  });
+
+  // --- Smart skip: shows once the circle forms and whenever the visitor looks in a hurry ---
+  var skipShownAt = 0;
+  function nudgeSkip() {
+    if (vScroll >= MAX_SCROLL) { skipBtn.classList.remove('is-on'); return; }
+    if (!skipBtn.classList.contains('is-on')) { skipBtn.classList.add('is-on'); skipShownAt = performance.now(); }
+  }
+  skipBtn.addEventListener('click', function () {
+    setScroll(MAX_SCROLL);
+    skipBtn.classList.remove('is-on');
+    var next = root.closest('.nalea-homepage') ? root.nextElementSibling : null;
+    var y = (next || root).getBoundingClientRect().top + window.pageYOffset + (next ? -70 : root.offsetHeight);
+    window.scrollTo({ top: y, behavior: reduceMotion ? 'auto' : 'smooth' });
+  });
 
   // --- Mouse parallax ---
   root.addEventListener('mousemove', function (e) {
@@ -229,10 +447,27 @@
 
   // --- Intro sequence ---
   var phase = 'scatter';
-  setTimeout(function () { phase = 'line'; }, 500);
-  setTimeout(function () { phase = 'circle'; root.classList.add('is-circle'); }, 2500);
+  var introT1 = setTimeout(function () { phase = 'line'; }, reduceMotion ? 0 : 500);
+  var introT2 = setTimeout(function () { phase = 'circle'; root.classList.add('is-circle'); nudgeSkip(); }, reduceMotion ? 50 : 2300);
+
+  // --- Re-shuffle: cards fly out, get new products, deal back in ---
+  var dealing = false;
+  root.querySelector('[data-nmh-shuffle]').addEventListener('click', function () {
+    if (dealing) return;
+    dealing = true;
+    var prev = phase;
+    cards.forEach(function (c) { c.scatter = scatterPos(); c.el.classList.remove('is-flipped'); });
+    phase = 'scatter';
+    setTimeout(function () {
+      var next = dealSet();
+      cards.forEach(function (c, i) { c.p = next[i]; c.el.innerHTML = cardHTML(next[i], i); c.el.setAttribute('aria-label', next[i].t); });
+      phase = prev;
+      setTimeout(function () { dealing = false; }, 700);
+    }, 650);
+  });
 
   function lerp(a, b, t) { return a * (1 - t) + b * t; }
+  var spotIdx = -1;
 
   function targetFor(i) {
     if (phase === 'scatter') return cards[i].scatter;
@@ -246,42 +481,75 @@
     var circle = { x: Math.cos(cRad) * cR, y: Math.sin(cRad) * cR, rotation: cA + 90 };
 
     var arcR = Math.min(W, H * 1.5) * (isMobile ? 1.4 : 1.1);
-    var apexY = H * (isMobile ? 0.35 : 0.25);
-    var centerY = apexY + arcR;
+    var apexY = H * (isMobile ? 0.33 : 0.25);
     var spread = isMobile ? 100 : 130;
     var start = -90 - spread / 2, step = spread / (TOTAL - 1);
-    var prog = Math.min(Math.max(rotate.x / 360, 0), 1);
-    var ang = start + i * step - prog * spread * 0.8;
+    var ang = start + i * step - rotate.x * spread * 0.8;
     var aRad = ang * Math.PI / 180;
+    var baseScale = isMobile ? 1.4 : 1.8;
+    // Spotlight: the card closest to the top of the arc grows
+    var near = Math.max(0, 1 - Math.abs(ang + 90) / (step * 1.2));
     var arc = {
       x: Math.cos(aRad) * arcR + parallax.x,
-      y: Math.sin(aRad) * arcR + centerY,
+      y: Math.sin(aRad) * arcR + apexY + arcR - near * 18,
       rotation: ang + 90,
-      scale: isMobile ? 1.4 : 1.8
+      scale: baseScale * (1 + near * 0.28)
     };
-    return {
-      x: lerp(circle.x, arc.x, m), y: lerp(circle.y, arc.y, m),
-      rotation: lerp(circle.rotation, arc.rotation, m),
-      scale: lerp(1, arc.scale, m), opacity: 1
-    };
+    return { x: lerp(circle.x, arc.x, m), y: lerp(circle.y, arc.y, m), rotation: lerp(circle.rotation, arc.rotation, m),
+      scale: lerp(1, arc.scale, m), opacity: 1, near: near };
   }
 
+  // --- Gold dust particles ---
+  var dust = root.querySelector('.nmh__dust'), dctx = dust.getContext && dust.getContext('2d'), motes = [];
+  function sizeDust() {
+    if (!dctx) return;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dust.width = W * dpr; dust.height = H * dpr; dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  sizeDust();
+  var moteCount = reduceMotion ? 0 : (W < 768 ? 22 : 45);
+  for (var n = 0; n < moteCount; n++) {
+    motes.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.6 + 0.4, vy: -(Math.random() * 12 + 4), vx: (Math.random() - 0.5) * 6, a: Math.random() * 0.5 + 0.2, tw: Math.random() * 6.28 });
+  }
+  var dustRGB = '212,175,85';
+  function readDust() { dustRGB = getComputedStyle(root).getPropertyValue('--nmh-dust').trim() || dustRGB; }
+  readDust();
+  new MutationObserver(readDust).observe(document.documentElement, { attributes: true, attributeFilter: ['data-nx-theme'] });
+  function drawDust(dt) {
+    if (!dctx || !motes.length) return;
+    dctx.clearRect(0, 0, W, H);
+    for (var i = 0; i < motes.length; i++) {
+      var p = motes[i];
+      p.y += p.vy * dt; p.x += p.vx * dt; p.tw += dt * 2;
+      if (p.y < -5) { p.y = H + 5; p.x = Math.random() * W; }
+      dctx.globalAlpha = p.a * (0.6 + 0.4 * Math.sin(p.tw));
+      dctx.fillStyle = 'rgb(' + dustRGB + ')';
+      dctx.beginPath(); dctx.arc(p.x, p.y, p.r, 0, 6.283); dctx.fill();
+    }
+    dctx.globalAlpha = 1;
+  }
+
+  // --- Render loop ---
   var KEYS = ['x', 'y', 'rotation', 'scale', 'opacity'];
   var last = performance.now(), visible = true;
-  if ('IntersectionObserver' in window) {
-    new IntersectionObserver(function (en) { visible = en[0].isIntersecting; }).observe(root);
-  }
+  if ('IntersectionObserver' in window) new IntersectionObserver(function (en) { visible = en[0].isIntersecting; }).observe(root);
 
   function frame(now) {
     var dt = Math.min((now - last) / 1000, 1 / 30);
     last = now;
     if (visible) {
-      // sub-step for stable springs
+      if (autoTo !== null) {
+        var diff = autoTo - vScroll;
+        if (Math.abs(diff) < 4) { setScroll(autoTo); autoTo = null; }
+        else setScroll(vScroll + diff * Math.min(1, dt * 7));
+      }
+      var targets = [];
       for (var sub = 0; sub < 2; sub++) {
         var h = dt / 2;
         morph.step(h); rotate.step(h); parallax.step(h);
         for (var i = 0; i < TOTAL; i++) {
           var c = cards[i], t = targetFor(i);
+          targets[i] = t;
           for (var k = 0; k < 5; k++) {
             var key = KEYS[k];
             var f = -40 * (c.v[key] - t[key]) - 15 * c.vel[key];
@@ -289,19 +557,37 @@
           }
         }
       }
+      var best = -1, bestNear = 0.55;
       for (var j = 0; j < TOTAL; j++) {
         var cv = cards[j].v;
         cards[j].el.style.transform = 'translate3d(' + cv.x.toFixed(1) + 'px,' + cv.y.toFixed(1) + 'px,0) rotate(' + cv.rotation.toFixed(2) + 'deg) scale(' + cv.scale.toFixed(3) + ')';
         cards[j].el.style.opacity = Math.max(0, Math.min(1, cv.opacity)).toFixed(3);
+        cards[j].el.style.zIndex = targets[j] && targets[j].near ? 10 + Math.round(targets[j].near * 10) : 1;
+        if (targets[j] && targets[j].near > bestNear) { bestNear = targets[j].near; best = j; }
       }
-      // intro text fades out as morph begins; arc content fades in near the end of the morph
       var m = morph.x;
-      var intro = root.querySelector('.nmh__intro');
-      intro.style.opacity = phase === 'circle' ? Math.max(0, 1 - m * 2) : 1;
+      if (m < 0.9 || phase !== 'circle') best = -1;
+      if (best !== spotIdx) {
+        if (spotIdx > -1) cards[spotIdx].el.classList.remove('is-spot');
+        spotIdx = best;
+        if (best > -1) {
+          cards[best].el.classList.add('is-spot');
+          spotName.textContent = cards[best].p.t;
+          spotPrice.textContent = cards[best].p.p;
+        }
+        spotEl.classList.toggle('is-on', best > -1);
+      }
+      if (best > -1) {
+        var sv = cards[best].v;
+        spotEl.style.top = (H / 2 + sv.y - 42.5 * sv.scale - 46) + 'px';
+        spotEl.style.marginLeft = sv.x + 'px';
+      }
+      introEl.style.opacity = phase === 'circle' ? Math.max(0, 1 - m * 2) : 1;
       var co = Math.min(Math.max((m - 0.8) / 0.2, 0), 1);
       arcContent.style.opacity = co;
       arcContent.style.transform = 'translateY(' + ((1 - co) * 20) + 'px)';
       arcContent.classList.toggle('is-live', co > 0.5);
+      drawDust(dt);
     }
     requestAnimationFrame(frame);
   }
