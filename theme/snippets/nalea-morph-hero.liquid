@@ -271,6 +271,20 @@
     #nalea-morph-hero .nmh__cta,#nalea-morph-hero .nmh__pill{min-height:42px!important;padding:0 16px!important;font-size:10.5px!important;letter-spacing:.12em!important;gap:7px!important}
     #nalea-morph-hero .nmh__ctas{gap:8px}
   }
+  /* Pause every decorative animation while the hero is off-screen */
+  .nmh.is-off,.nmh.is-off *,.nmh.is-off *::before,.nmh.is-off *::after{animation-play-state:paused!important}
+  .nmh{contain:layout paint}
+  /* Lite mode (low-power phones): drop the expensive paint effects */
+  .nmh.is-lite .nmh__face--front::after,.nmh.is-lite .nmh__glow,.nmh.is-lite .nmh__logo-sweep{animation:none!important;display:none}
+  .nmh.is-lite .nmh__face,.nmh.is-lite .nmh__card.is-spot .nmh__face{box-shadow:0 4px 10px rgba(0,0,0,.35)}
+  .nmh.is-lite .nmh__card.is-spot .nmh__face{outline:1px solid var(--nmh-gold)}
+  .nmh.is-lite .nmh__logo-fill{filter:none}
+  #nalea-morph-hero.is-lite .nmh__pill,#nalea-morph-hero.is-lite .nmh__skip,#nalea-morph-hero.is-lite .nmh__toast{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+  #nalea-morph-hero.is-lite .nmh__pill{background:rgba(40,28,14,.85)!important}
+  html[data-nx-theme="light"] #nalea-morph-hero.is-lite .nmh__pill{background:rgba(255,255,255,.92)!important}
+  #nalea-morph-hero.is-lite .nmh__pill::before{animation:none!important;background:linear-gradient(135deg,#e8c56a,rgba(232,197,106,.25))}
+  #nalea-morph-hero.is-lite .nmh__cta{animation:none!important}
+  #nalea-morph-hero.is-lite .nmh__cta::after{animation-duration:5s}
   @media (prefers-reduced-motion:reduce){
     .nmh__card-inner{transition:none}.nmh__face--front::after,.nmh__glow,.nmh__skip-a svg,#nalea-morph-hero .nmh__cta,#nalea-morph-hero .nmh__cta::after,#nalea-morph-hero .nmh__pill::before{animation:none}
     .nmh__logo-stroke{animation:none;stroke-dashoffset:0}.nmh__logo-fill{animation:none;opacity:1}
@@ -284,7 +298,14 @@
   if (!root || root.dataset.ready) return;
   root.dataset.ready = '1';
 
-  var TOTAL = 20, MORPH_END = 350, MAX_SCROLL = 1000;
+  // Lite mode for low-power phones: fewer cards, no dust/shimmer/blur, one spring sub-step.
+  var nav = navigator, conn = nav.connection || {};
+  var LITE = !!(conn.saveData || (nav.deviceMemory && nav.deviceMemory <= 4) ||
+    (nav.hardwareConcurrency && nav.hardwareConcurrency <= 4) ||
+    (window.matchMedia && window.matchMedia('(hover: none)').matches && (nav.hardwareConcurrency || 4) <= 6));
+  if (/[?&]nmh=(lite|full)/.test(location.search)) LITE = /nmh=lite/.test(location.search);
+  if (LITE) root.classList.add('is-lite');
+  var TOTAL = LITE ? 14 : 20, MORPH_END = 350, MAX_SCROLL = 1000, SUBSTEPS = LITE ? 1 : 2;
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var stage = root.querySelector('[data-nmh-stage]');
   var arcContent = root.querySelector('.nmh__arc-content');
@@ -345,7 +366,7 @@
       : '<a class="nmh__add" href="' + esc(p.u) + '" style="text-decoration:none">Choose</a>';
     return '<div class="nmh__card-inner">' +
       '<div class="nmh__face nmh__face--front">' + sale +
-        '<img src="' + esc(p.i) + '" alt="' + esc(p.t) + '" loading="' + (i < 12 ? 'eager' : 'lazy') + '" width="60" height="85" draggable="false"></div>' +
+        '<img src="' + esc(LITE ? p.i.replace(/width=\d+/, 'width=240') : p.i) + '" alt="' + esc(p.t) + '" loading="' + (i < 12 ? 'eager' : 'lazy') + '" width="60" height="85" draggable="false"></div>' +
       '<div class="nmh__face nmh__face--back">' +
         '<a class="nmh__back-name" href="' + esc(p.u) + '">' + esc(p.t) + '</a>' +
         '<span class="nmh__back-price">' + esc(p.p) + '</span>' + was + add +
@@ -428,7 +449,7 @@
   var morph = new Spring(55, 18, 0), rotate = new Spring(45, 18, 0), parallax = new Spring(30, 20, 0);
 
   var W = root.clientWidth, H = root.clientHeight;
-  function measure() { W = root.clientWidth; H = root.clientHeight; sizeDust(); }
+  function measure() { W = root.clientWidth; H = root.clientHeight; sizeDust(); if (window.__nmhWake) window.__nmhWake(); }
   if ('ResizeObserver' in window) new ResizeObserver(measure).observe(root);
   else window.addEventListener('resize', measure);
 
@@ -440,6 +461,7 @@
     rotate.target = Math.min(Math.max((vScroll - MORPH_END) / (MAX_SCROLL - MORPH_END), 0), 1);
     root.classList.toggle('is-done', vScroll >= MAX_SCROLL);
     bar.style.height = (vScroll / MAX_SCROLL * 100).toFixed(1) + '%';
+    if (window.__nmhWake) window.__nmhWake();
   }
   function heroAtTop() { var top = root.getBoundingClientRect().top; return top > -10 && top < window.innerHeight * 0.3; }
   function shouldCapture(delta) {
@@ -457,7 +479,7 @@
     var sum = recent.reduce(function (s, r) { return s + r.d; }, 0);
     return Math.abs(sum) > 700;
   }
-  function autoFinish(dir) { autoTo = dir > 0 ? MAX_SCROLL : 0; recent = []; }
+  function autoFinish(dir) { autoTo = dir > 0 ? MAX_SCROLL : 0; recent = []; wake(); }
   function feed(delta) {
     if (autoTo !== null) return;
     if (isFlick(delta)) { autoFinish(delta); return; }
@@ -524,13 +546,14 @@
   root.addEventListener('mousemove', function (e) {
     var rect = root.getBoundingClientRect();
     parallax.target = (((e.clientX - rect.left) / rect.width) * 2 - 1) * 100;
+    wake();
   });
 
   // --- Intro sequence ---
   var phase = 'scatter';
-  var introT1 = setTimeout(function () { phase = 'line'; }, reduceMotion ? 0 : 700);
+  var introT1 = setTimeout(function () { phase = 'line'; wake(); }, reduceMotion ? 0 : 700);
   setTimeout(function () { root.classList.add('is-logo-out'); }, reduceMotion ? 800 : 3200);
-  var introT2 = setTimeout(function () { phase = 'circle'; root.classList.add('is-circle'); nudgeSkip(); }, reduceMotion ? 900 : 3500);
+  var introT2 = setTimeout(function () { phase = 'circle'; wake(); root.classList.add('is-circle'); nudgeSkip(); }, reduceMotion ? 900 : 3500);
 
   // --- Re-shuffle: cards fly out, get new products, deal back in ---
   var dealing = false;
@@ -539,11 +562,11 @@
     dealing = true;
     var prev = phase;
     cards.forEach(function (c) { c.scatter = scatterPos(); c.el.classList.remove('is-flipped'); });
-    phase = 'scatter';
+    phase = 'scatter'; wake();
     setTimeout(function () {
       var next = dealSet();
       cards.forEach(function (c, i) { c.p = next[i]; c.el.innerHTML = cardHTML(next[i], i); c.el.setAttribute('aria-label', next[i].t); });
-      phase = prev;
+      phase = prev; wake();
       setTimeout(function () { dealing = false; }, 700);
     }, 650);
   });
@@ -589,7 +612,7 @@
     dust.width = W * dpr; dust.height = H * dpr; dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   sizeDust();
-  var moteCount = reduceMotion ? 0 : (W < 768 ? 22 : 45);
+  var moteCount = (reduceMotion || LITE) ? 0 : (W < 768 ? 22 : 45);
   for (var n = 0; n < moteCount; n++) {
     motes.push({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.6 + 0.4, vy: -(Math.random() * 12 + 4), vx: (Math.random() - 0.5) * 6, a: Math.random() * 0.5 + 0.2, tw: Math.random() * 6.28 });
   }
@@ -613,8 +636,15 @@
 
   // --- Render loop ---
   var KEYS = ['x', 'y', 'rotation', 'scale', 'opacity'];
-  var last = performance.now(), visible = true;
-  if ('IntersectionObserver' in window) new IntersectionObserver(function (en) { visible = en[0].isIntersecting; }).observe(root);
+  var last = performance.now(), visible = true, running = false;
+  if ('IntersectionObserver' in window) new IntersectionObserver(function (en) {
+    visible = en[0].isIntersecting;
+    root.classList.toggle('is-off', !visible);   // pauses CSS animations while off-screen
+    if (visible) wake();
+  }).observe(root);
+  // The loop only runs while something is moving, then sleeps until input wakes it.
+  function wake() { if (!running && visible) { running = true; last = performance.now(); requestAnimationFrame(frame); } }
+  window.__nmhWake = wake;
 
   function frame(now) {
     var dt = Math.min((now - last) / 1000, 1 / 30);
@@ -626,8 +656,9 @@
         else setScroll(vScroll + diff * Math.min(1, dt * 7));
       }
       var targets = [];
-      for (var sub = 0; sub < 2; sub++) {
-        var h = dt / 2;
+      var energy = 0;
+      for (var sub = 0; sub < SUBSTEPS; sub++) {
+        var h = dt / SUBSTEPS;
         morph.step(h); rotate.step(h); parallax.step(h);
         for (var i = 0; i < TOTAL; i++) {
           var c = cards[i], t = targetFor(i);
@@ -636,15 +667,20 @@
             var key = KEYS[k];
             var f = -40 * (c.v[key] - t[key]) - 15 * c.vel[key];
             c.vel[key] += f * h; c.v[key] += c.vel[key] * h;
+            if (sub === SUBSTEPS - 1) energy += Math.abs(c.vel[key]) + Math.abs(c.v[key] - t[key]);
           }
         }
       }
       var best = -1, bestNear = 0.55;
       for (var j = 0; j < TOTAL; j++) {
         var cv = cards[j].v;
-        cards[j].el.style.transform = 'translate3d(' + cv.x.toFixed(1) + 'px,' + cv.y.toFixed(1) + 'px,0) rotate(' + cv.rotation.toFixed(2) + 'deg) scale(' + cv.scale.toFixed(3) + ')';
-        cards[j].el.style.opacity = Math.max(0, Math.min(1, cv.opacity)).toFixed(3);
-        cards[j].el.style.zIndex = targets[j] && targets[j].near ? 10 + Math.round(targets[j].near * 10) : 1;
+        var cj = cards[j];
+        var tf = 'translate3d(' + cv.x.toFixed(1) + 'px,' + cv.y.toFixed(1) + 'px,0) rotate(' + cv.rotation.toFixed(1) + 'deg) scale(' + cv.scale.toFixed(3) + ')';
+        if (tf !== cj._tf) { cj.el.style.transform = tf; cj._tf = tf; }
+        var op = Math.max(0, Math.min(1, cv.opacity)).toFixed(2);
+        if (op !== cj._op) { cj.el.style.opacity = op; cj._op = op; }
+        var zi = targets[j] && targets[j].near ? 10 + Math.round(targets[j].near * 10) : 1;
+        if (zi !== cj._zi) { cj.el.style.zIndex = zi; cj._zi = zi; }
         if (targets[j] && targets[j].near > bestNear) { bestNear = targets[j].near; best = j; }
       }
       var m = morph.x;
@@ -670,9 +706,11 @@
       arcContent.style.transform = 'translateY(' + ((1 - co) * 20) + 'px)';
       arcContent.classList.toggle('is-live', co > 0.5);
       drawDust(dt);
-    }
+      var springsBusy = Math.abs(morph.v) + Math.abs(morph.x - morph.target) + Math.abs(rotate.v) + Math.abs(rotate.x - rotate.target) + Math.abs(parallax.v) + Math.abs(parallax.x - parallax.target);
+      if (energy < 0.05 && springsBusy < 0.002 && autoTo === null && !motes.length) { running = false; return; }
+    } else { running = false; return; }
     requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
+  wake();
 })();
 </script>
