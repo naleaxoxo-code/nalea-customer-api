@@ -122,9 +122,3 @@ export const PACKAGES: { id: string; title: string; tagline: string; items: Pkg[
     ],
   },
 ]
-
-/** Public file URL — Shopify serves theme assets from its CDN, Next from /public. */
-export const asset = (name: string) => {
-  const base = typeof window !== "undefined" ? (window as unknown as { MPHO_ASSET_BASE?: string }).MPHO_ASSET_BASE : undefined
-  return base ? base + name : "/" + name
-}
