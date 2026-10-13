@@ -2306,6 +2306,9 @@ async function sendReviewRequestEmail(toEmail, firstName, lineItems) {
   }
 }
 
+// Mpho Sauli bookings — separate store, separate MPHO_* settings, /mpho/* routes only.
+require('./bookings')(app);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Nalea API listening on port ${PORT}`));
 
