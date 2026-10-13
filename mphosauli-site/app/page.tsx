@@ -4,6 +4,7 @@ import * as React from "react"
 import WavingPortfolioHero from "@/components/ui/waving-portfolio-hero"
 import MurmurationWordmark from "@/components/ui/murmuration-wordmark"
 import GlassFolder from "@/components/ui/glass-folder-cards"
+import BookingExperience from "@/components/booking-experience"
 import { PACKAGES, SITE, waLink, type Pkg } from "@/lib/site"
 
 function useReveal() {
@@ -39,6 +40,7 @@ function Nav() {
     ["Services", "#services"],
     ["Work", "#work"],
     ["Packages", "#packages"],
+    ["Book", "#book"],
     ["Contact", "#contact"],
   ]
   return (
@@ -453,6 +455,9 @@ export default function Home() {
       <Packages />
       <Flock />
       <Process />
+      <section id="book" className="scroll-mt-20">
+        <BookingExperience />
+      </section>
       <Contact />
       <Footer />
       <FloatingWhatsApp />

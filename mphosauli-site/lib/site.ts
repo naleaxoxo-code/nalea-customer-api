@@ -7,7 +7,7 @@ export const SITE = {
   instagram: "https://instagram.com/",
   tiktok: "https://tiktok.com/",
   // Booking link (Calendly, Cal.com…). Falls back to the contact form.
-  booking: "#contact",
+  booking: "#book",
   // Shopify store used for "Buy now" checkout links.
   shop: "https://4pqks1-fs.myshopify.com",
 }
