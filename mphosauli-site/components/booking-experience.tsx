@@ -21,7 +21,8 @@ type Slot = { start: string; end: string; free: boolean }
 type Booking = {
   id: string; world: World; session: string; method: string; start: string; end: string; fee: number
   name: string; email: string; phone: string; notes: string; answers: Record<string, string | string[]>
-  status: "confirmed" | "pending_payment" | "cancelled"; room?: string; moved?: number
+  status: "confirmed" | "pending_payment" | "pending_approval" | "cancelled"; room?: string; moved?: number
+  venue?: string; code?: string
 }
 
 const TZ = "Africa/Johannesburg"
@@ -72,6 +73,33 @@ const METHODS: Method[] = [
 
 const STEPS = ["Track", "Brief", "Session", "Meet", "Time", "Confirm"]
 
+// In person: public, busy, CCTV-covered venues only. Daylight hours only.
+const VENUES = [
+  { id: "sandton", name: "Starbucks — Sandton City", area: "Sandton" },
+  { id: "fourways", name: "Starbucks — Fourways Mall", area: "Fourways" },
+  { id: "morningside", name: "Starbucks — Morningside Shopping Centre", area: "Morningside" },
+  { id: "khayalami", name: "Starbucks — Khayalami Mall", area: "Kyalami" },
+]
+const IN_PERSON = [
+  { minutes: 60, fee: 750 },
+  { minutes: 90, fee: 1000 },
+  { minutes: 120, fee: 1300 },
+]
+const IN_PERSON_HOURS: Record<number, [number, number]> = { 1: [10, 16], 2: [10, 16], 3: [10, 16], 4: [10, 16], 5: [10, 16], 6: [10, 13] }
+const WHY_IN_PERSON = [
+  ["Travel across Joburg", "Getting to and from the mall blocks out 2–3 hours of studio time."],
+  ["Prepared for you", "Laptop demos, printed moodboards and your mock-ups ready on the table."],
+  ["Undivided focus", "One client, face to face — no other calls that afternoon."],
+  ["Verified & safe", "Every in-person client is checked so both sides can meet with confidence."],
+]
+const CODE_WORDS = ["CORAL", "NEON", "VELVET", "ORBIT", "PRISM", "LUNAR", "EMBER", "SAFFRON"]
+type Verify = {
+  business: string; reg: string; site: string; suburb: string; phone: string
+  otpSent: boolean; otp: string; otpOk: boolean; idFile: string; selfieFile: string
+  emergency: string; rules: boolean; popia: boolean
+}
+const EMPTY_VERIFY: Verify = { business: "", reg: "", site: "", suburb: "", phone: "", otpSent: false, otp: "", otpOk: false, idFile: "", selfieFile: "", emergency: "", rules: false, popia: false }
+
 // ---------- time helpers -------------------------------------------------------
 const pad = (n: number) => String(n).padStart(2, "0")
 const ymd = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
@@ -80,10 +108,10 @@ const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("en-ZA", { hou
 const fmtLong = (iso: string) => new Date(iso).toLocaleString("en-ZA", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: TZ })
 const rand = (n: number) => { const x = Math.sin(n * 12.9898) * 43758.5453; return x - Math.floor(x) }
 
-function demoSlots(date: string, minutes: number, taken: Booking[]): Slot[] {
+function demoSlots(date: string, minutes: number, taken: Booking[], table: Record<number, [number, number]> = HOURS): Slot[] {
   const [y, m, d] = date.split("-").map(Number)
   const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay()
-  const hours = HOURS[dow]
+  const hours = table[dow]
   if (!hours) return []
   const out: Slot[] = []
   const soon = Date.now() + 2 * 3600e3
@@ -194,6 +222,10 @@ export default function BookingExperience() {
   const [hold, setHold] = React.useState(0)
   const [mine, setMine] = React.useState<Booking[]>([])
   const [rescheduling, setRescheduling] = React.useState<Booking | null>(null)
+  const [venue, setVenue] = React.useState<string | null>(null)
+  const [ipLen, setIpLen] = React.useState(60)
+  const [verify, setVerify] = React.useState<Verify>(EMPTY_VERIFY)
+  const [demoUnlocked, setDemoUnlocked] = React.useState(false)
   const { bursts, fire } = useBursts()
   const W = world ? WORLDS[world] : null
 
@@ -214,7 +246,17 @@ export default function BookingExperience() {
   }
 
   const answered = W ? W.questions.every((q) => (q.multi ? (answers[q.id] as string[] | undefined)?.length : answers[q.id])) : false
-  const minutes = session?.minutes ?? 15
+  const inPerson = method === "person"
+  const tier = IN_PERSON.find((t) => t.minutes === ipLen) || IN_PERSON[0]
+  const minutes = inPerson ? tier.minutes : session?.minutes ?? 15
+  const fee = inPerson ? tier.fee : session?.fee ?? 0
+  const hoursTable = inPerson ? IN_PERSON_HOURS : HOURS
+  const hadPaidOnline = demoUnlocked || mine.some((b) => b.fee > 0 && b.status === "confirmed" && b.method !== "person")
+  const inPersonReady = !inPerson || (hadPaidOnline && Boolean(venue))
+  const v = verify
+  const verifyDone = !inPerson || Boolean(
+    v.business && v.reg && v.site && v.suburb && v.otpOk && v.idFile && v.selfieFile && v.emergency && v.rules && v.popia,
+  )
 
   // Month grid.
   const today = new Date()
@@ -228,11 +270,11 @@ export default function BookingExperience() {
       const key = ymd(d)
       const past = key < todayKey
       const far = d.getTime() - today.getTime() > 60 * 864e5
-      const slots = past || far ? [] : demoSlots(key, minutes, mine)
-      days.push({ key, d: d.getUTCDate(), inMonth: d.getUTCMonth() === month.getUTCMonth(), open: slots.filter((s) => s.free).length, closed: !HOURS[d.getUTCDay()] || far, past })
+      const slots = past || far ? [] : demoSlots(key, minutes, mine, hoursTable)
+      days.push({ key, d: d.getUTCDate(), inMonth: d.getUTCMonth() === month.getUTCMonth(), open: slots.filter((s) => s.free).length, closed: !hoursTable[d.getUTCDay()] || far, past })
     }
   }
-  const slots = date ? demoSlots(date, minutes, mine.filter((b) => b.id !== rescheduling?.id)) : []
+  const slots = date ? demoSlots(date, minutes, mine.filter((b) => b.id !== rescheduling?.id), hoursTable) : []
   const morning = slots.filter((s) => +fmtTime(s.start).slice(0, 2) < 12)
   const afternoon = slots.filter((s) => +fmtTime(s.start).slice(0, 2) >= 12)
 
@@ -249,12 +291,15 @@ export default function BookingExperience() {
     } else {
       const id = "MS" + Date.now().toString(36).toUpperCase()
       const b: Booking = {
-        id, world, session: session.id, method, start: slot.start, end: slot.end, fee: session.fee, ...form, answers,
-        status: session.fee ? "pending_payment" : "confirmed", room: method === "room" ? roomFor(id) : undefined,
+        id, world, session: inPerson ? "in-person-" + tier.minutes : session.id, method, start: slot.start, end: slot.end, fee, ...form,
+        phone: inPerson ? verify.phone : form.phone, answers,
+        status: fee ? "pending_payment" : "confirmed", room: method === "room" ? roomFor(id) : undefined,
+        venue: inPerson ? venue || undefined : undefined,
+        code: inPerson ? CODE_WORDS[Math.floor(Math.random() * CODE_WORDS.length)] + "-" + (10 + Math.floor(Math.random() * 89)) : undefined,
       }
       setMine((m) => [b, ...m])
       setDone(b)
-      if (session.fee) setHold(15 * 60)
+      if (fee) setHold(15 * 60)
     }
     setBusy(false)
   }
@@ -263,7 +308,7 @@ export default function BookingExperience() {
     fire(e)
     if (!done) return
     // Real build: redirect to Shopify checkout for the consultation product; webhook confirms.
-    const paid = { ...done, status: "confirmed" as const }
+    const paid = { ...done, status: (done.method === "person" ? "pending_approval" : "confirmed") as Booking["status"] }
     setMine((m) => m.map((b) => (b.id === paid.id ? paid : b)))
     setDone(paid)
     setHold(0)
@@ -271,6 +316,7 @@ export default function BookingExperience() {
 
   const reset = () => {
     setDone(null); setStep(0); setWorld(null); setAnswers({}); setSession(null); setDate(null); setSlot(null); setAgree(false); setHold(0)
+    setMethod("room"); setVenue(null); setIpLen(60); setVerify(EMPTY_VERIFY)
   }
 
   const startReschedule = (b: Booking) => {
@@ -292,7 +338,7 @@ export default function BookingExperience() {
     setMine((m) => m.map((x) => (x.id === b.id ? { ...x, status: "cancelled" } : x)))
   }
 
-  const sessionLabel = (id: string) => [...WORLDS.web.sessions, ...WORLDS.ads.sessions].find((s) => s.id === id)?.label || id
+  const sessionLabel = (id: string) => (id.startsWith("in-person-") ? `In-person meeting · ${id.slice(10)} min` : [...WORLDS.web.sessions, ...WORLDS.ads.sessions].find((s) => s.id === id)?.label || id)
 
   // ---------- render ----------
   return (
@@ -337,8 +383,8 @@ export default function BookingExperience() {
                       <div className="bx-item-tag">{b.world === "web" ? "WEB" : "ADS"}</div>
                       <div className="bx-item-main">
                         <strong>{sessionLabel(b.session)}</strong>
-                        <span>{fmtLong(b.start)} · {METHODS.find((m) => m.id === b.method)?.label}</span>
-                        <small>#{b.id} · {b.fee ? "R" + b.fee : "Free"} · {b.status === "pending_payment" ? "awaiting payment" : b.status}{b.moved ? ` · moved ${b.moved}×` : ""}</small>
+                        <span>{fmtLong(b.start)} · {b.venue ? VENUES.find((x) => x.id === b.venue)?.name : METHODS.find((m) => m.id === b.method)?.label}</span>
+                        <small>#{b.id} · {b.fee ? "R" + b.fee : "Free"} · {b.status === "pending_payment" ? "awaiting payment" : b.status === "pending_approval" ? "awaiting Mpho's approval" : b.status}{b.code ? " · code " + b.code : ""}{b.moved ? ` · moved ${b.moved}×` : ""}</small>
                       </div>
                       {b.status !== "cancelled" ? (
                         <div className="bx-item-actions">
@@ -355,15 +401,23 @@ export default function BookingExperience() {
             )}
           </Panel>
         ) : done ? (
-          <Panel world={world} title={done.status === "pending_payment" ? "payment_required" : "booking_confirmed"}>
+          <Panel world={world} title={done.status === "pending_payment" ? "payment_required" : done.status === "pending_approval" ? "awaiting_approval" : "booking_confirmed"}>
             <div className="bx-done">
-              <div className={"bx-seal" + (done.status === "pending_payment" ? " is-wait" : "")}>{done.status === "pending_payment" ? "R" + done.fee : "✓"}</div>
-              {done.status === "pending_payment" ? (
+              <div className={"bx-seal" + (done.status !== "confirmed" ? " is-wait" : "")}>{done.status === "pending_payment" ? "R" + done.fee : done.status === "pending_approval" ? "⏳" : "✓"}</div>
+              {done.status === "pending_approval" ? (
+                <>
+                  <h2>Paid — awaiting approval</h2>
+                  <p className="bx-muted">In-person · <strong>{fmtLong(done.start)}</strong> at <strong>{VENUES.find((x) => x.id === done.venue)?.name}</strong></p>
+                  <p className="bx-muted">Mpho reviews your verification within 24 hours. You&apos;ll get an email when it&apos;s approved — or a full refund if not.</p>
+                  <div className="bx-code"><small>Your meeting code</small><strong>{done.code}</strong><span className="bx-muted">Say this when you meet so Mpho knows it&apos;s you. Don&apos;t share it.</span></div>
+                  <button className="bx-ghost" onClick={() => setTab("manage")}>Manage</button>
+                </>
+              ) : done.status === "pending_payment" ? (
                 <>
                   <h2>Your slot is held</h2>
-                  <p className="bx-muted">Pay the R{done.fee} {sessionLabel(done.session).toLowerCase()} fee to lock <strong>{fmtLong(done.start)}</strong>. It comes off your package if you hire Mpho.</p>
+                  <p className="bx-muted">Pay the R{done.fee.toLocaleString("en-ZA")} {sessionLabel(done.session).toLowerCase()} fee to lock <strong>{fmtLong(done.start)}</strong>. It comes off your package if you hire Mpho.</p>
                   <div className="bx-timer"><span>{pad(Math.floor(hold / 60))}</span>:<span>{pad(hold % 60)}</span></div>
-                  <button className="bx-cta" onClick={pay}>Pay R{done.fee} &amp; confirm</button>
+                  <button className="bx-cta" onClick={pay}>Pay R{done.fee.toLocaleString("en-ZA")} &amp; {done.method === "person" ? "send for approval" : "confirm"}</button>
                   <p className="bx-muted bx-small">Secure checkout through Shopify. If you don&apos;t pay within 15 minutes the slot is released.</p>
                 </>
               ) : (
@@ -461,15 +515,59 @@ export default function BookingExperience() {
                 <Panel world={world} title={world === "web" ? "connect --method" : "How we meet"}>
                   <div className="bx-methods">
                     {METHODS.map((m) => (
-                      <button key={m.id} className={"bx-method" + (method === m.id ? " is-on" : "")} onClick={pick(() => setMethod(m.id))}>
-                        <span className="bx-method-i">{m.icon}</span>
+                      <button key={m.id} className={"bx-method" + (method === m.id ? " is-on" : "") + (m.id === "person" ? " bx-method-vip" : "")} onClick={pick(() => setMethod(m.id))}>
+                        <span className="bx-method-i">{m.id === "person" && !hadPaidOnline ? "🔒" : m.icon}</span>
                         <strong>{m.label}</strong>
-                        <span className="bx-muted">{m.note}</span>
+                        <span className="bx-muted">{m.id === "person" ? "From R750 · verified clients" : m.note}</span>
                         {m.id === "room" ? <span className="bx-badge">Mpho&apos;s own</span> : null}
+                        {m.id === "person" ? <span className="bx-badge bx-badge-vip">Premium</span> : null}
                       </button>
                     ))}
                   </div>
-                  <div className="bx-nav"><button className="bx-link" onClick={() => go(2)}>← Back</button><button className="bx-cta" onClick={(e) => { fire(e); go(4) }}>Next</button></div>
+                  {inPerson ? (
+                    <div className="bx-ip">
+                      {!hadPaidOnline ? (
+                        <div className="bx-lock">
+                          <strong>🔒 In-person is for returning clients</strong>
+                          <p className="bx-muted">For everyone&apos;s safety, Mpho only meets in person after a paid online session (video or call). Book a strategy session first — it unlocks in-person meetings on your account.</p>
+                          <div className="bx-row" style={{ justifyContent: "flex-start" }}>
+                            <button className="bx-cta" onClick={pick(() => setMethod("room"))}>Book an online session instead</button>
+                            {!BOOKING_API ? <button className="bx-link" onClick={pick(() => setDemoUnlocked(true))}>Demo: pretend I&apos;ve had one</button> : null}
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="bx-why">
+                            <p className="bx-ip-h">Why in-person costs more</p>
+                            <div className="bx-why-grid">
+                              {WHY_IN_PERSON.map(([t, d]) => <div key={t}><strong>{t}</strong><span className="bx-muted">{d}</span></div>)}
+                            </div>
+                          </div>
+                          <p className="bx-ip-h">How long?</p>
+                          <div className="bx-tiers">
+                            {IN_PERSON.map((t) => (
+                              <button key={t.minutes} className={"bx-card bx-tier" + (ipLen === t.minutes ? " is-on" : "")} onClick={pick(() => { setIpLen(t.minutes); setSlot(null) })}>
+                                <span className="bx-card-min">{t.minutes === 120 ? "2 hours" : t.minutes + " min"}</span>
+                                <span className="bx-price">R{t.fee.toLocaleString("en-ZA")}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <p className="bx-ip-h">Pick a venue <span className="bx-muted">— public, busy and covered by mall security</span></p>
+                          <div className="bx-venues">
+                            {VENUES.map((x) => (
+                              <button key={x.id} className={"bx-venue" + (venue === x.id ? " is-on" : "")} onClick={pick(() => setVenue(x.id))}>
+                                <span className="bx-venue-pin">☕</span>
+                                <strong>{x.name}</strong>
+                                <span className="bx-muted">{x.area} · public seating · CCTV</span>
+                              </button>
+                            ))}
+                          </div>
+                          <p className="bx-muted bx-small">Daylight only: weekdays 10:00–16:00, Saturdays 10:00–13:00. Every in-person booking is verified and approved by Mpho.</p>
+                        </>
+                      )}
+                    </div>
+                  ) : null}
+                  <div className="bx-nav"><button className="bx-link" onClick={() => go(2)}>← Back</button><button className="bx-cta" disabled={!inPersonReady} onClick={(e) => { fire(e); go(4) }}>Next</button></div>
                 </Panel>
               )}
 
@@ -539,6 +637,58 @@ export default function BookingExperience() {
 
               {step === 5 && W && session && slot && (
                 <div className="bx-confirm">
+                  {inPerson ? (
+                    <div className="bx-verify-wrap">
+                      <Panel world={world} title={world === "web" ? "verify_identity()" : "Safety check"} right={<span className="bx-muted">{[v.business && v.reg && v.site && v.suburb, v.otpOk, v.idFile && v.selfieFile, v.emergency, v.rules && v.popia].filter(Boolean).length}/5 done</span>}>
+                        <p className="bx-muted bx-small" style={{ marginTop: 0 }}>In-person meetings need verification. Only Mpho sees these details, and your ID is deleted 30 days after the meeting.</p>
+                        <div className="bx-verify">
+                          <fieldset>
+                            <legend>1 · Business</legend>
+                            <input placeholder="Business name" value={v.business} onChange={(e) => setVerify({ ...v, business: e.target.value })} />
+                            <input placeholder="CIPC reg. number (or 'Sole trader')" value={v.reg} onChange={(e) => setVerify({ ...v, reg: e.target.value })} />
+                            <input placeholder="Website or Instagram / TikTok link" value={v.site} onChange={(e) => setVerify({ ...v, site: e.target.value })} />
+                            <input placeholder="Business area / suburb" value={v.suburb} onChange={(e) => setVerify({ ...v, suburb: e.target.value })} />
+                          </fieldset>
+                          <fieldset>
+                            <legend>2 · Cellphone</legend>
+                            <div className="bx-otp">
+                              <input placeholder="Cellphone, e.g. 082 123 4567" value={v.phone} disabled={v.otpOk} onChange={(e) => setVerify({ ...v, phone: e.target.value, otpSent: false, otpOk: false })} />
+                              {!v.otpSent ? (
+                                <button className="bx-mini" disabled={v.phone.replace(/\D/g, "").length < 10} onClick={pick(() => setVerify({ ...v, otpSent: true }))}>Send code</button>
+                              ) : v.otpOk ? <span className="bx-ok">✓ Verified</span> : null}
+                            </div>
+                            {v.otpSent && !v.otpOk ? (
+                              <div className="bx-otp">
+                                <input inputMode="numeric" maxLength={6} placeholder="6-digit SMS code" value={v.otp} onChange={(e) => setVerify({ ...v, otp: e.target.value.replace(/\D/g, "") })} />
+                                <button className="bx-mini" disabled={v.otp.length !== 6} onClick={pick(() => setVerify({ ...v, otpOk: true }))}>Verify</button>
+                              </div>
+                            ) : null}
+                            {v.otpSent && !v.otpOk && !BOOKING_API ? <small className="bx-muted">Demo: any 6 digits work.</small> : null}
+                          </fieldset>
+                          <fieldset>
+                            <legend>3 · Identity</legend>
+                            <label className={"bx-upload" + (v.idFile ? " is-on" : "")}>
+                              <input type="file" accept="image/*,.pdf" onChange={(e) => setVerify({ ...v, idFile: e.target.files?.[0]?.name || "" })} />
+                              <span>{v.idFile ? "✓ " + v.idFile : "Upload SA ID / passport"}</span>
+                            </label>
+                            <label className={"bx-upload" + (v.selfieFile ? " is-on" : "")}>
+                              <input type="file" accept="image/*" capture="user" onChange={(e) => setVerify({ ...v, selfieFile: e.target.files?.[0]?.name || "" })} />
+                              <span>{v.selfieFile ? "✓ " + v.selfieFile : "Selfie holding your ID"}</span>
+                            </label>
+                          </fieldset>
+                          <fieldset>
+                            <legend>4 · Emergency contact</legend>
+                            <input placeholder="Name & number of someone we can reach" value={v.emergency} onChange={(e) => setVerify({ ...v, emergency: e.target.value })} />
+                          </fieldset>
+                          <fieldset className="bx-span">
+                            <legend>5 · Agreements</legend>
+                            <label className="bx-agree"><input type="checkbox" checked={v.rules} onChange={(e) => setVerify({ ...v, rules: e.target.checked })} /> We meet only at the venue booked — no changes on the day. Mpho may bring a colleague, and may leave if your ID or details don&apos;t match.</label>
+                            <label className="bx-agree"><input type="checkbox" checked={v.popia} onChange={(e) => setVerify({ ...v, popia: e.target.checked })} /> I consent (POPIA) to Mpho Sauli storing my ID and selfie only to verify this meeting; they&apos;re deleted 30 days after it.</label>
+                          </fieldset>
+                        </div>
+                      </Panel>
+                    </div>
+                  ) : null}
                   <Panel world={world} title={world === "web" ? "your_details" : "Your details"}>
                     <div className="bx-form">
                       <input placeholder="Full name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -551,18 +701,20 @@ export default function BookingExperience() {
                   <Panel world={world} title={world === "web" ? "summary.log" : "Call sheet"}>
                     <dl className="bx-sum">
                       <div><dt>Track</dt><dd>{W.name}</dd></div>
-                      <div><dt>Session</dt><dd>{session.label} · {session.minutes} min</dd></div>
+                      <div><dt>Session</dt><dd>{inPerson ? `In-person meeting · ${tier.minutes} min` : `${session.label} · ${session.minutes} min`}</dd></div>
                       <div><dt>When</dt><dd>{fmtLong(slot.start)}</dd></div>
-                      <div><dt>Where</dt><dd>{METHODS.find((m) => m.id === method)?.label}</dd></div>
+                      <div><dt>Where</dt><dd>{inPerson ? VENUES.find((x) => x.id === venue)?.name : METHODS.find((m) => m.id === method)?.label}</dd></div>
+                      
                       {W.questions.map((q) => <div key={q.id}><dt>{q.q.replace("?", "")}</dt><dd>{Array.isArray(answers[q.id]) ? (answers[q.id] as string[]).join(", ") : (answers[q.id] as string)}</dd></div>)}
-                      <div className="bx-sum-total"><dt>Due now</dt><dd>{session.fee ? "R" + session.fee : "R0 — free"}</dd></div>
+                      <div className="bx-sum-total"><dt>Due now</dt><dd>{fee ? "R" + fee.toLocaleString("en-ZA") : "R0 — free"}</dd></div>
+                      {inPerson ? <p className="bx-muted bx-small" style={{ margin: "6px 0 0" }}>After payment Mpho reviews your details within 24h. If declined, you get a full refund.</p> : null}
                     </dl>
                     <button
                       className="bx-cta bx-cta-big"
-                      disabled={busy || !form.name || !/^\S+@\S+\.\S+$/.test(form.email) || !agree || (method === "whatsapp" && !form.phone)}
+                      disabled={busy || !form.name || !/^\S+@\S+\.\S+$/.test(form.email) || !agree || (method === "whatsapp" && !form.phone) || !verifyDone}
                       onClick={confirm}
                     >
-                      {busy ? "Locking it in…" : session.fee ? `Hold slot & pay R${session.fee}` : "Confirm booking"}
+                      {busy ? "Locking it in…" : !verifyDone ? "Finish the safety check" : fee ? `Hold slot & pay R${fee.toLocaleString("en-ZA")}` : "Confirm booking"}
                     </button>
                     <button className="bx-link" onClick={() => go(4)}>← Change time</button>
                   </Panel>
@@ -799,6 +951,39 @@ const CSS = `
 .bx-item-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .bx-policy { font-size: 12px; margin-top: 8px; }
 .bx-demo { text-align: center; margin-top: 24px; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--a); opacity: .7; font-family: var(--mono); }
+
+/* in person */
+.bx-method-vip { background: linear-gradient(160deg, rgba(255,215,140,.12), rgba(255,255,255,.03)); }
+.bx-badge-vip { background: linear-gradient(135deg, #ffd78c, #ffb347); }
+.bx-ip { margin-top: 22px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.08); display: grid; gap: 14px; animation: bx-in .5s both; }
+.bx-ip-h { font-weight: 800; margin: 6px 0 0; }
+.bx-lock { padding: 22px; border-radius: 18px; border: 1px dashed rgba(255,215,140,.5); background: rgba(255,215,140,.06); display: grid; gap: 8px; }
+.bx-why-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 10px; }
+.bx-why-grid > div { padding: 14px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); display: grid; gap: 4px; font-size: 13px; }
+.bx-tiers { display: grid; gap: 10px; grid-template-columns: repeat(3, 1fr); }
+.bx-tier { align-items: flex-start; padding: 16px; } .bx-tier .bx-price { font-size: 30px; }
+.bx-venues { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.bx-venue { text-align: left; padding: 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); display: grid; gap: 4px; transition: all .3s; position: relative; }
+.bx-venue:hover { transform: translateY(-3px); border-color: rgba(255,255,255,.3); }
+.bx-venue.is-on { border-color: var(--a); box-shadow: 0 0 0 1px var(--a), 0 16px 40px -16px var(--a); }
+.bx-venue-pin { font-size: 20px; }
+.bx-venue .bx-muted { font-size: 12px; }
+.bx-verify-wrap { grid-column: 1 / -1; }
+.bx-verify { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.bx-verify fieldset { border: 1px solid rgba(255,255,255,.1); border-radius: 16px; padding: 14px; margin: 0; display: grid; gap: 10px; align-content: start; }
+.bx-verify legend { padding: 0 6px; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--a); }
+.bx-verify .bx-span { grid-column: 1 / -1; }
+.bx-verify input:not([type=checkbox]):not([type=file]) { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05); color: var(--ink); outline: none; font-family: inherit; }
+.bx-verify input:focus { border-color: var(--a); }
+.bx-otp { display: flex; gap: 8px; align-items: center; } .bx-otp input { flex: 1; }
+.bx-ok { color: #39ff8c; font-weight: 800; font-size: 13px; white-space: nowrap; }
+.bx-upload { position: relative; display: grid; place-items: center; min-height: 64px; border-radius: 12px; border: 1px dashed rgba(255,255,255,.25); background: rgba(255,255,255,.03); font-size: 13px; font-weight: 700; cursor: pointer; text-align: center; padding: 10px; }
+.bx-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.bx-upload.is-on { border-style: solid; border-color: #39ff8c; color: #39ff8c; }
+.bx-code { display: grid; gap: 4px; justify-items: center; padding: 16px 26px; border-radius: 18px; border: 1px solid var(--a); background: color-mix(in srgb, var(--a) 10%, transparent); }
+.bx-code strong { font-family: var(--mono); font-size: 30px; letter-spacing: .15em; color: var(--a); }
+.bx-code small { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--mut); }
+@media (max-width: 600px) { .bx-tiers { grid-template-columns: 1fr; } }
 
 /* click effects */
 .bx-burst { position: absolute; z-index: 50; pointer-events: none; }
