@@ -11,6 +11,7 @@
     {{ 'mpho-studio.css' | asset_url | stylesheet_tag }}
   </head>
   <body style="margin:0;background:#050507;color:#f4f4f6">
+    <script>window.MPHO_PHOTO = {{ 'mpho.webp' | asset_url | json }};</script>
     {{ content_for_layout }}
     <script src="{{ 'mpho-studio.js' | asset_url }}" defer></script>
   </body>

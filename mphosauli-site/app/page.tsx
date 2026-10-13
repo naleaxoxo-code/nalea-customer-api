@@ -70,7 +70,7 @@ function Nav() {
 function Hero() {
   return (
     <div id="top">
-      <WavingPortfolioHero>
+      <WavingPortfolioHero photo={(typeof window !== "undefined" && (window as unknown as { MPHO_PHOTO?: string }).MPHO_PHOTO) || "/mpho.webp"}>
         <div className="flex flex-wrap justify-center gap-3 font-sans">
           <a href="#packages" className="rounded-full bg-white px-6 py-3 font-semibold text-black transition hover:scale-105">
             See packages

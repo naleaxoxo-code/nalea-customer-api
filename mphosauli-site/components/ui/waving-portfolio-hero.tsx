@@ -56,6 +56,62 @@ function Glyphs({ text, delay }: { text: string; delay: number }) {
   )
 }
 
+function MatrixRain() {
+  const ref = React.useRef<HTMLCanvasElement>(null)
+  React.useEffect(() => {
+    const c = ref.current
+    if (!c) return
+    const ctx = c.getContext("2d")
+    if (!ctx) return
+    const glyphs = "アイウエオカキクケコサシスセソタチツテトナニヌネノMPHOSAULI0123456789<>/{}#$%"
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    let w = 0
+    let h = 0
+    let drops: number[] = []
+    const fs = 15
+    const size = () => {
+      const r = c.getBoundingClientRect()
+      w = r.width
+      h = r.height
+      c.width = w * dpr
+      c.height = h * dpr
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      drops = Array.from({ length: Math.ceil(w / fs) }, () => Math.random() * -40)
+    }
+    size()
+    let raf = 0
+    let last = 0
+    const tick = (t: number) => {
+      raf = requestAnimationFrame(tick)
+      if (t - last < 45) return
+      last = t
+      // fade the trails without painting a background, so the canvas stays see-through
+      ctx.globalCompositeOperation = "destination-out"
+      ctx.fillStyle = "rgba(0,0,0,.14)"
+      ctx.fillRect(0, 0, w, h)
+      ctx.globalCompositeOperation = "source-over"
+      ctx.font = "600 " + fs + "px ui-monospace, Menlo, monospace"
+      for (let i = 0; i < drops.length; i++) {
+        const y = drops[i] * fs
+        const ch = glyphs[Math.floor(Math.random() * glyphs.length)]
+        ctx.fillStyle = "#ffffff"
+        ctx.fillText(ch, i * fs, y)
+        ctx.fillStyle = i % 3 === 0 ? "rgba(57,255,140,.85)" : "rgba(255,77,141,.85)"
+        ctx.fillText(glyphs[Math.floor(Math.random() * glyphs.length)], i * fs, y - fs)
+        drops[i] = y > h && Math.random() > 0.96 ? 0 : drops[i] + 1
+      }
+    }
+    raf = requestAnimationFrame(tick)
+    const ro = new ResizeObserver(size)
+    ro.observe(c)
+    return () => {
+      cancelAnimationFrame(raf)
+      ro.disconnect()
+    }
+  }, [])
+  return <canvas ref={ref} className="wph-matrix" aria-hidden="true" />
+}
+
 export default function WavingPortfolioHero({
   left = ["MP", "HO"],
   right = ["SAU", "LI"],
@@ -102,7 +158,14 @@ export default function WavingPortfolioHero({
             </div>
             <div className="wph-charwrap">{act === 2 ? (photo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt="Mpho Sauli" className="wph-char wph-photo" />
+              <div className="wph-char wph-photowrap">
+                <div className="wph-aura" aria-hidden="true" />
+                <MatrixRain />
+                <img src={photo} alt="Mpho Sauli" className="wph-photo" />
+                <img src={photo} alt="" aria-hidden="true" className="wph-photo wph-ghost wph-ghost-a" />
+                <img src={photo} alt="" aria-hidden="true" className="wph-photo wph-ghost wph-ghost-b" />
+                <i className="wph-scan" aria-hidden="true" />
+              </div>
             ) : (
               <div className="wph-char wph-ph">Your photo here</div>
             )) : null}</div>
@@ -173,7 +236,30 @@ const CSS = `
 .wph-charwrap { width: clamp(160px, 22vw, 300px); height: clamp(260px, 42vh, 470px); display: flex; align-items: flex-end; justify-content: center; }
 .wph-char { width: 100%; height: 100%; animation: wph-pop .8s cubic-bezier(.34,1.5,.5,1) both; transform-origin: 50% 100%; }
 @keyframes wph-pop { from { transform: translateY(40%) scale(.8); opacity: 0; } to { transform: none; opacity: 1; } }
-.wph-photo { object-fit: contain; object-position: bottom; filter: drop-shadow(0 30px 40px rgba(0,0,0,.6)) drop-shadow(0 0 40px rgba(255,77,141,.25)); }
+.wph-photowrap { position: relative; }
+.wph-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: bottom; z-index: 2;
+  filter: drop-shadow(0 30px 40px rgba(0,0,0,.6)) drop-shadow(0 0 30px rgba(255,77,141,.3));
+  -webkit-mask-image: linear-gradient(180deg, #000 var(--rv), transparent calc(var(--rv) + 6%)); mask-image: linear-gradient(180deg, #000 var(--rv), transparent calc(var(--rv) + 6%));
+  animation: wph-decode 1.5s steps(24) 1.1s both, wph-glitch 2.6s steps(1) 1.1s both; }
+@property --rv { syntax: "<percentage>"; inherits: false; initial-value: -10%; }
+@keyframes wph-decode { from { --rv: -10%; } to { --rv: 110%; } }
+@keyframes wph-glitch {
+  0% { transform: translateX(-6px) skewX(4deg); filter: hue-rotate(90deg) saturate(2) drop-shadow(0 0 30px #39ff8c); }
+  10% { transform: translateX(5px); filter: hue-rotate(-60deg) saturate(1.6); }
+  20% { transform: translateX(-3px) skewX(-3deg); filter: none; }
+  32% { transform: translateX(2px); filter: hue-rotate(40deg) drop-shadow(0 0 20px #ff4d8d); }
+  45%, 100% { transform: none; filter: drop-shadow(0 30px 40px rgba(0,0,0,.6)) drop-shadow(0 0 30px rgba(255,77,141,.3)); }
+}
+.wph-ghost { z-index: 1; opacity: 0; -webkit-mask-image: none; mask-image: none; }
+.wph-ghost-a { filter: brightness(1.4) sepia(1) hue-rotate(280deg) saturate(6); animation: wph-ghost-a 2.6s steps(1) 1.1s both; }
+.wph-ghost-b { filter: brightness(1.4) sepia(1) hue-rotate(80deg) saturate(6); animation: wph-ghost-b 2.6s steps(1) 1.1s both; }
+@keyframes wph-ghost-a { 0%{opacity:.8;transform:translate(-14px,0)} 12%{opacity:.6;transform:translate(10px,-3px)} 26%{opacity:.5;transform:translate(-6px,2px)} 40%,100%{opacity:0;transform:none} }
+@keyframes wph-ghost-b { 0%{opacity:.7;transform:translate(12px,2px)} 14%{opacity:.5;transform:translate(-9px,0)} 30%{opacity:.4;transform:translate(5px,-2px)} 42%,100%{opacity:0;transform:none} }
+.wph-scan { position: absolute; left: -6%; right: -6%; height: 3px; z-index: 3; top: 0; background: linear-gradient(90deg, transparent, #39ff8c, #fff, #ff4d8d, transparent); box-shadow: 0 0 24px 6px rgba(57,255,140,.6); opacity: 0; animation: wph-scan 1.5s steps(24) 1.1s both; }
+@keyframes wph-scan { 0% { top: 0; opacity: 1; } 96% { top: 100%; opacity: 1; } 100% { top: 100%; opacity: 0; } }
+.wph-matrix { max-width: none; max-height: none; mix-blend-mode: screen; position: absolute; inset: -8% -18%; width: 136%; height: 116%; z-index: 0; -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent); mask-image: radial-gradient(closest-side, #000 55%, transparent); animation: wph-rain 3s ease 0s both; }
+@keyframes wph-rain { 0% { opacity: 0; } 8% { opacity: 1; } 50% { opacity: 1; } 100% { opacity: .35; } }
+.wph-aura { position: absolute; left: -40%; right: -40%; bottom: -20%; height: 110%; background: radial-gradient(closest-side, rgba(255,77,141,.4) 0%, rgba(138,125,255,.18) 45%, rgba(138,125,255,0) 100%); z-index: 0; pointer-events: none; }
 .wph-ph { display: grid; place-items: center; border-radius: 28px; border: 1px dashed rgba(255,255,255,.25); background: rgba(255,255,255,.04); color: rgba(255,255,255,.4); font-family: ui-sans-serif, system-ui; font-size: 14px; }
 .wph-wave { transform-origin: 160px 205px; animation: wph-waving 1.4s ease-in-out .6s infinite; }
 @keyframes wph-waving { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } 75% { transform: rotate(10deg); } }
@@ -197,6 +283,7 @@ const CSS = `
   .wph-corner { width: 56px; height: 56px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .wph-photo { --rv: 110%; }
   .wph-root *, .wph-root *::before { animation-duration: .01s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
 }
 `
