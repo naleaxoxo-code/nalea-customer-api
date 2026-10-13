@@ -4,7 +4,7 @@ import * as React from "react"
 import WavingPortfolioHero from "@/components/ui/waving-portfolio-hero"
 import MurmurationWordmark from "@/components/ui/murmuration-wordmark"
 import GlassFolder from "@/components/ui/glass-folder-cards"
-import { PACKAGES, SITE, waLink, type Pkg } from "@/lib/site"
+import { PACKAGES, SITE, asset, waLink, type Pkg } from "@/lib/site"
 
 function useReveal() {
   React.useEffect(() => {
@@ -44,8 +44,9 @@ function Nav() {
   return (
     <header className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
       <nav className="glass bg-black/75! flex w-full max-w-5xl items-center justify-between rounded-full px-5 py-3">
-        <a href="#top" className="text-sm font-black tracking-[0.2em]">
-          MPHO<span className="glow-text"> SAULI</span>
+        <a href="#top" aria-label="Mpho Sauli — home">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={asset("logo.svg")} alt="Mpho Sauli Design Studio" className="h-10 w-auto" />
         </a>
         <div className="hidden gap-7 text-sm text-muted-foreground md:flex">
           {links.map(([l, h]) => (
@@ -70,7 +71,7 @@ function Nav() {
 function Hero() {
   return (
     <div id="top">
-      <WavingPortfolioHero photo={(typeof window !== "undefined" && (window as unknown as { MPHO_PHOTO?: string }).MPHO_PHOTO) || "/mpho.webp"}>
+      <WavingPortfolioHero photo={asset("mpho.webp")}>
         <div className="flex flex-wrap justify-center gap-3 font-sans">
           <a href="#packages" className="rounded-full bg-white px-6 py-3 font-semibold text-black transition hover:scale-105">
             See packages
@@ -413,9 +414,8 @@ function Footer() {
   return (
     <footer className="border-t border-white/10 px-6 py-12">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 md:flex-row">
-        <p className="text-sm font-black tracking-[0.2em]">
-          MPHO<span className="glow-text"> SAULI</span>
-        </p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={asset("logo.svg")} alt="Mpho Sauli Design Studio" className="h-14 w-auto" />
         <div className="flex gap-6 text-sm text-muted-foreground">
           <a href={SITE.instagram} className="hover:text-white">Instagram</a>
           <a href={SITE.tiktok} className="hover:text-white">TikTok</a>
