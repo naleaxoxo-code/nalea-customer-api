@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import WavingNameHero from "@/components/ui/waving-name-hero"
+import WavingPortfolioHero from "@/components/ui/waving-portfolio-hero"
 import MurmurationWordmark from "@/components/ui/murmuration-wordmark"
 import GlassFolder from "@/components/ui/glass-folder-cards"
 import { PACKAGES, SITE, waLink, type Pkg } from "@/lib/site"
@@ -43,7 +43,7 @@ function Nav() {
   ]
   return (
     <header className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
-      <nav className="glass flex w-full max-w-5xl items-center justify-between rounded-full px-5 py-3">
+      <nav className="glass bg-black/75! flex w-full max-w-5xl items-center justify-between rounded-full px-5 py-3">
         <a href="#top" className="text-sm font-black tracking-[0.2em]">
           MPHO<span className="glow-text"> SAULI</span>
         </a>
@@ -69,30 +69,18 @@ function Nav() {
 
 function Hero() {
   return (
-    <section id="top" className="relative">
-      <Blobs />
-      <WavingNameHero word="MPHO SAULI">
-        <div className="flex h-full flex-col items-center justify-between px-6 pt-32 pb-14 text-center">
-          <span className="glass rounded-full px-4 py-1.5 font-mono text-[11px] tracking-[0.25em] uppercase">
-            👋 Hi, I&apos;m Mpho — South Africa&apos;s glossiest designer
-          </span>
-          <div className="flex flex-col items-center gap-6">
-            <p className="max-w-xl text-lg text-muted-foreground md:text-xl">
-              I build <span className="text-white">websites</span>, <span className="text-white">e-commerce ads</span> and{" "}
-              <span className="text-white">brands</span> so glossy your customers have never seen anything like it.
-            </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              <a href="#packages" className="rounded-full bg-white px-6 py-3 font-semibold text-black transition hover:scale-105">
-                See packages
-              </a>
-              <a href={SITE.booking} className="glass glass-hover rounded-full px-6 py-3 font-semibold">
-                Book a call
-              </a>
-            </div>
-          </div>
+    <div id="top">
+      <WavingPortfolioHero>
+        <div className="flex flex-wrap justify-center gap-3 font-sans">
+          <a href="#packages" className="rounded-full bg-[#e5262f] px-6 py-3 font-semibold text-white transition hover:scale-105">
+            See packages
+          </a>
+          <a href={SITE.booking} className="rounded-full border-2 border-[#e5262f] px-6 py-3 font-semibold text-[#e5262f] transition hover:bg-[#e5262f] hover:text-white">
+            Book a call
+          </a>
         </div>
-      </WavingNameHero>
-    </section>
+      </WavingPortfolioHero>
+    </div>
   )
 }
 
