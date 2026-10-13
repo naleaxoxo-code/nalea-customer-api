@@ -1,0 +1,7 @@
+{
+  "layout": "mpho",
+  "sections": {
+    "studio": { "type": "mpho-studio", "settings": {} }
+  },
+  "order": ["studio"]
+}
