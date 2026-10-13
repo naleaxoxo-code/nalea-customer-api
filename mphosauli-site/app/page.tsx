@@ -72,10 +72,10 @@ function Hero() {
     <div id="top">
       <WavingPortfolioHero>
         <div className="flex flex-wrap justify-center gap-3 font-sans">
-          <a href="#packages" className="rounded-full bg-[#e5262f] px-6 py-3 font-semibold text-white transition hover:scale-105">
+          <a href="#packages" className="rounded-full bg-white px-6 py-3 font-semibold text-black transition hover:scale-105">
             See packages
           </a>
-          <a href={SITE.booking} className="rounded-full border-2 border-[#e5262f] px-6 py-3 font-semibold text-[#e5262f] transition hover:bg-[#e5262f] hover:text-white">
+          <a href={SITE.booking} className="glass glass-hover rounded-full px-6 py-3 font-semibold text-white">
             Book a call
           </a>
         </div>

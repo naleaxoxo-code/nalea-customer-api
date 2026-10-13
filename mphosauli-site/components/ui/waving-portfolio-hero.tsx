@@ -18,6 +18,8 @@ export interface WavingPortfolioHeroProps {
   bottomLeft?: string
   bottomRight?: string
   stamp?: [string, string]
+  /** Cut-out photo (transparent PNG) shown between the name halves. */
+  photo?: string
   children?: React.ReactNode
 }
 
@@ -54,42 +56,6 @@ function Glyphs({ text, delay }: { text: string; delay: number }) {
   )
 }
 
-function Character() {
-  return (
-    <svg className="wph-char" viewBox="0 0 220 420" aria-hidden="true">
-      <g fill="none" stroke="#111" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-        {/* body */}
-        <path d="M58 200 Q60 170 110 165 Q160 170 162 200 L168 330 L52 330 Z" fill="#111" />
-        {[...Array(26)].map((_, i) => (
-          <circle key={i} cx={66 + ((i * 37) % 96)} cy={190 + ((i * 53) % 130)} r="1.6" fill="#fff" stroke="none" />
-        ))}
-        <path d="M92 168 L110 195 L128 168" stroke="#fff" strokeWidth="3" />
-        {/* legs */}
-        <path d="M58 330 L58 410 L162 410 L162 330" fill="#111" />
-        {/* resting arm */}
-        <path d="M60 205 Q40 260 70 300 Q95 315 112 300" strokeWidth="18" stroke="#111" />
-        <circle cx="114" cy="298" r="11" fill="#fff" />
-        {/* waving arm */}
-        <g className="wph-wave">
-          <path d="M160 205 Q190 170 195 120" strokeWidth="18" stroke="#111" />
-          <path d="M190 128 Q178 100 182 78 M190 120 L190 70 M198 120 L203 72 M204 124 L214 84 M188 132 Q172 122 168 108" fill="#fff" strokeWidth="4" />
-          <rect x="182" y="132" width="20" height="10" rx="2" fill="#111" />
-        </g>
-        {/* neck + head */}
-        <path d="M98 150 L98 168 L122 168 L122 150" fill="#fff" />
-        <ellipse cx="110" cy="105" rx="38" ry="48" fill="#fff" />
-        <path d="M72 95 Q70 50 112 52 Q156 50 150 98 Q140 72 112 74 Q86 72 72 95 Z" fill="#111" />
-        <rect x="80" y="100" width="24" height="18" rx="4" />
-        <rect x="116" y="100" width="24" height="18" rx="4" />
-        <path d="M104 108 L116 108" />
-        <circle cx="92" cy="110" r="2.5" fill="#111" />
-        <circle cx="128" cy="110" r="2.5" fill="#111" />
-        <path d="M98 133 Q110 142 122 133" />
-      </g>
-    </svg>
-  )
-}
-
 export default function WavingPortfolioHero({
   left = ["MP", "HO"],
   right = ["SAU", "LI"],
@@ -98,6 +64,7 @@ export default function WavingPortfolioHero({
   bottomLeft = "WEB DESIGNER",
   bottomRight = "ADS & BRANDS",
   stamp = ["MPHO", "SAULI"],
+  photo,
   children,
 }: WavingPortfolioHeroProps) {
   const [run, setRun] = React.useState(0)
@@ -115,6 +82,7 @@ export default function WavingPortfolioHero({
   return (
     <section className="wph-root" data-act={act} onClick={() => act === 2 && setRun((r) => r + 1)}>
       <style>{CSS}</style>
+      <div className="wph-blobs" aria-hidden="true"><i /><i /><i /></div>
       <span className="wph-corner wph-tl" aria-hidden="true"><i /><i /></span>
       <span className="wph-corner wph-tr" aria-hidden="true"><i /></span>
 
@@ -132,7 +100,12 @@ export default function WavingPortfolioHero({
               <Glyphs text={left[0]} delay={0} />
               <Glyphs text={left[1]} delay={0.25} />
             </div>
-            <div className="wph-charwrap">{act === 2 ? <Character /> : null}</div>
+            <div className="wph-charwrap">{act === 2 ? (photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photo} alt="Mpho Sauli" className="wph-char wph-photo" />
+            ) : (
+              <div className="wph-char wph-ph">Your photo here</div>
+            )) : null}</div>
             <div className="wph-col">
               <Glyphs text={right[0]} delay={0.15} />
               <Glyphs text={right[1]} delay={0.4} />
@@ -157,15 +130,19 @@ export default function WavingPortfolioHero({
 
 const CSS = `
 .wph-root {
-  --red: #e5262f; --cream: #f4f1ec;
+  --red: #ff4d8d; --cream: #050507; --ink: rgba(244,244,246,.55);
   position: relative; min-height: 100svh; overflow: hidden; background: var(--cream); color: var(--red);
   font-family: "Oswald", "Bebas Neue", "Arial Narrow", "Roboto Condensed", sans-serif; cursor: default;
 }
+.wph-blobs i { position: absolute; border-radius: 50%; filter: blur(90px); opacity: .5; animation: blob 18s ease-in-out infinite alternate; }
+.wph-blobs i:nth-child(1) { width: 520px; height: 520px; left: -8%; top: 10%; background: #ff4d8d; }
+.wph-blobs i:nth-child(2) { width: 460px; height: 460px; right: -6%; top: 25%; background: #6d5dfc; animation-delay: -6s; }
+.wph-blobs i:nth-child(3) { width: 380px; height: 380px; left: 40%; bottom: -12%; background: #22d3ee; opacity: .3; animation-delay: -12s; }
 .wph-root[data-act="2"] { cursor: pointer; }
 .wph-wall { position: absolute; inset: -20% -10%; display: flex; flex-direction: column; justify-content: center; transform: rotate(-7deg); animation: wph-wall-out .6s ease-in 1.8s forwards; }
 .wph-row { white-space: nowrap; font-size: clamp(70px, 13vh, 150px); line-height: .98; font-weight: 500; letter-spacing: .02em; animation: wph-slide 2.4s linear infinite; }
 .wph-fill { color: var(--red); }
-.wph-out { color: transparent; -webkit-text-stroke: 2px #1a1a1a; }
+.wph-out { color: transparent; -webkit-text-stroke: 1.5px var(--ink); }
 .wph-row:nth-child(4n+1) { -webkit-text-stroke: 2px var(--red); color: transparent; }
 @keyframes wph-slide { from { transform: translateX(0) skewY(2deg); } to { transform: translateX(-12%) skewY(-2deg); } }
 @keyframes wph-wall-out { to { transform: rotate(-7deg) scale(1.6); opacity: 0; filter: blur(6px); } }
@@ -180,6 +157,8 @@ const CSS = `
 @keyframes wph-fade { to { opacity: 1; } }
 
 .wph-mid { width: min(1100px, 100%); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+.wph-col .wph-half { background: linear-gradient(180deg,#ffd1e3 0%,#ff4d8d 45%,#b14dff 75%,#8a7dff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.wph-mid .wph-col { filter: drop-shadow(0 0 30px rgba(255,77,141,.35)); }
 .wph-col { display: flex; flex-direction: column; line-height: .82; font-size: clamp(90px, 19vh, 230px); font-weight: 500; }
 .wph-col:last-child { align-items: flex-end; }
 .wph-word { display: flex; }
@@ -194,13 +173,15 @@ const CSS = `
 .wph-charwrap { width: clamp(160px, 22vw, 300px); height: clamp(260px, 42vh, 470px); display: flex; align-items: flex-end; justify-content: center; }
 .wph-char { width: 100%; height: 100%; animation: wph-pop .8s cubic-bezier(.34,1.5,.5,1) both; transform-origin: 50% 100%; }
 @keyframes wph-pop { from { transform: translateY(40%) scale(.8); opacity: 0; } to { transform: none; opacity: 1; } }
+.wph-photo { object-fit: contain; object-position: bottom; filter: drop-shadow(0 30px 40px rgba(0,0,0,.6)) drop-shadow(0 0 40px rgba(255,77,141,.25)); }
+.wph-ph { display: grid; place-items: center; border-radius: 28px; border: 1px dashed rgba(255,255,255,.25); background: rgba(255,255,255,.04); color: rgba(255,255,255,.4); font-family: ui-sans-serif, system-ui; font-size: 14px; }
 .wph-wave { transform-origin: 160px 205px; animation: wph-waving 1.4s ease-in-out .6s infinite; }
 @keyframes wph-waving { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } 75% { transform: rotate(10deg); } }
 
 .wph-stamp { margin-top: 2vh; width: 72px; height: 72px; border: 2px solid var(--red); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 13px; letter-spacing: .05em; line-height: 1.15; opacity: 0; animation: wph-stamp .7s cubic-bezier(.34,1.5,.5,1) 2.2s forwards; }
 @keyframes wph-stamp { from { opacity: 0; transform: scale(2) rotate(-90deg); } to { opacity: 1; transform: rotate(-8deg); } }
 
-.wph-corner { position: absolute; top: 0; width: 88px; height: 88px; z-index: 2; background: var(--red); box-shadow: 8px 8px 0 -4px var(--cream), 12px 12px 0 -4px var(--red), 18px 18px 0 -4px var(--cream), 22px 22px 0 -4px var(--red); }
+.wph-corner { position: absolute; top: 0; width: 88px; height: 88px; z-index: 2; background: linear-gradient(135deg, rgba(255,77,141,.9), rgba(138,125,255,.7)); box-shadow: 8px 8px 0 -4px var(--cream), 12px 12px 0 -4px var(--red), 18px 18px 0 -4px var(--cream), 22px 22px 0 -4px var(--red); }
 .wph-tl { left: 0; border-bottom-right-radius: 4px; }
 .wph-tr { right: 0; box-shadow: -8px 8px 0 -4px var(--cream), -12px 12px 0 -4px var(--red), -18px 18px 0 -4px var(--cream), -22px 22px 0 -4px var(--red); }
 .wph-corner i { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: #fff; }
