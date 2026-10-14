@@ -402,6 +402,19 @@ function Viewer({ items, start, onClose }: { items: ShowItem[]; start: number; o
 
 export default function Showroom() {
   const [filter, setFilter] = React.useState<Filter>("all")
+
+  // Links like #showroom/store open the showroom on that tab.
+  React.useEffect(() => {
+    const read = () => {
+      const m = window.location.hash.match(/^#showroom\/(store|widget)$/)
+      if (!m) return
+      setFilter(m[1] as Kind)
+      document.getElementById("showroom")?.scrollIntoView({ behavior: "smooth" })
+    }
+    read()
+    window.addEventListener("hashchange", read)
+    return () => window.removeEventListener("hashchange", read)
+  }, [])
   const [open, setOpen] = React.useState<number | null>(null)
   const items = filter === "all" ? SHOWROOM : SHOWROOM.filter((x) => x.kind === filter)
   const counts = {

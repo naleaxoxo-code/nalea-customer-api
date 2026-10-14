@@ -6,6 +6,7 @@ import MurmurationWordmark from "@/components/ui/murmuration-wordmark"
 import GlassFolder from "@/components/ui/glass-folder-cards"
 import BookingExperience from "@/components/booking-experience"
 import Showroom from "@/components/showroom"
+import { SHOWROOM } from "@/lib/showroom"
 import { PACKAGES, SITE, waLink, type Pkg } from "@/lib/site"
 
 function useReveal() {
@@ -140,16 +141,16 @@ function Services() {
             labelPlacement="top-left"
             width={380}
             files={[
-              { name: "Glossy websites", meta: "Custom", art: "aurora" },
-              { name: "Shopify stores", meta: "E-com", art: "ember" },
-              { name: "Shopify bug fixes", meta: "48h" },
-              { name: "Motion & 3D", meta: "Animated", art: "glacier" },
+              { name: "Glossy websites", meta: "Packages", art: "aurora", href: "#packages" },
+              { name: "Shopify bug fixes", meta: "Book a fix", art: "glacier", href: "#book" },
+              { name: "Store widgets", meta: `${SHOWROOM.filter((x) => x.kind === "widget").length} live demos`, image: SHOWROOM.find((x) => x.slug === "01-product-spotlight")?.shot, href: "#showroom/widget" },
+              { name: "Shopify stores", meta: `${SHOWROOM.filter((x) => x.kind === "store").length} ready to buy`, image: SHOWROOM[0].shot, href: "#showroom/store" },
             ]}
           />
           <ul className="max-w-sm space-y-2 text-center text-muted-foreground">
-            <li>Websites & landing pages with glass, motion and 3D</li>
-            <li>Shopify stores built, styled and loaded</li>
-            <li>Broken store? Bugs found and fixed</li>
+            <li><a href="#packages" className="transition hover:text-white">Websites & landing pages with glass, motion and 3D</a></li>
+            <li><a href="#showroom/store" className="transition hover:text-white">Shopify stores you can try live, then buy →</a></li>
+            <li><a href="#book" className="transition hover:text-white">Broken store? Bugs found and fixed</a></li>
           </ul>
         </div>
         <div className="reveal flex flex-col items-center gap-8" style={{ transitionDelay: "150ms" }}>
