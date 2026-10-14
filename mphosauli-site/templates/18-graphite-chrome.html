@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Graphite Chrome — Shop Widget</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    width:460px; height:220px;
+    display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 50%, #94a3b8 100%);
+    font-family:'Inter', sans-serif;
+  }
+  .card{
+    position:relative;
+    width:420px; height:184px;
+    border-radius:20px;
+    background:rgba(255,255,255,0.22);
+    border:1px solid rgba(255,255,255,0.8);
+    backdrop-filter: blur(24px) saturate(180%) brightness(1.05);
+    -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.05);
+    box-shadow: 0 16px 40px rgba(60,80,110,0.3), inset 0 1px 0 rgba(255,255,255,0.9);
+    display:flex; align-items:center; padding:0 28px; overflow:hidden;
+  }
+  .card::before{
+    content:""; position:absolute; top:0; left:-30%; width:45%; height:100%;
+    background:linear-gradient(120deg, rgba(255,255,255,0.6), rgba(255,255,255,0) 60%);
+    transform:skewX(-18deg); pointer-events:none;
+  }
+  .left{ flex:1; }
+  .loc{ font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#475569; }
+  .clock{ font-family:'Space Mono', monospace; font-weight:700; font-size:30px; color:#1e293b; margin-top:4px; }
+  .date{ font-size:11px; color:#475569; margin-top:2px; }
+  .weather{ display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .w-icon{ font-size:20px; }
+  .w-temp{ font-size:14px; font-weight:600; color:#1e293b; }
+  .tagline{ font-size:13px; font-weight:700; color:#334155; margin-top:8px; }
+
+  .chat-fab{
+    position:absolute; bottom:16px; right:16px; width:48px; height:48px; border-radius:50%;
+    background:rgba(255,255,255,0.55); border:1px solid rgba(255,255,255,0.9);
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+    box-shadow:0 8px 20px rgba(60,80,110,0.3); cursor:pointer;
+  }
+  .chat-fab .dot{ position:absolute; top:2px; right:2px; width:10px; height:10px; border-radius:50%; background:#22c55e; border:2px solid #fff; animation:pulse 2s infinite; }
+  @keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(34,197,94,0.5);} 70%{box-shadow:0 0 0 6px rgba(34,197,94,0);} 100%{box-shadow:0 0 0 0 rgba(34,197,94,0);} }
+  .chat-tip{
+    position:absolute; bottom:70px; right:16px; background:#1e293b; color:#fff; font-size:11px;
+    padding:8px 12px; border-radius:12px 12px 2px 12px; max-width:160px;
+    opacity:0; transform:translateY(6px); transition:all .25s ease; pointer-events:none;
+  }
+  .chat-tip.show{ opacity:1; transform:translateY(0); }
+
+  .track-btn{
+    margin-top:10px; border:1px solid rgba(255,255,255,0.8); background:rgba(255,255,255,0.4);
+    border-radius:12px; padding:7px 12px; font-size:11px; font-weight:600; color:#1e293b; cursor:pointer;
+  }
+  .track-panel{ max-height:0; opacity:0; overflow:hidden; transition:all .35s ease; width:200px; }
+  .track-panel.open{ max-height:50px; opacity:1; margin-top:8px; }
+  .progress-track{ height:4px; border-radius:2px; background:rgba(60,80,110,0.15); overflow:hidden; }
+  .progress-fill{ height:100%; width:70%; background:linear-gradient(90deg,#64748b,#334155); }
+  .progress-label{ font-size:9px; color:#475569; margin-top:5px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="left">
+      <div class="loc" id="weather-location">📍 Locating…</div>
+      <div class="clock" id="clock-time">--:--:--</div>
+      <div class="date" id="clock-date">—</div>
+      <div class="weather">
+        <div class="w-icon" id="weather-icon">🌡️</div>
+        <div class="w-temp" id="weather-temp">--°</div>
+      </div>
+      <div class="tagline">Enjoy Shopping</div>
+      <button class="track-btn" id="track-btn">📦 Track Package</button>
+      <div class="track-panel" id="track-panel">
+        <div class="progress-track"><div class="progress-fill"></div></div>
+        <div class="progress-label">Order #48213 · Out for delivery</div>
+      </div>
+    </div>
+    <div class="chat-tip" id="chat-tooltip">Hi! How can we help?</div>
+    <div class="chat-fab" id="chat-btn">💬<span class="dot"></span></div>
+  </div>
+
+<script>
+function updateClock(){
+  const now = new Date();
+  let h = now.getHours();
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  const ampm = h>=12?'PM':'AM';
+  h = h%12; if(h===0) h=12;
+  document.getElementById('clock-time').textContent = `${h}:${m}:${s}`;
+  document.getElementById('clock-date').textContent = now.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})+' · '+ampm;
+}
+setInterval(updateClock,1000); updateClock();
+
+const weatherIcons = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌦️',61:'🌧️',63:'🌧️',65:'🌧️',71:'❄️',73:'❄️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️'};
+
+function setWeatherError(){
+  document.getElementById('weather-temp').textContent = '--°';
+  document.getElementById('weather-location').textContent = '📍 Location off';
+}
+
+if('geolocation' in navigator){
+  navigator.geolocation.getCurrentPosition(async (pos)=>{
+    const {latitude, longitude} = pos.coords;
+    try{
+      const [weatherRes, geoRes] = await Promise.all([
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&temperature_unit=celsius`),
+        fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`)
+      ]);
+      const weatherData = await weatherRes.json();
+      const geoData = await geoRes.json();
+      const temp = Math.round(weatherData.current_weather.temperature);
+      const code = weatherData.current_weather.weathercode;
+      document.getElementById('weather-icon').textContent = weatherIcons[code] || '🌡️';
+      document.getElementById('weather-temp').textContent = `${temp}°C`;
+      document.getElementById('weather-location').textContent = '📍 ' + (geoData.city || geoData.locality || geoData.principalSubdivision || 'Your area');
+    }catch(e){ setWeatherError(); }
+  }, ()=>{ setWeatherError(); }, {timeout:8000});
+} else {
+  setWeatherError();
+}
+
+const chatBtn = document.getElementById('chat-btn');
+const chatTip = document.getElementById('chat-tooltip');
+chatBtn.addEventListener('click', ()=>{
+  chatTip.classList.toggle('show');
+  setTimeout(()=>chatTip.classList.remove('show'), 4000);
+});
+
+const trackBtn = document.getElementById('track-btn');
+const trackPanel = document.getElementById('track-panel');
+trackBtn.addEventListener('click', ()=>{
+  trackPanel.classList.toggle('open');
+});
+</script>
+</body>
+</html>
