@@ -369,7 +369,7 @@ function Viewer({ items, start, startPay = false, onClose }: { items: ShowItem[]
 
             <button
               type="button"
-              onClick={() => setPaying(true)}
+              onClick={() => (window.location.href = buyUrl(chosen.id))}
               className="sr-buy mt-4 block w-full rounded-full bg-white py-3.5 text-center font-black text-black transition hover:scale-[1.02]"
             >
               Buy now · {rand(chosen.price)}
@@ -509,7 +509,7 @@ export default function Showroom() {
 
       <div key={filter} className="relative mx-auto grid max-w-7xl gap-7 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((it, n) => (
-          <Card key={it.slug} it={it} index={n} onOpen={() => setOpen({ n, pay: false })} onBuy={() => setOpen({ n, pay: true })} />
+          <Card key={it.slug} it={it} index={n} onOpen={() => setOpen({ n, pay: false })} onBuy={() => (window.location.href = buyUrl(it.code.id))} />
         ))}
       </div>
 
