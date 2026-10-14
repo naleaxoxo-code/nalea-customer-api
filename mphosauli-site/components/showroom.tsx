@@ -3,6 +3,7 @@
 import * as React from "react"
 import { SHOWROOM, rand, type ShowItem, type Kind } from "@/lib/showroom"
 import { SITE, waLink } from "@/lib/site"
+import { PayCard } from "@/components/ui/pay-card"
 
 type Filter = "all" | Kind
 type Device = "desktop" | "tablet" | "phone"
@@ -35,9 +36,10 @@ function loadHtml(url: string) {
   return htmlCache.get(url)!
 }
 
-function buyUrl(variant: string) {
+function buyUrl(variant: string, email?: string) {
   const onShopify = typeof window !== "undefined" && "Shopify" in window
-  return (onShopify ? "" : SITE.shop) + `/cart/${variant}:1`
+  const q = email ? `?checkout[email]=${encodeURIComponent(email)}` : ""
+  return (onShopify ? "" : SITE.shop) + `/cart/${variant}:1` + q
 }
 
 /* ---------------- Live thumbnail (widgets animate, so a still shot looks empty) ---------------- */
@@ -86,7 +88,7 @@ function LiveThumb({ it }: { it: ShowItem }) {
 
 /* ---------------- Card ---------------- */
 
-function Card({ it, index, onOpen }: { it: ShowItem; index: number; onOpen: () => void }) {
+function Card({ it, index, onOpen, onBuy }: { it: ShowItem; index: number; onOpen: () => void; onBuy: () => void }) {
   const ref = React.useRef<HTMLDivElement>(null)
   const move = (e: React.PointerEvent) => {
     const el = ref.current
@@ -165,12 +167,13 @@ function Card({ it, index, onOpen }: { it: ShowItem; index: number; onOpen: () =
           >
             Preview
           </button>
-          <a
-            href={buyUrl(it.code.id)}
+          <button
+            type="button"
+            onClick={onBuy}
             className="flex-1 rounded-full bg-white px-4 py-2.5 text-center text-sm font-bold text-black transition hover:scale-[1.03]"
           >
-            Buy code
-          </a>
+            Buy
+          </button>
         </div>
       </div>
     </div>
@@ -179,7 +182,7 @@ function Card({ it, index, onOpen }: { it: ShowItem; index: number; onOpen: () =
 
 /* ---------------- Live viewer ---------------- */
 
-function Viewer({ items, start, onClose }: { items: ShowItem[]; start: number; onClose: () => void }) {
+function Viewer({ items, start, startPay = false, onClose }: { items: ShowItem[]; start: number; startPay?: boolean; onClose: () => void }) {
   const [i, setI] = React.useState(start)
   const it = items[i]
   const [device, setDevice] = React.useState<Device>("desktop")
@@ -188,6 +191,7 @@ function Viewer({ items, start, onClose }: { items: ShowItem[]; start: number; o
   const [doc, setDoc] = React.useState<string | null>(null)
   const [err, setErr] = React.useState(false)
   const [panel, setPanel] = React.useState(true)
+  const [paying, setPaying] = React.useState(startPay)
   const stage = React.useRef<HTMLDivElement>(null)
   const [box, setBox] = React.useState({ w: 1000, h: 700 })
 
@@ -321,6 +325,20 @@ function Viewer({ items, start, onClose }: { items: ShowItem[]; start: number; o
         {/* buy panel */}
         {panel ? (
           <aside className="sr-panel glass absolute inset-x-2 bottom-2 z-10 max-h-[75%] overflow-y-auto rounded-[24px] p-5 md:static md:inset-auto md:m-3 md:max-h-none md:w-[340px] md:shrink-0">
+            {paying ? (
+              <>
+                <p className="mb-3 font-mono text-[10px] tracking-[0.2em] text-accent uppercase">Secure payment</p>
+                <PayCard
+                  amount={rand(chosen.price)}
+                  item={`${it.name} · ${plan === "code" ? "Code only" : "Installed for you"}`}
+                  onBack={() => setPaying(false)}
+                  onPay={({ email }) => {
+                    window.location.href = buyUrl(chosen.id, email)
+                  }}
+                />
+              </>
+            ) : (
+            <>
             <p className="font-mono text-[10px] tracking-[0.2em] text-accent uppercase">{it.tag}</p>
             <h3 className="mt-1 text-2xl font-black tracking-tight">{it.name}</h3>
             <p className="mt-2 text-sm text-muted-foreground">{it.blurb}</p>
@@ -349,12 +367,13 @@ function Viewer({ items, start, onClose }: { items: ShowItem[]; start: number; o
               ))}
             </div>
 
-            <a
-              href={buyUrl(chosen.id)}
-              className="sr-buy mt-4 block rounded-full bg-white py-3.5 text-center font-black text-black transition hover:scale-[1.02]"
+            <button
+              type="button"
+              onClick={() => setPaying(true)}
+              className="sr-buy mt-4 block w-full rounded-full bg-white py-3.5 text-center font-black text-black transition hover:scale-[1.02]"
             >
               Buy now · {rand(chosen.price)}
-            </a>
+            </button>
 
             <div className="mt-5">
               <div className="flex items-center justify-between text-xs text-white/60">
@@ -391,6 +410,8 @@ function Viewer({ items, start, onClose }: { items: ShowItem[]; start: number; o
             >
               Questions? Ask me on WhatsApp
             </a>
+            </>
+            )}
           </aside>
         ) : null}
       </div>
@@ -415,7 +436,7 @@ export default function Showroom() {
     window.addEventListener("hashchange", read)
     return () => window.removeEventListener("hashchange", read)
   }, [])
-  const [open, setOpen] = React.useState<number | null>(null)
+  const [open, setOpen] = React.useState<{ n: number; pay: boolean } | null>(null)
   const items = filter === "all" ? SHOWROOM : SHOWROOM.filter((x) => x.kind === filter)
   const counts = {
     all: SHOWROOM.length,
@@ -488,7 +509,7 @@ export default function Showroom() {
 
       <div key={filter} className="relative mx-auto grid max-w-7xl gap-7 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((it, n) => (
-          <Card key={it.slug} it={it} index={n} onOpen={() => setOpen(n)} />
+          <Card key={it.slug} it={it} index={n} onOpen={() => setOpen({ n, pay: false })} onBuy={() => setOpen({ n, pay: true })} />
         ))}
       </div>
 
@@ -504,7 +525,7 @@ export default function Showroom() {
         </a>
       </div>
 
-      {open !== null ? <Viewer items={items} start={open} onClose={() => setOpen(null)} /> : null}
+      {open !== null ? <Viewer items={items} start={open.n} startPay={open.pay} onClose={() => setOpen(null)} /> : null}
     </section>
   )
 }

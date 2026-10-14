@@ -113,3 +113,39 @@ body {
 .sr-hue::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; border-radius: 99px; background: #fff; border: 2px solid #000; }
 .sr-hue::-moz-range-thumb { width: 18px; height: 18px; border-radius: 99px; background: #fff; border: 2px solid #000; }
 @media (prefers-reduced-motion: reduce) { .sr-scroll, .sr-buy, .sr-shimmer { transition: none; animation: none; } }
+
+/* ---------- Pay card ---------- */
+.pc-wrap { display: grid; gap: 12px; }
+.pc-card { position: relative; height: 196px; perspective: 1000px; transform-style: preserve-3d; transition: transform .8s cubic-bezier(.2,.8,.2,1); }
+.pc-flip { transform: rotateY(180deg); }
+.pc-face { position: absolute; inset: 0; border-radius: 20px; padding: 18px 20px; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; color: #fff;
+  background: linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,.04)), linear-gradient(to right bottom, #1d1a2e, #07070c);
+  border: 1px solid rgba(255,255,255,.22); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 30px 50px -20px rgba(0,0,0,.8); }
+.pc-back { transform: rotateY(180deg); padding: 0; }
+.pc-ring { position: absolute; border-radius: 100%; width: 260px; height: 260px; filter: blur(14px); pointer-events: none; }
+.pc-ring1 { border: 14px solid #ff4d8d; left: -18%; top: -60px; }
+.pc-ring2 { border: 14px solid #8a7dff; left: -170px; top: 55%; }
+.pc-row { position: relative; display: flex; align-items: center; justify-content: space-between; }
+.pc-brand { font-weight: 900; letter-spacing: .2em; font-size: 12px; }
+.pc-chip { width: 38px; height: 28px; border-radius: 6px; background: linear-gradient(135deg, #f5d27a, #b8892d); box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+.pc-amount { position: relative; margin-top: 22px; font-size: 30px; font-weight: 900; letter-spacing: -.02em; }
+.pc-item { position: relative; font-size: 12px; opacity: .7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-bottom { position: absolute; left: 20px; right: 20px; bottom: 16px; }
+.pc-label { font-size: 10px; letter-spacing: .15em; text-transform: uppercase; opacity: .6; }
+.pc-name { font-family: var(--font-mono); font-size: 15px; height: 20px; overflow: hidden; white-space: nowrap; max-width: 230px; }
+.pc-letter { display: inline-block; animation: pc-drop .35s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes pc-drop { from { transform: translateY(-14px); opacity: 0; } }
+.pc-lock { font-size: 18px; }
+.pc-strip { height: 38px; margin-top: 22px; background: #2b2b33; }
+.pc-backtext { display: flex; align-items: center; justify-content: center; gap: 10px; height: 110px; font-weight: 600; }
+.pc-spin { width: 16px; height: 16px; border-radius: 99px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; animation: pc-rot .8s linear infinite; }
+@keyframes pc-rot { to { transform: rotate(360deg); } }
+.pc-field { display: grid; gap: 4px; font-size: 12px; color: rgba(255,255,255,.7); }
+.pc-field input { height: 44px; border-radius: 12px; padding: 0 14px; font-size: 15px; color: #fff; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.18); outline: none; transition: border-color .2s, box-shadow .2s; }
+.pc-field input:focus { border-color: rgba(255,255,255,.6); box-shadow: 0 0 0 4px rgba(255,77,141,.18); }
+.pc-pay { height: 50px; border-radius: 99px; background: #fff; color: #000; font-weight: 900; transition: transform .2s, opacity .2s; cursor: pointer; }
+.pc-pay:hover:not(:disabled) { transform: scale(1.02); }
+.pc-pay:disabled { opacity: .55; cursor: not-allowed; }
+.pc-note { font-size: 11px; color: rgba(255,255,255,.5); text-align: center; }
+.pc-back-btn { font-size: 12px; color: rgba(255,255,255,.6); text-decoration: underline; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .pc-card { transition: none; } .pc-letter { animation: none; } }
