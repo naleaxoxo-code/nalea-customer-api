@@ -5,6 +5,7 @@ import WavingPortfolioHero from "@/components/ui/waving-portfolio-hero"
 import MurmurationWordmark from "@/components/ui/murmuration-wordmark"
 import GlassFolder from "@/components/ui/glass-folder-cards"
 import BookingExperience from "@/components/booking-experience"
+import Showroom from "@/components/showroom"
 import { PACKAGES, SITE, waLink, type Pkg } from "@/lib/site"
 
 function useReveal() {
@@ -39,6 +40,7 @@ function Nav() {
   const links = [
     ["Services", "#services"],
     ["Work", "#work"],
+    ["Showroom", "#showroom"],
     ["Packages", "#packages"],
     ["Book", "#book"],
     ["Contact", "#contact"],
@@ -452,6 +454,7 @@ export default function Home() {
       <Marquee />
       <Services />
       <Work />
+      <Showroom />
       <Packages />
       <Flock />
       <Process />

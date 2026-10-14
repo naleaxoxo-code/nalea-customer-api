@@ -81,3 +81,35 @@ body {
   .reveal { opacity: 1; transform: none; filter: none; }
   .blob, .marquee, .glow-text { animation: none; }
 }
+
+/* ---------- Showroom ---------- */
+.sr-bg {
+  background:
+    radial-gradient(60% 40% at 15% 10%, rgba(255,77,141,.18), transparent 70%),
+    radial-gradient(50% 40% at 85% 30%, rgba(138,125,255,.18), transparent 70%),
+    radial-gradient(60% 50% at 50% 100%, rgba(34,211,238,.12), transparent 70%);
+}
+.sr-bg::after {
+  content: ""; position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(70% 60% at 50% 40%, #000 30%, transparent 80%);
+}
+.sr-card { perspective: 1200px; }
+.sr-tilt { transform: rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)); transition: transform .4s cubic-bezier(.2,.8,.2,1), box-shadow .5s; transform-style: preserve-3d; }
+.sr-card:hover .sr-tilt { box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 50px 90px -30px rgba(255,77,141,.4); }
+.sr-glare { background: radial-gradient(400px circle at var(--mx,50%) var(--my,0%), rgba(255,255,255,.14), transparent 45%); opacity: 0; transition: opacity .4s; }
+.sr-card:hover .sr-glare { opacity: 1; }
+.sr-scroll { transform: translateY(0); transition: transform 6s cubic-bezier(.45,0,.25,1); }
+.group:hover .sr-scroll { transform: translateY(calc(-100% + 15rem)); }
+.sr-stage { background: radial-gradient(70% 60% at 50% 40%, rgba(138,125,255,.15), transparent 70%), #07070a; }
+.sr-shimmer { background: linear-gradient(100deg, #0c0c10 30%, #1a1a22 50%, #0c0c10 70%); background-size: 200% 100%; animation: sr-sh 1.4s linear infinite; }
+@keyframes sr-sh { to { background-position: -200% 0; } }
+.sr-viewer { animation: sr-in .35s cubic-bezier(.2,.8,.2,1); }
+@keyframes sr-in { from { opacity: 0; transform: scale(.98); } }
+.sr-buy { box-shadow: 0 0 0 0 rgba(255,77,141,.6); animation: sr-pulse 2.4s infinite; }
+@keyframes sr-pulse { 70% { box-shadow: 0 0 0 14px rgba(255,77,141,0); } 100% { box-shadow: 0 0 0 0 rgba(255,77,141,0); } }
+.sr-hue { appearance: none; height: 8px; border-radius: 99px; background: linear-gradient(90deg,red,#ff0,lime,cyan,blue,#f0f,red); }
+.sr-hue::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; border-radius: 99px; background: #fff; border: 2px solid #000; }
+.sr-hue::-moz-range-thumb { width: 18px; height: 18px; border-radius: 99px; background: #fff; border: 2px solid #000; }
+@media (prefers-reduced-motion: reduce) { .sr-scroll, .sr-buy, .sr-shimmer { transition: none; animation: none; } }
