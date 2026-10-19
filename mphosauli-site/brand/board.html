@@ -1,0 +1,49 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#050507;color:#f4f4f6;font-family:Inter,sans-serif;width:1600px}
+h1{font:600 14px Inter;letter-spacing:.3em;color:#ff4d8d;margin:0 0 6px}
+.row{display:grid;grid-template-columns:200px 1fr 1fr 260px;gap:24px;padding:36px 48px;border-bottom:1px solid #222;align-items:center}
+.name{font:700 26px Oswald;letter-spacing:.04em}.desc{font-size:13px;color:#999;margin-top:8px;line-height:1.5}
+.tile{height:260px;border-radius:24px;display:grid;place-items:center;overflow:hidden;position:relative}
+.dark{background:radial-gradient(60% 80% at 20% 30%,rgba(255,77,141,.25),transparent),radial-gradient(60% 80% at 85% 70%,rgba(109,93,252,.25),transparent),#050507;border:1px solid #1d1d22}
+.light{background:#f4f1ec}
+.smalls{display:flex;gap:18px;align-items:center}
+.smalls .a{width:96px;height:96px;border-radius:22px;display:grid;place-items:center;background:#0b0b0f;border:1px solid #222}
+.smalls .b{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:#0b0b0f;border:1px solid #222}
+.smalls .c{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;background:#f4f1ec}
+svg text{font-family:Oswald}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd1e3"/><stop offset=".45" stop-color="#ff4d8d"/><stop offset=".78" stop-color="#b14dff"/><stop offset="1" stop-color="#8a7dff"/></linearGradient>
+<linearGradient id="gh" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff4d8d"/><stop offset=".55" stop-color="#b14dff"/><stop offset="1" stop-color="#7dd3fc"/></linearGradient>
+<linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".42" stop-color="#e2e2ea"/><stop offset=".5" stop-color="#6e6e7c"/><stop offset=".56" stop-color="#2b2b35"/><stop offset=".74" stop-color="#ececf4"/><stop offset="1" stop-color="#ffb8d2"/></linearGradient>
+<linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4d8d"/><stop offset=".6" stop-color="#9b5cff"/><stop offset="1" stop-color="#6d5dfc"/></linearGradient>
+<linearGradient id="shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<clipPath id="top"><rect x="0" y="0" width="1000" height="62"/></clipPath><clipPath id="bot"><rect x="0" y="62" width="1000" height="200"/></clipPath>
+</defs></svg>
+<div style="padding:40px 48px 10px"><h1>MPHO SAULI — LOGO CONCEPTS</h1><div style="color:#888;font-size:14px">Each shown on dark, on light, and small (app icon / favicon / stamp)</div></div>
+<div id="rows"></div>
+<script>
+const C = {
+ // 1 Stacked gloss
+ stack:(fill,sub)=>`<svg viewBox="0 0 300 200" width="300"><text x="150" y="92" text-anchor="middle" font-size="96" font-weight="600" letter-spacing="2" fill="${fill}">MPHO</text><text x="150" y="176" text-anchor="middle" font-size="96" font-weight="600" letter-spacing="2" fill="${fill}">SAULI</text><rect x="70" y="186" width="160" height="2" fill="${sub}"/><text x="150" y="200" text-anchor="middle" font-size="11" font-weight="500" letter-spacing="10" fill="${sub}" font-family="Inter">STUDIO</text></svg>`,
+ stackMark:(fill)=>`<svg viewBox="0 0 100 100" width="70%"><text x="50" y="47" text-anchor="middle" font-size="46" font-weight="600" fill="${fill}">MP</text><text x="50" y="92" text-anchor="middle" font-size="46" font-weight="600" fill="${fill}">SA</text></svg>`,
+ // 2 Slice — echo of the hero animation
+ slice:(fill,sub)=>`<svg viewBox="0 0 440 150" width="420"><g font-size="104" font-weight="600"><text x="220" y="100" text-anchor="middle" fill="${fill}" clip-path="url(#top)" transform="translate(-7,0)" textLength="390" lengthAdjust="spacingAndGlyphs">MPHO SAULI</text><text x="220" y="100" text-anchor="middle" fill="${fill}" clip-path="url(#bot)" transform="translate(7,0)" textLength="390" lengthAdjust="spacingAndGlyphs">MPHO SAULI</text></g><rect x="20" y="61" width="400" height="2" fill="${sub}" opacity=".9"/><text x="220" y="140" text-anchor="middle" font-size="12" letter-spacing="12" fill="${sub}" font-family="Inter" font-weight="600">STUDIO</text></svg>`,
+ sliceMark:(fill)=>`<svg viewBox="0 0 100 100" width="76%"><g font-size="78" font-weight="600"><text x="50" y="80" text-anchor="middle" fill="${fill}" clip-path="url(#top2)" transform="translate(-4,0)">MS</text><text x="50" y="80" text-anchor="middle" fill="${fill}" clip-path="url(#bot2)" transform="translate(4,0)">MS</text></g><defs><clipPath id="top2"><rect width="100" height="52"/></clipPath><clipPath id="bot2"><rect y="52" width="100" height="60"/></clipPath></defs></svg>`,
+ // 3 Glass monogram tile + wordmark
+ glass:(fill,sub)=>`<svg viewBox="0 0 470 150" width="440"><g transform="translate(10,15)"><rect width="120" height="120" rx="32" fill="url(#glass)"/><rect width="120" height="120" rx="32" fill="url(#shine)"/><rect x=".75" y=".75" width="118.5" height="118.5" rx="31" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.5"/><text x="60" y="88" text-anchor="middle" font-size="72" font-weight="600" fill="#fff" letter-spacing="-2">MS</text></g><text x="152" y="88" font-size="70" font-weight="600" fill="${fill}" textLength="300" lengthAdjust="spacingAndGlyphs">MPHO SAULI</text><text x="154" y="122" font-size="12" letter-spacing="11" fill="${sub}" font-family="Inter" font-weight="600">DESIGN STUDIO</text></svg>`,
+ glassMark:()=>`<svg viewBox="0 0 120 120" width="100%"><rect width="120" height="120" rx="32" fill="url(#glass)"/><rect width="120" height="120" rx="32" fill="url(#shine)"/><text x="60" y="88" text-anchor="middle" font-size="72" font-weight="600" fill="#fff" letter-spacing="-2">MS</text></svg>`,
+ // 4 Glitch / scan — echo of the matrix reveal
+ glitch:(fill,sub,light)=>`<svg viewBox="0 0 440 150" width="420"><g font-size="96" font-weight="600" text-anchor="middle"><text x="216" y="100" textLength="390" lengthAdjust="spacingAndGlyphs" fill="#ff4d8d" opacity="${light?.55:.85}">MPHO SAULI</text><text x="224" y="100" textLength="390" lengthAdjust="spacingAndGlyphs" fill="#39ff8c" opacity="${light?.45:.7}">MPHO SAULI</text><text x="220" y="100" textLength="390" lengthAdjust="spacingAndGlyphs" fill="${fill}">MPHO SAULI</text></g><rect x="10" y="54" width="420" height="3" fill="url(#gh)"/><text x="220" y="140" text-anchor="middle" font-size="12" letter-spacing="12" fill="${sub}" font-family="Inter" font-weight="600">STUDIO</text></svg>`,
+ glitchMark:(fill)=>`<svg viewBox="0 0 100 100" width="78%"><g font-size="74" font-weight="600" text-anchor="middle"><text x="47" y="80" fill="#ff4d8d">MS</text><text x="53" y="80" textLength="390" lengthAdjust="spacingAndGlyphs" fill="#39ff8c" opacity=".8">MS</text><text x="50" y="80" fill="${fill}">MS</text></g><rect x="4" y="44" width="92" height="3" fill="url(#gh)"/></svg>`,
+}
+const rows=[
+ ["01 · STACKED GLOSS","Tall name stacked in two lines with the hero's pink-to-purple gradient. Bold and poster-like.",d=>C.stack("url(#g)","#ff4d8d"),l=>C.stack("url(#g)","#b14dff"),C.stackMark("url(#g)")],
+ ["02 · THE SLICE","The name cut through the middle, with the halves shifted apart like the hero animation. Your signature move.",d=>C.slice("url(#chrome)","#ff4d8d"),l=>C.slice("#111","#ff4d8d"),C.sliceMark("url(#chrome)")],
+ ["03 · GLASS MONOGRAM","A glossy glass MS badge next to the clean name. The badge works on its own for socials and favicons.",d=>C.glass("#fff","#ff4d8d"),l=>C.glass("#111","#b14dff"),C.glassMark()],
+ ["04 · MATRIX GLITCH","Pink and green split with a scan line, like your photo's reveal. Techy and moving.",d=>C.glitch("#fff","#ff4d8d"),l=>C.glitch("#111","#b14dff",1),C.glitchMark("#fff")],
+]
+document.getElementById("rows").innerHTML=rows.map(r=>`<div class="row"><div><div class="name">${r[0]}</div><div class="desc">${r[1]}</div></div><div class="tile dark">${r[2]()}</div><div class="tile light">${r[3]()}</div><div class="smalls"><div class="a">${r[4]}</div><div class="b">${r[4]}</div><div class="c" style="background:#050507">${r[4]}</div></div></div>`).join("")
+</script></body></html>

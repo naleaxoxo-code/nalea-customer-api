@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>04 — New Arrival</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --blush:#fbe8ec; --rose:#e8a4b4; --deep-rose:#b6536a; --gold:#cda05b; --ink:#3a2630; --ink-soft:#7a6470; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{ min-height:100vh; display:flex; align-items:center; justify-content:center; font-family:'Poppins',sans-serif; position:relative; overflow:hidden;
+    background:linear-gradient(135deg,#f7e3da 0%, #f3d9de 50%, #ecd4e0 100%); }
+  .blob{ position:absolute; border-radius:50%; filter:blur(60px); opacity:.5; }
+  .b1{ width:360px;height:360px; background:var(--rose); top:-130px; left:-110px; }
+  .b2{ width:300px;height:300px; background:var(--gold); bottom:-130px; right:-90px; }
+
+  .popup{ position:relative; z-index:5; width:520px; max-width:92vw; display:grid; grid-template-columns:1fr 1.1fr;
+    background:rgba(255,255,255,0.55); backdrop-filter:blur(22px) saturate(160%); -webkit-backdrop-filter:blur(22px) saturate(160%);
+    border:1px solid rgba(255,255,255,0.85); border-radius:26px; overflow:hidden; box-shadow:0 25px 70px rgba(150,80,100,0.28), inset 0 1px 0 rgba(255,255,255,0.6);
+    animation:rise .7s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes rise{ from{opacity:0; transform:translateY(28px) scale(.96);} to{opacity:1; transform:translateY(0) scale(1);} }
+
+  .visual{ background:linear-gradient(160deg,var(--deep-rose),var(--rose) 60%, var(--gold)); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:20px; }
+  .visual .product{ font-size:100px; animation:slide-in-product .8s .15s cubic-bezier(.2,.9,.3,1) both, sway 4s 1s ease-in-out infinite; filter:drop-shadow(0 16px 18px rgba(0,0,0,.2)); }
+  @keyframes slide-in-product{ from{ transform:translateX(-60px) rotate(-10deg); opacity:0;} to{ transform:translateX(0) rotate(0); opacity:1;} }
+  @keyframes sway{ 0%,100%{ transform:rotate(-3deg);} 50%{ transform:rotate(3deg);} }
+  .ribbon{ position:absolute; top:18px; left:-36px; transform:rotate(-45deg); background:#fff; color:var(--deep-rose); font-size:10px; font-weight:700;
+    letter-spacing:.12em; text-transform:uppercase; padding:5px 44px; box-shadow:0 4px 10px rgba(0,0,0,.15); }
+
+  .content{ padding:34px 30px; text-align:left; position:relative; }
+  .close{ position:absolute; top:14px; right:14px; width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,0.6);
+    border:1px solid rgba(255,255,255,0.8); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:13px; transition:.25s; }
+  .close:hover{ background:#fff; transform:rotate(90deg); }
+
+  .eyebrow{ font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--deep-rose); font-weight:600; margin-bottom:8px; opacity:0; animation:fade-up .6s .4s forwards; }
+  h1{ font-family:'Playfair Display',serif; font-weight:700; font-size:22px; color:var(--ink); margin-bottom:8px; line-height:1.25; opacity:0; animation:fade-up .6s .5s forwards; }
+  p.sub{ font-size:12px; color:var(--ink-soft); line-height:1.6; margin-bottom:16px; font-weight:300; opacity:0; animation:fade-up .6s .6s forwards; }
+  @keyframes fade-up{ from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:translateY(0);} }
+
+  .price-row{ display:flex; align-items:baseline; gap:8px; margin-bottom:16px; opacity:0; animation:fade-up .6s .7s forwards; }
+  .price-new{ font-family:'Playfair Display',serif; font-size:22px; font-weight:700; color:var(--deep-rose); }
+
+  button.cta{ width:100%; padding:14px 18px; border:none; border-radius:13px; cursor:pointer;
+    background:linear-gradient(120deg,var(--deep-rose),var(--rose) 60%, var(--gold)); background-size:200% 100%;
+    color:#fff; font-weight:600; font-size:13.5px; box-shadow:0 12px 26px rgba(182,83,106,.32); transition:.3s;
+    opacity:0; animation:fade-up .6s .8s forwards; }
+  button.cta:hover{ background-position:100% 0; transform:translateY(-2px); }
+
+  @media (max-width:520px){ .popup{ grid-template-columns:1fr; } .visual{ padding:24px 0; } }
+</style>
+</head>
+<body>
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="popup">
+    <div class="visual">
+      <div class="ribbon">New In</div>
+      <div class="product">👑</div>
+    </div>
+    <div class="content">
+      <button class="close" onclick="this.closest('.popup').style.display='none'">✕</button>
+      <div class="eyebrow">Just Dropped</div>
+      <h1>Custom Name Drop Earrings</h1>
+      <p class="sub">Gold-plated stainless steel, personalized with your name or a word that says it all.</p>
+      <div class="price-row"><span class="price-new">R 164.60</span></div>
+      <button class="cta">Personalize Mine →</button>
+    </div>
+  </div>
+</body>
+</html>

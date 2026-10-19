@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>01 — Slot Machine</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --plum:#150a18; --gold:#e3bd7d; --rose:#e6a4b4; --champagne:#f3e3cf; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{ min-height:100vh; display:flex; align-items:center; justify-content:center; font-family:'Poppins',sans-serif; overflow:hidden; position:relative;
+    background:radial-gradient(circle at 30% 20%, #2a1530 0%, #150a18 55%, #0a050b 100%); }
+  .glow{ position:absolute; border-radius:50%; filter:blur(70px); opacity:.35; }
+  .g1{ width:400px;height:400px; background:var(--gold); top:-150px; left:-120px; }
+  .g2{ width:340px;height:340px; background:var(--rose); bottom:-150px; right:-100px; }
+
+  .popup{ position:relative; z-index:5; width:420px; max-width:92vw; background:rgba(255,255,255,0.06);
+    backdrop-filter:blur(26px) saturate(160%); -webkit-backdrop-filter:blur(26px) saturate(160%);
+    border:1px solid rgba(255,255,255,0.14); border-radius:26px; box-shadow:0 30px 80px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,0.08);
+    padding:38px 32px 32px; text-align:center; color:#fff; animation:rise .7s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes rise{ from{opacity:0; transform:translateY(28px);} to{opacity:1; transform:translateY(0);} }
+
+  .close{ position:absolute; top:14px; right:16px; width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.15); cursor:pointer; display:flex; align-items:center; justify-content:center; color:#cbb; font-size:13px; transition:.25s; z-index:20; }
+  .close:hover{ background:rgba(255,255,255,0.18); transform:rotate(90deg); }
+
+  h1{ font-family:'Playfair Display',serif; font-weight:700; font-size:25px; margin-bottom:4px; }
+  h1 .accent{ background:linear-gradient(120deg,var(--gold),var(--rose)); -webkit-background-clip:text; background-clip:text; color:transparent; font-style:italic; }
+  p.sub{ font-size:12.5px; color:#cdb9c4; margin-bottom:22px; font-weight:300; }
+
+  .machine{ background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:18px; padding:18px; margin-bottom:18px; }
+  .reels{ display:flex; gap:10px; justify-content:center; margin-bottom:6px; }
+  .reel{ width:80px; height:80px; background:linear-gradient(160deg,#1f1224,#150a18); border-radius:12px; border:1px solid rgba(255,255,255,0.1);
+    display:flex; align-items:center; justify-content:center; font-size:38px; overflow:hidden; box-shadow:inset 0 4px 12px rgba(0,0,0,.5); }
+  .reel span{ display:inline-block; }
+  .reel.spinning span{ animation:spin-symbols .15s linear infinite; }
+  @keyframes spin-symbols{ from{ transform:translateY(0);} to{ transform:translateY(-40px);} }
+
+  .lever-row{ display:flex; align-items:center; justify-content:center; gap:6px; margin-top:8px; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#a896a0; }
+
+  button.cta{ width:100%; margin-top:6px; padding:15px 20px; border:none; border-radius:14px; cursor:pointer;
+    background:linear-gradient(120deg,var(--gold),#f4d999 60%, var(--rose)); background-size:200% 100%;
+    color:#1d1020; font-weight:700; font-size:14px; box-shadow:0 14px 30px rgba(227,189,125,.25); transition:.3s; }
+  button.cta:hover:not(:disabled){ background-position:100% 0; transform:translateY(-2px); }
+  button.cta:disabled{ opacity:.55; cursor:not-allowed; }
+
+  .result{ display:none; margin-top:14px; }
+  .result.show{ display:block; animation:rise .5s ease both; }
+  .code{ font-family:'Playfair Display',serif; font-size:24px; font-weight:700; color:var(--champagne); letter-spacing:.06em; margin:6px 0 14px; }
+
+  form{ display:flex; flex-direction:column; gap:12px; margin-top:14px; }
+  input[type=email]{ width:100%; padding:14px 18px; border-radius:14px; border:1px solid rgba(255,255,255,0.16);
+    background:rgba(255,255,255,0.06); font-size:14px; color:#fff; outline:none; transition:.25s; }
+  input::placeholder{ color:#a896a0; }
+  input[type=email]:focus{ border-color:var(--gold); box-shadow:0 0 0 4px rgba(227,189,125,0.15); }
+</style>
+</head>
+<body>
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="popup">
+    <button class="close" onclick="this.closest('.popup').style.display='none'">✕</button>
+    <h1>Spin To <span class="accent">Win Big</span></h1>
+    <p class="sub">Match 3 symbols for a guaranteed prize ✦</p>
+
+    <div class="machine">
+      <div class="reels">
+        <div class="reel" id="r0"><span id="s0">🎀</span></div>
+        <div class="reel" id="r1"><span id="s1">💎</span></div>
+        <div class="reel" id="r2"><span id="s2">✨</span></div>
+      </div>
+      <div class="lever-row">Pull To Play</div>
+    </div>
+
+    <div id="preGame">
+      <button class="cta" id="playBtn" onclick="playSlots()">Pull The Lever</button>
+    </div>
+
+    <div class="result" id="result">
+      <p style="font-size:13px;color:#cdb9c4;">Jackpot! You won</p>
+      <div class="code" id="prizeText">20% OFF</div>
+      <form onsubmit="event.preventDefault(); alert('Code sent to your inbox ✦');">
+        <input type="email" placeholder="Enter email to claim your prize" required>
+        <button class="cta" type="submit">Claim My Prize</button>
+      </form>
+    </div>
+  </div>
+
+<script>
+  const symbols=["🎀","💎","✨","👑","💄","🌸"];
+  const prizes=["10% OFF","15% OFF","Free Gift","20% OFF","Free Shipping","25% OFF"];
+  let played=false;
+  function playSlots(){
+    if(played) return; played=true;
+    document.getElementById('playBtn').disabled=true;
+    document.getElementById('playBtn').textContent='Spinning...';
+    const reels=[0,1,2].map(i=>document.getElementById('r'+i));
+    const spans=[0,1,2].map(i=>document.getElementById('s'+i));
+    reels.forEach(r=>r.classList.add('spinning'));
+
+    const winSymbol = symbols[Math.floor(Math.random()*symbols.length)];
+    const winPrize = prizes[Math.floor(Math.random()*prizes.length)];
+
+    let count=0;
+    const iv=setInterval(()=>{
+      spans.forEach(s=> s.textContent = symbols[Math.floor(Math.random()*symbols.length)]);
+      count++;
+      if(count>14){
+        clearInterval(iv);
+        reels.forEach(r=>r.classList.remove('spinning'));
+        spans.forEach(s=> s.textContent = winSymbol);
+        document.getElementById('prizeText').textContent = winPrize;
+        setTimeout(()=>{
+          document.getElementById('preGame').style.display='none';
+          document.getElementById('result').classList.add('show');
+        }, 500);
+      }
+    }, 90);
+  }
+</script>
+</body>
+</html>

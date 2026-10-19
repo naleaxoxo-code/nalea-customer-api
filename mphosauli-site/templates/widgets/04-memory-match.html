@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Naléa — Memory Match</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --np-bg:#0a0a0f; --np-card-bg:#111118; --np-gold:#c9a84c; --np-gold-soft:rgba(201,168,76,.15);
+    --np-cream:#f5f0e8; --np-cream-dim:#cfc8bc; --np-red1:#8b0000; --np-red2:#cc1a1a; --np-red3:#e83030;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{ min-height:100vh; display:flex; align-items:center; justify-content:center; font-family:'DM Sans',sans-serif; position:relative; overflow:hidden;
+    background:radial-gradient(circle at 20% 0%, #1a1420 0%, var(--np-bg) 55%); }
+  .blob{ position:absolute; border-radius:50%; filter:blur(70px); opacity:.35; }
+  .b1{ width:340px;height:340px; background:var(--np-gold); top:-130px; left:-110px; }
+  .b2{ width:300px;height:300px; background:var(--np-red3); bottom:-140px; right:-100px; }
+
+  .popup{ display:none; position:relative; z-index:5; width:420px; max-width:92vw; background:rgba(17,17,24,0.88);
+    backdrop-filter:blur(22px) saturate(140%); -webkit-backdrop-filter:blur(22px) saturate(140%);
+    border:1px solid rgba(201,168,76,0.25); border-radius:24px; box-shadow:0 25px 70px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04);
+    padding:32px 30px 28px; text-align:center; }
+  .popup.npg-show{ display:block; animation:rise .7s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes rise{ from{opacity:0; transform:translateY(28px) scale(.96);} to{opacity:1; transform:translateY(0) scale(1);} }
+
+  .npg-intro{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:4; opacity:0; transition:opacity .25s; }
+  .npg-intro.show{ opacity:1; }
+  .npg-flash{ position:absolute; inset:0; background:radial-gradient(circle, rgba(201,168,76,.4), transparent 60%); opacity:0; animation:npgFlash 1.15s ease-out forwards; }
+  @keyframes npgFlash{ 0%{opacity:0;} 45%{opacity:1;} 100%{opacity:0;} }
+  .npg-ring{ position:absolute; border:1.5px solid var(--np-gold); border-radius:50%; opacity:0; animation:npgRing 1.15s ease-out forwards; }
+  .npg-ring.r2{ animation-delay:.15s; } .npg-ring.r3{ animation-delay:.3s; }
+  @keyframes npgRing{ 0%{width:36px;height:36px;opacity:.85;} 100%{width:360px;height:360px;opacity:0;} }
+  .npg-spark{ position:absolute; color:var(--np-gold); font-size:18px; opacity:0; animation:npgSpark 1.2s ease-out forwards; }
+  @keyframes npgSpark{ 0%{transform:translate(0,0) scale(.3); opacity:0;} 28%{opacity:1;} 100%{transform:translate(var(--tx),var(--ty)) scale(1.15); opacity:0;} }
+
+  .close{ position:absolute; top:14px; right:16px; width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,0.06);
+    border:1px solid rgba(201,168,76,0.25); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--np-cream-dim); font-size:13px; transition:.25s; z-index:10; }
+  .close:hover{ background:rgba(201,168,76,0.15); transform:rotate(90deg); color:var(--np-gold); }
+
+  h1{ font-family:'Cormorant Garamond',serif; font-weight:700; font-size:25px; color:var(--np-cream); margin-bottom:4px; }
+  p.sub{ font-size:12px; color:var(--np-cream-dim); margin-bottom:6px; }
+  .tries{ font-size:11px; color:var(--np-gold); font-weight:600; margin-bottom:14px; letter-spacing:.04em; }
+
+  .grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px; }
+  .card{ aspect-ratio:1; perspective:600px; cursor:pointer; }
+  .card-inner{ position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform .45s cubic-bezier(.3,1.2,.4,1); }
+  .card.flipped .card-inner{ transform:rotateY(180deg); }
+  .card.matched .card-inner{ transform:rotateY(180deg); }
+  .face{ position:absolute; inset:0; backface-visibility:hidden; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:22px; }
+  .front{ background:linear-gradient(135deg,#1a1a22,#111118); border:1px solid rgba(201,168,76,0.25); color:var(--np-gold); }
+  .front::after{ content:'✦'; font-size:16px; opacity:.8; }
+  .back{ background:linear-gradient(135deg,#1c1c26,#15151c); transform:rotateY(180deg); box-shadow:0 4px 12px rgba(0,0,0,.4); border:1px solid rgba(201,168,76,0.15); }
+  .card.matched .back{ background:linear-gradient(135deg,#1c1c26,#221b12); box-shadow:0 0 0 2px var(--np-gold); }
+
+  .result{ display:none; }
+  .result.show{ display:block; animation:rise .5s ease both; }
+  .code{ font-family:'Cormorant Garamond',serif; font-size:26px; font-weight:700; color:var(--np-gold); letter-spacing:.06em; margin:6px 0 4px; }
+  .code-sub{ font-size:11.5px; color:var(--np-cream-dim); margin-bottom:16px; }
+  .code-sub strong{ color:var(--np-gold); }
+
+  form{ display:flex; flex-direction:column; gap:12px; }
+  input[type=email]{ width:100%; padding:13px 16px; border-radius:13px; border:1px solid rgba(201,168,76,.25);
+    background:rgba(255,255,255,0.04); font-size:13.5px; color:var(--np-cream); outline:none; transition:.25s; }
+  input[type=email]::placeholder{ color:var(--np-cream-dim); }
+  input[type=email]:focus{ border-color:var(--np-gold); box-shadow:0 0 0 4px rgba(201,168,76,0.15); }
+
+  button.cta{ padding:14px 18px; border:none; border-radius:13px; cursor:pointer;
+    background:linear-gradient(135deg,var(--np-red1) 0%,var(--np-red2) 40%,var(--np-red3) 60%,var(--np-red1) 100%); background-size:200% 100%;
+    color:#fff; font-weight:700; font-size:12.5px; letter-spacing:.04em; text-transform:uppercase; box-shadow:0 12px 26px rgba(232,48,48,.3); transition:.3s; }
+  button.cta:hover{ background-position:100% 0; transform:translateY(-2px); }
+
+  .claimed-msg{ font-size:12.5px; color:var(--np-cream-dim); line-height:1.5; }
+  .claimed-msg strong{ color:var(--np-gold); }
+</style>
+</head>
+<body>
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="npg-intro" id="npgIntro">
+    <div class="npg-flash"></div>
+    <div class="npg-ring r1"></div>
+    <div class="npg-ring r2"></div>
+    <div class="npg-ring r3"></div>
+    <div class="npg-spark" style="--tx:-90px; --ty:-70px; animation-delay:.05s;">✦</div>
+    <div class="npg-spark" style="--tx:100px; --ty:-50px; animation-delay:.12s;">✧</div>
+    <div class="npg-spark" style="--tx:-110px; --ty:60px; animation-delay:.2s;">✦</div>
+    <div class="npg-spark" style="--tx:90px; --ty:80px; animation-delay:.1s;">✧</div>
+    <div class="npg-spark" style="--tx:0px; --ty:-110px; animation-delay:.18s;">✦</div>
+  </div>
+  <div class="popup">
+    <button class="close" onclick="this.closest('.popup').style.display='none'">✕</button>
+    <h1>Match All 4 to Win</h1>
+    <p class="sub">Flip the cards and find every pair to unlock your discount</p>
+    <div class="tries" id="tries">Tries: 0/10</div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="result" id="result"></div>
+  </div>
+
+<script>
+  // ---- try cap + 8hr cooldown, persisted in localStorage so it survives page exit/reload ----
+  const MAX_TRIES=10;
+  const LOCK_MS=8*60*60*1000;
+  const LOCK_KEY='npGameLockUntil';
+  const TRIES_KEY='npGameTriesUsed';
+
+  function npCheckLock(){
+    const until=Number(localStorage.getItem(LOCK_KEY)||0);
+    if(until && Date.now()<until) return until;
+    if(until){ localStorage.removeItem(LOCK_KEY); localStorage.removeItem(TRIES_KEY); }
+    return 0;
+  }
+
+  function npFormatRemaining(until){
+    const ms=until-Date.now();
+    const h=Math.floor(ms/3600000);
+    const m=Math.floor((ms%3600000)/60000);
+    return h+'h '+m+'m';
+  }
+
+  function npLockGame(){
+    const until=Date.now()+LOCK_MS;
+    localStorage.setItem(LOCK_KEY, String(until));
+    localStorage.removeItem(TRIES_KEY);
+  }
+
+  function renderLocked(until){
+    document.getElementById('grid').style.display='none';
+    document.getElementById('tries').style.display='none';
+    const result=document.getElementById('result');
+    result.innerHTML=`
+      <div class="code-sub" style="margin-bottom:6px;">No more tries right now</div>
+      <div class="claimed-msg">Come back in <strong>${npFormatRemaining(until)}</strong> for 10 fresh tries.</div>`;
+    result.classList.add('show');
+  }
+
+  // ---- daily popup cap: max 3 auto-popups per device per day ----
+  const POPUP_DATE_KEY='npGamePopupDate';
+  const POPUP_COUNT_KEY='npGamePopupCount';
+  const MAX_POPUPS_PER_DAY=3;
+
+  function npPopupsLeftToday(){
+    const today=new Date().toDateString();
+    const storedDate=localStorage.getItem(POPUP_DATE_KEY);
+    if(storedDate!==today){
+      localStorage.setItem(POPUP_DATE_KEY, today);
+      localStorage.setItem(POPUP_COUNT_KEY, '0');
+      return MAX_POPUPS_PER_DAY;
+    }
+    const used=Number(localStorage.getItem(POPUP_COUNT_KEY)||0);
+    return MAX_POPUPS_PER_DAY-used;
+  }
+
+  function npRecordPopupShown(){
+    const used=Number(localStorage.getItem(POPUP_COUNT_KEY)||0);
+    localStorage.setItem(POPUP_COUNT_KEY, String(used+1));
+  }
+
+  // ---- 6s delay -> sparkle/ring intro effect -> popup reveal. Skipped while locked out or over the daily cap. ----
+  function npRevealPopup(lockUntil){
+    npRecordPopupShown();
+    const popupEl=document.querySelector('.popup');
+    const intro=document.getElementById('npgIntro');
+    intro.classList.add('show');
+    setTimeout(()=>{
+      intro.classList.remove('show');
+      popupEl.classList.add('npg-show');
+      if(lockUntil){ renderLocked(lockUntil); } else { startGame(); }
+    }, 1150);
+  }
+
+  const lockUntil=npCheckLock();
+  if(!lockUntil && npPopupsLeftToday()>0){
+    setTimeout(()=> npRevealPopup(lockUntil), 6000);
+  }
+  // locked out, or already shown 3x today: no auto-popup — nothing more to do until the cap/cooldown clears.
+
+  function startGame(){
+    // ---- game setup: 4 pairs, 8 cards, must match ALL pairs to win ----
+    const icons=['🎀','💄','💎','👑','🌸','✨','👛','💋'];
+    let pool=[...icons,...icons].slice(0,8);
+    for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+
+    const grid=document.getElementById('grid');
+    let flipped=[]; let matchedPairs=0; const totalPairs=4; let lock=false;
+    let tries=Number(localStorage.getItem(TRIES_KEY)||0);
+    document.getElementById('tries').textContent='Tries: '+tries+'/'+MAX_TRIES;
+
+    pool.forEach((icon)=>{
+      const card=document.createElement('div');
+      card.className='card';
+      card.dataset.icon=icon;
+      card.innerHTML=`<div class="card-inner"><div class="face front"></div><div class="face back">${icon}</div></div>`;
+      card.addEventListener('click', ()=> flipCard(card));
+      grid.appendChild(card);
+    });
+
+    function flipCard(card){
+      if(lock || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+      card.classList.add('flipped');
+      flipped.push(card);
+      if(flipped.length===2){
+        tries++;
+        localStorage.setItem(TRIES_KEY, String(tries));
+        document.getElementById('tries').textContent='Tries: '+tries+'/'+MAX_TRIES;
+        lock=true;
+        const [a,b]=flipped;
+        if(a.dataset.icon===b.dataset.icon){
+          a.classList.add('matched'); b.classList.add('matched');
+          flipped=[]; lock=false; matchedPairs++;
+          if(matchedPairs===totalPairs){ npLockGame(); winGame(); }
+          else if(tries>=MAX_TRIES){ npLockGame(); loseGame(); }
+        } else {
+          setTimeout(()=>{
+            a.classList.remove('flipped'); b.classList.remove('flipped');
+            flipped=[]; lock=false;
+            if(tries>=MAX_TRIES && matchedPairs<totalPairs){ npLockGame(); loseGame(); }
+          }, 800);
+        }
+      }
+    }
+  }
+
+  function loseGame(){
+    document.getElementById('grid').style.display='none';
+    document.getElementById('tries').style.display='none';
+    const result=document.getElementById('result');
+    result.innerHTML=`
+      <div class="code-sub" style="margin-bottom:6px;">Out of tries this round</div>
+      <div class="claimed-msg">No match this time — try again in <strong>8 hours</strong> for 10 fresh tries.</div>`;
+    result.classList.add('show');
+  }
+
+  // ---- prize tiers: weighted random ----
+  function rollTier(){
+    const r=Math.random()*100;
+    if(r<50) return 10;
+    if(r<85) return 15;
+    return 20;
+  }
+
+  const CODE_MAP={
+    member:{10:'NALEAGAME10',15:'NALEAGAME15',20:'NALEAGAME20'},
+    newSignup:{10:'NALEAGAME15NEW',15:'NALEAGAME20NEW',20:'NALEAGAME25NEW'}
+  };
+
+  function winGame(){
+    const tier=rollTier();
+    setTimeout(()=>{
+      document.getElementById('grid').style.display='none';
+      document.getElementById('tries').style.display='none';
+      renderResult(tier);
+    }, 700);
+  }
+
+  function renderResult(tier){
+    const result=document.getElementById('result');
+    const loggedIn = !!window.npLoggedIn;
+    if(loggedIn){
+      const code=CODE_MAP.member[tier];
+      result.innerHTML=`
+        <div class="code">${tier}% OFF</div>
+        <div class="code-sub">Code <strong>${code}</strong> saved to your profile</div>
+        <div class="claimed-msg">Claimed! Check your <strong>profile</strong> to use it on your next order.</div>`;
+      result.classList.add('show');
+      npClaimCoupon({ tier, code, isNewSignup:false });
+    } else {
+      const bonusTier=tier+5;
+      const code=CODE_MAP.newSignup[tier];
+      result.innerHTML=`
+        <div class="code">${bonusTier}% OFF</div>
+        <div class="code-sub">${tier}% win + <strong>5% signup bonus</strong></div>
+        <button class="cta" id="npGameClaimBtn" type="button">Create Account to Claim</button>`;
+      result.classList.add('show');
+      document.getElementById('npGameClaimBtn').addEventListener('click', ()=>{
+        npStashGameCoupon({ tier:bonusTier, code, isNewSignup:true });
+        npOpenSignup();
+      });
+    }
+  }
+
+  // ---- integration points: these call into the site-wide auth modal (npAuthView/npReg flow) ----
+  // when this snippet is embedded site-wide, window.npShowAuthView/npShowRegStep already exist.
+  function npOpenSignup(){
+    if(typeof window.npShowAuthView==='function' && typeof window.npShowRegStep==='function'){
+      window.npShowAuthView();
+      window.npShowRegStep(1);
+    } else {
+      // standalone/local-preview fallback only — real theme always has the functions above
+      renderEmailFallback();
+    }
+  }
+
+  function npStashGameCoupon(payload){
+    let data={};
+    try{ data=JSON.parse(sessionStorage.getItem('naleaRegisterData')||'{}'); }catch(e){}
+    data.gameCoupon=payload;
+    sessionStorage.setItem('naleaRegisterData', JSON.stringify(data));
+  }
+
+  function npClaimCoupon(payload){
+    if(typeof window.fetch!=='function') return;
+    fetch('/apps/nalea/customer', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ game_coupon: { code:payload.code, tier:payload.tier, isNewSignup:payload.isNewSignup } })
+    }).catch(()=>{});
+  }
+
+  function renderEmailFallback(){
+    const result=document.getElementById('result');
+    result.innerHTML=`
+      <div class="code-sub" style="margin-bottom:10px;">(Local preview — site auth modal not present)</div>
+      <form id="npGameFallbackForm">
+        <input type="email" placeholder="Enter email to claim" required>
+        <button class="cta" type="submit">Claim My Discount</button>
+      </form>`;
+    document.getElementById('npGameFallbackForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      result.innerHTML='<div class="claimed-msg">Code sent to your inbox ✦</div>';
+    });
+  }
+</script>
+</body>
+</html>

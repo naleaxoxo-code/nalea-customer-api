@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nalèa XoXo — Cart Redesign Preview (Dark Gold)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{ --gold:#c9a84c; --gold-light:#e8d5a3; --gold-deep:#b8922a; --black:#080808; --accent:#e8405a;
+    --serif:'Instrument Serif',Georgia,serif; --sans:'Instrument Sans',system-ui,sans-serif; }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 50% -10%, #1a1407 0%, #0a0a0a 55%, #050505 100%);font-family:var(--sans);color:#e9e4d8}
+  .wrap{max-width:1400px;margin:0 auto;padding:30px 18px 80px}
+  .head{text-align:center;margin:6px 0 22px}
+  .head h1{font-family:var(--serif);font-weight:400;font-size:38px;margin:0 0 6px;color:#fff}
+  .head h1 b{color:var(--gold);font-weight:400}
+  .head p{margin:0;color:#a99f86;font-size:14px}
+  .legend{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:14px 0 28px;font-size:12px;color:#cbbf9f}
+  .legend span{background:rgba(233,196,106,.06);border:1px solid rgba(233,196,106,.35);border-radius:100px;padding:6px 13px}
+  .frames{display:flex;gap:26px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+  .device{background:#000;border-radius:18px;box-shadow:0 18px 60px rgba(0,0,0,.6), 0 0 0 1px rgba(233,196,106,.18);overflow:hidden;flex:0 0 auto}
+  .device .bar{height:34px;background:#000;display:flex;align-items:center;gap:6px;padding:0 12px;border-bottom:1px solid rgba(233,196,106,.18)}
+  .device .bar i{width:10px;height:10px;border-radius:50%;background:#3a3a3a;display:inline-block}
+  .device .bar b{margin-left:auto;margin-right:auto;color:#8a8268;font-weight:500;font-size:11px}
+  .device .label{position:absolute;margin-top:-58px;width:100%;text-align:center;font-size:13px;font-weight:600;color:#d8cca6}
+  iframe{border:0;display:block;background:#000}
+  .col{display:flex;flex-direction:column;align-items:center;gap:54px}
+  .note{max-width:820px;margin:56px auto 0;background:rgba(233,196,106,.04);border:1px solid rgba(233,196,106,.28);border-radius:14px;padding:22px 26px;font-size:14px;line-height:1.65;color:#d8cfb9}
+  .note h3{font-family:var(--serif);font-weight:400;font-size:24px;margin:0 0 10px;color:var(--gold)}
+  .note li{margin:5px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>Your Bag — matched to your <b>homepage</b></h1>
+    <p>Dark + gold cart with free-shipping bar, trust badges, express checkout & cross-sell</p>
+  </div>
+  <div class="legend">
+    <span>🚚 Free-shipping progress</span><span>🔒 Trust badges</span><span>💳 Payment + express checkout</span>
+    <span>🏷️ Discount code</span><span>💝 You may also like</span><span>✨ Gold #c9a84c</span>
+  </div>
+
+  <div class="frames">
+    <div class="col">
+      <div style="position:relative">
+        <div class="label">💻 Desktop</div>
+        <div class="device">
+          <div class="bar"><i></i><i></i><i></i><b>naleaxoxo.com/cart</b></div>
+          <iframe id="f-desktop" width="980" height="760"></iframe>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div style="position:relative">
+        <div class="label">📱 Tablet</div>
+        <div class="device">
+          <div class="bar"><i></i><i></i><i></i><b>iPad</b></div>
+          <iframe id="f-tablet" width="440" height="760"></iframe>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div style="position:relative">
+        <div class="label">📲 Mobile</div>
+        <div class="device">
+          <div class="bar"><i></i><i></i><i></i><b>iPhone</b></div>
+          <iframe id="f-mobile" width="300" height="660"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <h3>What's in this cart (think-hard checklist)</h3>
+    <ul>
+      <li><b>Free-shipping progress bar</b> — nudges shoppers to add more ("R— to free shipping").</li>
+      <li><b>Line items</b> — image, title, variant, qty stepper, remove, "Only 2 left" urgency.</li>
+      <li><b>Order summary</b> — subtotal, <b>discount code</b>, total, big gold <b>CHECKOUT</b>; sticky on desktop.</li>
+      <li><b>Express checkout</b> — Shop Pay / PayPal / Google Pay buttons for 1-tap.</li>
+      <li><b>Trust badges</b> — 🔒 Secure · ↩ Easy returns · 🚚 Fast SA shipping · ⭐ 5-star, plus payment icons.</li>
+      <li><b>Order note / gift message</b> field.</li>
+      <li><b>"You may also like"</b> cross-sell to raise order value.</li>
+      <li><b>Mobile</b> gets a sticky bottom Checkout bar so it's always one tap away.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const items = [
+  {t:'Pearl & Rhinestone "BRIDE" Tiara Headband', v:'One size', p:289, qty:1, img:'https://cdn.shopify.com/s/files/1/0789/2166/2696/files/image_-_2026-04-21T133034.897_1.png?v=1781966488', low:'Only 2 left'},
+  {t:'Faux Feather Bridal Folding Fan', v:'White', p:299, qty:1, img:'https://cdn.shopify.com/s/files/1/0789/2166/2696/files/1b21c548-474c-4294-a89e-17408cfbe7d9_1_1.png?v=1781966680', low:''},
+  {t:'8-Piece Matte Heart Snap Hair Clips', v:'8pcs · Set A', p:99, qty:2, img:'https://cdn.shopify.com/s/files/1/0789/2166/2696/files/S531dd03470cb4477952f7d589b3902e28_1_1.png?v=1781966747', low:''}
+];
+const recs = [
+  {t:'Birdcage Veil Headband', p:199, img:'https://cdn.shopify.com/s/files/1/0789/2166/2696/files/image-2026-04-21T133823.529.png?v=1776771565'},
+  {t:'"BRIDE" Hair Slide', p:189, img:'https://cdn.shopify.com/s/files/1/0789/2166/2696/files/image_-_2026-04-21T134558.875_1.png?v=1781966356'},
+  {t:'Nail Art Liner Brush', p:69, img:'https://cdn.shopify.com/s/files/1/0789/2166/2696/files/image-2026-04-21T155329.796_1.png?v=1781966275'}
+];
+const FREE = 750;
+const subtotal = items.reduce((s,i)=>s+i.p*i.qty,0);
+const remain = Math.max(0, FREE - subtotal);
+const pct = Math.min(100, Math.round(subtotal/FREE*100));
+
+function money(n){ return 'R '+n.toFixed(2); }
+
+function lineItems(compact){
+  return items.map(i=>`
+    <div class="li">
+      <a class="li__media" href="#"><img src="${i.img}" alt="${i.t}"></a>
+      <div class="li__main">
+        <a class="li__name" href="#">${i.t}</a>
+        <div class="li__variant">${i.v}</div>
+        ${i.low?`<div class="li__low">⚡ ${i.low}</div>`:''}
+        <div class="li__row">
+          <div class="qty"><button>−</button><span>${i.qty}</span><button>+</button></div>
+          <div class="li__price">${money(i.p*i.qty)}</div>
+        </div>
+        <button class="li__remove">Remove</button>
+      </div>
+    </div>`).join('');
+}
+
+function summary(){
+  return `
+    <div class="sum">
+      <div class="sum__title">Order Summary</div>
+      <div class="sum__line"><span>Subtotal</span><span>${money(subtotal)}</span></div>
+      <div class="sum__disc">
+        <input placeholder="Discount code" aria-label="Discount code"><button>Apply</button>
+      </div>
+      <div class="sum__line sum__line--total"><span>Total</span><span>${money(subtotal)}</span></div>
+      <div class="sum__tax">Taxes & shipping calculated at checkout</div>
+      <button class="sum__checkout">Secure Checkout · ${money(subtotal)}</button>
+      <div class="sum__express">
+        <button class="exp exp--shop">shop <b>Pay</b></button>
+        <button class="exp exp--pp"><i>Pay</i>Pal</button>
+        <button class="exp exp--gp">G&nbsp;Pay</button>
+      </div>
+      <div class="sum__pay"><span>VISA</span><span>MC</span><span>AMEX</span><span>PayPal</span></div>
+      <a class="sum__cont" href="#">← Continue shopping</a>
+    </div>`;
+}
+
+function trust(){
+  return `<div class="trust">
+    <div class="trust__i"><b>🔒</b><span>Secure<br>checkout</span></div>
+    <div class="trust__i"><b>↩</b><span>Easy<br>returns</span></div>
+    <div class="trust__i"><b>🚚</b><span>Fast SA<br>shipping</span></div>
+    <div class="trust__i"><b>★</b><span>5-star<br>loved</span></div>
+  </div>`;
+}
+
+function recsBlock(){
+  return `<div class="recs">
+    <div class="recs__title">You may also like</div>
+    <div class="recs__row">
+      ${recs.map(r=>`<div class="rec"><div class="rec__media"><img src="${r.img}" alt="${r.t}"></div>
+        <div class="rec__name">${r.t}</div><div class="rec__price">${money(r.p)}</div>
+        <button class="rec__add">Add +</button></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function pageHTML(mode){
+  // mode: 'desktop' | 'tablet' | 'mobile'
+  return `<!doctype html><html><head><meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+   :root{--gold:#c9a84c;--gold-light:#e8d5a3;--gold-deep:#b8922a;--black:#080808;--card:rgba(255,255,255,0.04);
+     --border:rgba(255,255,255,0.08);--muted:rgba(255,255,255,0.5);--accent:#e8405a;
+     --serif:'Instrument Serif',Georgia,serif;--sans:'Instrument Sans',system-ui,sans-serif;}
+   *{box-sizing:border-box}
+   body{margin:0;font-family:var(--sans);color:#eae5d8;font-size:14px;
+     background:radial-gradient(900px 500px at 50% -8%, #1c1509 0%, #0b0b0a 55%, #060606 100%);padding-bottom:${mode==='mobile'?'78px':'0'}}
+   a{text-decoration:none;color:inherit}
+   .nav{display:flex;align-items:center;padding:15px 18px;border-bottom:1px solid var(--border);background:#000}
+   .nav .logo{flex:1;text-align:center;font-family:var(--serif);font-size:22px;color:#fff}
+   .nav .ic{width:60px;text-align:right;color:#e6dcc2}
+   .pagehead{padding:26px 20px 4px}
+   .pagehead .ey{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--gold);font-weight:700}
+   .pagehead h1{font-family:var(--serif);font-weight:400;font-size:34px;color:#fff;margin:6px 0 0}
+   /* free shipping bar */
+   .ship{margin:16px 20px 0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 15px}
+   .ship__txt{font-size:12.5px;margin-bottom:8px}
+   .ship__txt b{color:var(--gold)}
+   .ship__bar{height:7px;border-radius:50px;background:rgba(255,255,255,0.08);overflow:hidden}
+   .ship__fill{height:100%;width:${pct}%;background:linear-gradient(90deg,var(--gold-deep),var(--gold-light));border-radius:50px}
+   /* layout */
+   .body{display:${mode==='desktop'?'grid':'block'};grid-template-columns:1fr 360px;gap:24px;padding:22px 20px 30px;max-width:1180px;margin:0 auto}
+   /* line items */
+   .li{display:flex;gap:14px;padding:18px 0;border-bottom:1px solid var(--border)}
+   .li__media{width:84px;height:104px;flex:0 0 auto;border-radius:10px;overflow:hidden;background:#181818}
+   .li__media img{width:100%;height:100%;object-fit:cover}
+   .li__main{flex:1;min-width:0;position:relative}
+   .li__name{font-weight:600;color:#fff;display:block;line-height:1.35;padding-right:60px}
+   .li__variant{color:var(--muted);font-size:12px;margin-top:3px}
+   .li__low{color:var(--accent);font-size:11px;font-weight:600;margin-top:6px;letter-spacing:.3px}
+   .li__row{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
+   .qty{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:50px;overflow:hidden}
+   .qty button{background:transparent;border:0;color:var(--gold);width:30px;height:30px;font-size:15px;cursor:pointer}
+   .qty span{min-width:26px;text-align:center;font-size:13px}
+   .li__price{font-weight:700;color:var(--gold)}
+   .li__remove{position:absolute;top:0;right:0;background:transparent;border:0;color:var(--muted);font-size:11px;text-decoration:underline;cursor:pointer}
+   /* summary */
+   .sum{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;${mode==='desktop'?'position:sticky;top:16px;':'margin-top:8px;'}}
+   .sum__title{font-family:var(--serif);font-size:20px;color:#fff;margin-bottom:14px}
+   .sum__line{display:flex;justify-content:space-between;font-size:13.5px;padding:7px 0;color:#d8cfb9}
+   .sum__line--total{border-top:1px solid var(--border);margin-top:6px;padding-top:13px;font-size:16px;font-weight:700;color:#fff}
+   .sum__disc{display:flex;gap:8px;margin:10px 0}
+   .sum__disc input{flex:1;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:50px;padding:10px 15px;color:#fff;font-family:inherit;font-size:12.5px}
+   .sum__disc button{background:transparent;border:1px solid rgba(201,168,76,0.5);color:var(--gold);border-radius:50px;padding:0 16px;font-weight:600;font-size:12px;cursor:pointer}
+   .sum__tax{font-size:11px;color:var(--muted);margin:4px 0 14px;text-align:center}
+   .sum__checkout{width:100%;background:linear-gradient(135deg,var(--gold) 0%,var(--gold-deep) 100%);color:#1a1206;border:0;border-radius:50px;padding:15px;font-family:inherit;font-size:13px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,0.28),0 6px 24px rgba(201,168,76,0.3)}
+   .sum__express{display:flex;gap:8px;margin-top:12px}
+   .exp{flex:1;border:0;border-radius:50px;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+   .exp--shop{background:#5a31f4;color:#fff}
+   .exp--pp{background:#ffc439;color:#003087}.exp--pp i{font-style:italic;color:#002f86}
+   .exp--gp{background:#fff;color:#000}
+   .sum__pay{display:flex;gap:6px;justify-content:center;margin-top:14px}
+   .sum__pay span{font-size:9px;font-weight:700;letter-spacing:.5px;color:#cdc3a6;border:1px solid var(--border);border-radius:5px;padding:4px 7px;background:rgba(255,255,255,0.03)}
+   .sum__cont{display:block;text-align:center;color:var(--gold);font-size:12px;margin-top:16px}
+   /* trust */
+   .trust{display:flex;gap:10px;margin:18px 0 0}
+   .trust__i{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 6px;text-align:center}
+   .trust__i b{display:block;color:var(--gold);font-size:17px;margin-bottom:5px}
+   .trust__i span{font-size:10px;color:#cdc3a6;line-height:1.3}
+   /* note */
+   .note{margin-top:16px}
+   .note textarea{width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:#fff;font-family:inherit;font-size:13px;resize:none;min-height:60px}
+   .note label{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:7px}
+   /* recs */
+   .recs{padding:10px 20px 30px;max-width:1180px;margin:0 auto;border-top:1px solid var(--border)}
+   .recs__title{font-family:var(--serif);font-size:22px;color:#fff;margin:20px 0 16px;text-align:center}
+   .recs__row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+   .rec{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;text-align:center;padding-bottom:12px}
+   .rec__media{aspect-ratio:1/1;background:#181818}.rec__media img{width:100%;height:100%;object-fit:cover}
+   .rec__name{font-size:11.5px;color:#f3eede;padding:10px 8px 3px;line-height:1.3;min-height:34px}
+   .rec__price{color:var(--gold);font-weight:700;font-size:12.5px;margin-bottom:8px}
+   .rec__add{background:transparent;border:1px solid rgba(201,168,76,0.5);color:var(--gold);border-radius:50px;padding:6px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;font-family:inherit}
+   /* sticky mobile bar */
+   .mbar{position:fixed;bottom:0;left:0;right:0;background:rgba(8,8,8,0.96);backdrop-filter:blur(10px);border-top:1px solid rgba(201,168,76,0.25);padding:11px 16px;display:flex;align-items:center;gap:12px;z-index:20}
+   .mbar__tot{font-size:12px;color:var(--muted)}.mbar__tot b{display:block;color:#fff;font-size:16px}
+   .mbar__btn{margin-left:auto;background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:#1a1206;border:0;border-radius:50px;padding:13px 26px;font-weight:800;letter-spacing:1px;text-transform:uppercase;font-size:12px;font-family:inherit}
+  </style></head>
+  <body>
+   <div class="nav"><span style="width:60px">&#9776;</span><span class="logo">Nalèa XoXo</span><span class="ic">&#128722;</span></div>
+   <div class="pagehead"><div class="ey">Checkout</div><h1>Your Bag (${items.reduce((s,i)=>s+i.qty,0)})</h1></div>
+   <div class="ship">
+     <div class="ship__txt">${remain>0?`You're <b>${money(remain)}</b> away from <b>FREE shipping</b> 🚚`:`🎉 You've unlocked <b>FREE shipping</b>!`}</div>
+     <div class="ship__bar"><div class="ship__fill"></div></div>
+   </div>
+   <div class="body">
+     <div class="cart">
+       ${lineItems()}
+       <div class="note"><label>Add a note or gift message</label><textarea placeholder="e.g. Please gift wrap 💝"></textarea></div>
+       ${trust()}
+     </div>
+     <div>${summary()}</div>
+   </div>
+   ${recsBlock()}
+   ${mode==='mobile'?`<div class="mbar"><div class="mbar__tot">Total<b>${money(subtotal)}</b></div><button class="mbar__btn">Checkout →</button></div>`:''}
+  </body></html>`;
+}
+
+document.getElementById('f-desktop').srcdoc = pageHTML('desktop');
+document.getElementById('f-tablet').srcdoc  = pageHTML('tablet');
+document.getElementById('f-mobile').srcdoc  = pageHTML('mobile');
+</script>
+</body>
+</html>

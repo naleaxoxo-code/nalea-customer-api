@@ -1,0 +1,7 @@
+{
+  "layout": "mpho-booking",
+  "sections": {
+    "booking": { "type": "mpho-booking", "settings": {} }
+  },
+  "order": ["booking"]
+}

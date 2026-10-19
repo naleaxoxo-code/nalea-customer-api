@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>01 — Product Spotlight</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --blush:#fbe8ec; --rose:#e8a4b4; --deep-rose:#b6536a; --gold:#cda05b; --ink:#3a2630; --ink-soft:#7a6470; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{ min-height:100vh; display:flex; align-items:center; justify-content:center; font-family:'Poppins',sans-serif; position:relative; overflow:hidden;
+    background:linear-gradient(135deg,#f7e3da 0%, #f3d9de 50%, #ecd4e0 100%); }
+  .blob{ position:absolute; border-radius:50%; filter:blur(60px); opacity:.5; animation:float 10s ease-in-out infinite; }
+  .b1{ width:380px;height:380px; background:var(--rose); top:-140px; left:-110px; }
+  .b2{ width:300px;height:300px; background:var(--gold); bottom:-140px; right:-90px; animation-delay:3s; }
+  @keyframes float{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-18px);} }
+
+  .popup{ position:relative; z-index:5; width:420px; max-width:92vw; background:rgba(255,255,255,0.55);
+    backdrop-filter:blur(22px) saturate(160%); -webkit-backdrop-filter:blur(22px) saturate(160%);
+    border:1px solid rgba(255,255,255,0.85); border-radius:28px; box-shadow:0 25px 70px rgba(150,80,100,0.25), inset 0 1px 0 rgba(255,255,255,0.6);
+    padding:30px 28px 28px; text-align:center; animation:rise .7s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes rise{ from{opacity:0; transform:translateY(28px) scale(.96);} to{opacity:1; transform:translateY(0) scale(1);} }
+
+  .close{ position:absolute; top:14px; right:16px; width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,0.6);
+    border:1px solid rgba(255,255,255,0.8); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:13px; transition:.25s; z-index:10; }
+  .close:hover{ background:#fff; transform:rotate(90deg); }
+
+  .tag{ position:absolute; top:18px; left:18px; background:linear-gradient(120deg,var(--deep-rose),var(--rose)); color:#fff; font-size:10px;
+    font-weight:700; letter-spacing:.1em; text-transform:uppercase; padding:6px 12px; border-radius:999px; box-shadow:0 8px 18px rgba(182,83,106,.3); z-index:6; }
+
+  .stage{ position:relative; width:220px; height:220px; margin:30px auto 18px; }
+  .ring{ position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,.7), rgba(232,164,180,.3)); box-shadow:0 20px 50px rgba(150,80,100,.3); }
+  .product-emoji{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:90px;
+    animation:hover-bob 3.5s ease-in-out infinite; filter:drop-shadow(0 18px 22px rgba(150,80,100,.35)); }
+  @keyframes hover-bob{ 0%,100%{ transform:translateY(0) rotate(-2deg);} 50%{ transform:translateY(-14px) rotate(2deg);} }
+  .sparkle{ position:absolute; font-size:16px; color:var(--gold); opacity:0; animation:sparkle-pop 2.4s ease-in-out infinite; }
+  .sp1{ top:10px; right:20px; animation-delay:.2s; }
+  .sp2{ bottom:30px; left:10px; animation-delay:1s; }
+  .sp3{ top:50%; right:0; animation-delay:1.8s; }
+  @keyframes sparkle-pop{ 0%,100%{ opacity:0; transform:scale(.5);} 50%{ opacity:1; transform:scale(1.2);} }
+
+  .brand{ font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--deep-rose); font-weight:600; margin-bottom:6px; }
+  h1{ font-family:'Playfair Display',serif; font-weight:700; font-size:21px; color:var(--ink); margin-bottom:6px; line-height:1.3; }
+  p.sub{ font-size:12px; color:var(--ink-soft); margin-bottom:14px; line-height:1.55; }
+
+  .price-row{ display:flex; align-items:baseline; justify-content:center; gap:10px; margin-bottom:18px; }
+  .price-old{ font-size:14px; color:var(--ink-soft); text-decoration:line-through; }
+  .price-new{ font-family:'Playfair Display',serif; font-size:26px; font-weight:700; position:relative; overflow:hidden;
+    background:linear-gradient(120deg, var(--deep-rose) 30%, #fff 50%, var(--deep-rose) 70%); background-size:200% 100%;
+    -webkit-background-clip:text; background-clip:text; color:transparent; animation:shimmer 2.5s linear infinite; }
+  @keyframes shimmer{ from{ background-position:200% 0;} to{ background-position:-200% 0;} }
+
+  button.cta{ width:100%; padding:15px 20px; border:none; border-radius:14px; cursor:pointer;
+    background:linear-gradient(120deg,var(--deep-rose),var(--rose) 60%, var(--gold)); background-size:200% 100%;
+    color:#fff; font-weight:600; font-size:14px; box-shadow:0 14px 30px rgba(182,83,106,.35); transition:.3s; }
+  button.cta:hover{ background-position:100% 0; transform:translateY(-2px); }
+
+  .skip{ margin-top:12px; font-size:11.5px; color:var(--ink-soft); text-decoration:underline; cursor:pointer; background:none; border:none; }
+  .skip:hover{ color:var(--deep-rose); }
+</style>
+</head>
+<body>
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="popup">
+    <button class="close" onclick="this.closest('.popup').style.display='none'">✕</button>
+    <div class="tag">✦ Just Landed</div>
+
+    <div class="stage">
+      <div class="ring"></div>
+      <div class="product-emoji">👛</div>
+      <div class="sparkle sp1">✦</div>
+      <div class="sparkle sp2">✦</div>
+      <div class="sparkle sp3">✦</div>
+    </div>
+
+    <div class="brand">Nalèa XoXo</div>
+    <h1>Ruched Half-Moon Handbag</h1>
+    <p class="sub">Avant-garde crescent silhouette in buttery vegan leather. Your everyday arm-candy upgrade.</p>
+    <div class="price-row">
+      <span class="price-old">R 1,199</span>
+      <span class="price-new">R 860.92</span>
+    </div>
+    <button class="cta">Shop This Bag →</button>
+    <button class="skip" onclick="this.closest('.popup').style.display='none'">Maybe later</button>
+  </div>
+</body>
+</html>
