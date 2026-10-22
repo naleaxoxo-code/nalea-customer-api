@@ -2134,7 +2134,7 @@ async function applyAutoImageAlt(productId, title, images) {
 
 // ===== BACKFILL — one-off catch-up for SEO + SKU + barcode image on products that predate the auto webhook =====
 // POST /admin/backfill-seo-sku, header X-Admin-Secret: <BACKFILL_ADMIN_SECRET>. Paginates every
-// product in the store, and for each one applies the same "skip if already set" SEO/SKU/barcode-image
+// product in the store, and for each one applies the same "skip if already set" SEO/SKU/alt-text/barcode-image
 // logic the products-create webhook uses — safe to re-run, never touches a product that already has
 // SEO, SKUs, or a barcode image on file (which is what flips the storefront's "Verified SKU" badge
 // off "Pending").
@@ -2148,7 +2148,7 @@ app.post('/admin/backfill-seo-sku', async (req, res) => {
   const base = `https://${SHOPIFY_STORE}/admin/api/2024-04`;
   const headers = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
   let url = `${base}/products.json?limit=250`;
-  let seoApplied = 0, skuApplied = 0, barcodeApplied = 0, scanned = 0, errors = 0;
+  let seoApplied = 0, skuApplied = 0, barcodeApplied = 0, altApplied = 0, scanned = 0, errors = 0;
 
   try {
     while (url) {
@@ -2194,6 +2194,16 @@ app.post('/admin/backfill-seo-sku', async (req, res) => {
             }
           }
 
+          // Images that predate the auto webhook have no alt text, which costs the
+          // product in search and leaves screen readers with nothing to read out.
+          // applyAutoImageAlt skips any image that already has alt text, so this is
+          // safe to re-run alongside the SEO and SKU passes.
+          const images = product.images || [];
+          if (images.some(img => !img.alt)) {
+            await applyAutoImageAlt(productId, product.title, images);
+            altApplied++;
+          }
+
           const variants = product.variants || [];
           const needsSku = variants.some(v => !v.sku || !String(v.sku).trim());
           let finalSkus = variants.map(v => (v.sku && String(v.sku).trim()) ? String(v.sku).trim() : null);
@@ -2220,7 +2230,7 @@ app.post('/admin/backfill-seo-sku', async (req, res) => {
     console.error('Backfill fatal exception:', err.message);
   }
 
-  console.log(`Backfill complete: scanned ${scanned}, SEO applied ${seoApplied}, SKU applied ${skuApplied}, barcode images applied ${barcodeApplied}, errors ${errors}`);
+  console.log(`Backfill complete: scanned ${scanned}, SEO applied ${seoApplied}, SKU applied ${skuApplied}, alt text applied ${altApplied}, barcode images applied ${barcodeApplied}, errors ${errors}`);
 });
 
 // ===== REVIEW REQUEST — sent automatically when an order is fulfilled =====
