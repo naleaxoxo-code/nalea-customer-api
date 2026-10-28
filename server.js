@@ -846,6 +846,101 @@ app.post('/liked', async (req, res) => {
   }
 });
 
+// ===== STYLE PREFERENCE =====
+// The Style filter on the collection page (Minimalist, Statement, Classic
+// Elegance, Gold Lover, Layered Luxe, Trending Now). The storefront keeps its
+// own copy in localStorage for an instant paint; this is what carries the
+// choice to her other devices, so the shop looks like hers wherever she opens
+// it. Both of these were being called by the theme and answering 404 — the
+// routes had never been written.
+//
+// The names are not hard-coded here on purpose: the list lives in the theme
+// and has grown before. Anything slug-shaped is accepted, and an empty value
+// clears the saved choice.
+const STYLE_SLUG = /^[a-z0-9][a-z0-9-]{0,31}$/;
+
+app.get('/style-preference', async (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.json({ success: true, style: '' });
+
+  const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=style_preference`, { headers });
+    const listData = await listRes.json();
+    const style = listData.metafields && listData.metafields.length > 0
+      ? String(listData.metafields[0].value || '').trim()
+      : '';
+    return res.json({ success: true, style });
+  } catch (err) {
+    console.error('Style preference GET error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/style-preference', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+
+  const raw = typeof req.body?.style === 'string' ? req.body.style.trim().toLowerCase() : null;
+  if (raw === null) return res.status(400).json({ error: 'style required' });
+  if (raw !== '' && !STYLE_SLUG.test(raw)) return res.status(400).json({ error: 'Invalid style' });
+
+  const base       = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const readHeader = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const jsonHeader = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=style_preference`, { headers: readHeader });
+    const listData = await listRes.json();
+    const existing = listData.metafields && listData.metafields.length > 0 ? listData.metafields[0] : null;
+
+    // Clearing: remove the metafield rather than storing an empty string, which
+    // a single_line_text_field will not accept.
+    if (raw === '') {
+      if (existing) {
+        const delRes = await fetch(`${base}/${existing.id}.json`, { method: 'DELETE', headers: readHeader });
+        if (!delRes.ok) {
+          const delBody = await delRes.text();
+          console.error('Style preference delete error:', delRes.status, delBody.substring(0, 300));
+          return res.status(delRes.status).json({ error: 'Could not clear style' });
+        }
+      }
+      console.log('Style preference cleared for customer', customerId);
+      return res.json({ success: true, style: '' });
+    }
+
+    let response;
+    if (existing) {
+      response = await fetch(`${base}/${existing.id}.json`, {
+        method: 'PUT', headers: jsonHeader,
+        body: JSON.stringify({ metafield: { id: existing.id, value: raw, type: 'single_line_text_field' } })
+      });
+    } else {
+      response = await fetch(`${base}.json`, {
+        method: 'POST', headers: jsonHeader,
+        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'style_preference', value: raw, type: 'single_line_text_field' } })
+      });
+    }
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.error('Style preference save error:', response.status, JSON.stringify(data));
+      return res.status(response.status).json({ error: data });
+    }
+    console.log('Style preference saved for customer', customerId, '->', raw);
+    return res.json({ success: true, style: raw });
+  } catch (err) {
+    console.error('Style preference POST error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ===== PUBLIC AVATARS — returns shop registry for all visitors =====
 app.get('/public-avatars', async (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
