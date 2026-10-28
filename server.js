@@ -182,20 +182,39 @@ async function attachBarcodeImagesToProduct(productId, skus, productName) {
 
 app.get('/', (req, res) => res.json({ status: 'Nalea Customer API running ✅' }));
 
+// Shopify signs app-proxy requests with the app's secret. We accept either of
+// the two secrets we hold, because stores have historically been set up with
+// one or the other.
+//
+// The two digests used to be computed side by side inside a single try block.
+// If SHOPIFY_PROXY_SECRET was unset, createHmac threw on that first line, the
+// catch swallowed it, and the client secret — the one Shopify actually signs
+// with — was never reached. Every proxied request came back 401 even though
+// the correct secret was sitting right there in the environment. Each secret
+// now stands on its own, and a missing one is skipped rather than fatal.
 function verifyProxySignature(query) {
   const signature = query.signature;
-  if (!signature) return false;
+  if (!signature || typeof signature !== 'string') return false;
+
   const params = Object.keys(query)
     .filter(k => k !== 'signature')
     .sort()
     .map(k => `${k}=${query[k]}`)
     .join('');
-  try {
-    const h1 = crypto.createHmac('sha256', SHOPIFY_PROXY_SECRET).update(params).digest('hex');
-    const h2 = crypto.createHmac('sha256', SHOPIFY_CLIENT_SECRET).update(params).digest('hex');
-    return crypto.timingSafeEqual(Buffer.from(h1), Buffer.from(signature)) ||
-           crypto.timingSafeEqual(Buffer.from(h2), Buffer.from(signature));
-  } catch { return false; }
+
+  const given = Buffer.from(signature, 'utf8');
+
+  for (const secret of [SHOPIFY_PROXY_SECRET, SHOPIFY_CLIENT_SECRET]) {
+    if (!secret) continue;
+    try {
+      const digest = Buffer.from(crypto.createHmac('sha256', secret).update(params).digest('hex'), 'utf8');
+      // timingSafeEqual throws on a length mismatch, so check that first.
+      if (digest.length === given.length && crypto.timingSafeEqual(digest, given)) return true;
+    } catch {
+      // This secret could not be used; try the next one.
+    }
+  }
+  return false;
 }
 
 function verifyWebhookHmac(req) {
@@ -823,6 +842,101 @@ app.post('/liked', async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     console.error('Liked POST error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ===== STYLE PREFERENCE =====
+// The Style filter on the collection page (Minimalist, Statement, Classic
+// Elegance, Gold Lover, Layered Luxe, Trending Now). The storefront keeps its
+// own copy in localStorage for an instant paint; this is what carries the
+// choice to her other devices, so the shop looks like hers wherever she opens
+// it. Both of these were being called by the theme and answering 404 — the
+// routes had never been written.
+//
+// The names are not hard-coded here on purpose: the list lives in the theme
+// and has grown before. Anything slug-shaped is accepted, and an empty value
+// clears the saved choice.
+const STYLE_SLUG = /^[a-z0-9][a-z0-9-]{0,31}$/;
+
+app.get('/style-preference', async (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.json({ success: true, style: '' });
+
+  const base    = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=style_preference`, { headers });
+    const listData = await listRes.json();
+    const style = listData.metafields && listData.metafields.length > 0
+      ? String(listData.metafields[0].value || '').trim()
+      : '';
+    return res.json({ success: true, style });
+  } catch (err) {
+    console.error('Style preference GET error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/style-preference', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(400).json({ error: 'No customer ID' });
+
+  const raw = typeof req.body?.style === 'string' ? req.body.style.trim().toLowerCase() : null;
+  if (raw === null) return res.status(400).json({ error: 'style required' });
+  if (raw !== '' && !STYLE_SLUG.test(raw)) return res.status(400).json({ error: 'Invalid style' });
+
+  const base       = `https://${SHOPIFY_STORE}/admin/api/2024-04/customers/${customerId}/metafields`;
+  const readHeader = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const jsonHeader = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+
+  try {
+    const listRes  = await fetch(`${base}.json?namespace=custom&key=style_preference`, { headers: readHeader });
+    const listData = await listRes.json();
+    const existing = listData.metafields && listData.metafields.length > 0 ? listData.metafields[0] : null;
+
+    // Clearing: remove the metafield rather than storing an empty string, which
+    // a single_line_text_field will not accept.
+    if (raw === '') {
+      if (existing) {
+        const delRes = await fetch(`${base}/${existing.id}.json`, { method: 'DELETE', headers: readHeader });
+        if (!delRes.ok) {
+          const delBody = await delRes.text();
+          console.error('Style preference delete error:', delRes.status, delBody.substring(0, 300));
+          return res.status(delRes.status).json({ error: 'Could not clear style' });
+        }
+      }
+      console.log('Style preference cleared for customer', customerId);
+      return res.json({ success: true, style: '' });
+    }
+
+    let response;
+    if (existing) {
+      response = await fetch(`${base}/${existing.id}.json`, {
+        method: 'PUT', headers: jsonHeader,
+        body: JSON.stringify({ metafield: { id: existing.id, value: raw, type: 'single_line_text_field' } })
+      });
+    } else {
+      response = await fetch(`${base}.json`, {
+        method: 'POST', headers: jsonHeader,
+        body: JSON.stringify({ metafield: { namespace: 'custom', key: 'style_preference', value: raw, type: 'single_line_text_field' } })
+      });
+    }
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.error('Style preference save error:', response.status, JSON.stringify(data));
+      return res.status(response.status).json({ error: data });
+    }
+    console.log('Style preference saved for customer', customerId, '->', raw);
+    return res.json({ success: true, style: raw });
+  } catch (err) {
+    console.error('Style preference POST error:', err.message);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -2134,7 +2248,7 @@ async function applyAutoImageAlt(productId, title, images) {
 
 // ===== BACKFILL — one-off catch-up for SEO + SKU + barcode image on products that predate the auto webhook =====
 // POST /admin/backfill-seo-sku, header X-Admin-Secret: <BACKFILL_ADMIN_SECRET>. Paginates every
-// product in the store, and for each one applies the same "skip if already set" SEO/SKU/barcode-image
+// product in the store, and for each one applies the same "skip if already set" SEO/SKU/alt-text/barcode-image
 // logic the products-create webhook uses — safe to re-run, never touches a product that already has
 // SEO, SKUs, or a barcode image on file (which is what flips the storefront's "Verified SKU" badge
 // off "Pending").
@@ -2148,7 +2262,7 @@ app.post('/admin/backfill-seo-sku', async (req, res) => {
   const base = `https://${SHOPIFY_STORE}/admin/api/2024-04`;
   const headers = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
   let url = `${base}/products.json?limit=250`;
-  let seoApplied = 0, skuApplied = 0, barcodeApplied = 0, scanned = 0, errors = 0;
+  let seoApplied = 0, skuApplied = 0, barcodeApplied = 0, altApplied = 0, scanned = 0, errors = 0;
 
   try {
     while (url) {
@@ -2194,6 +2308,16 @@ app.post('/admin/backfill-seo-sku', async (req, res) => {
             }
           }
 
+          // Images that predate the auto webhook have no alt text, which costs the
+          // product in search and leaves screen readers with nothing to read out.
+          // applyAutoImageAlt skips any image that already has alt text, so this is
+          // safe to re-run alongside the SEO and SKU passes.
+          const images = product.images || [];
+          if (images.some(img => !img.alt)) {
+            await applyAutoImageAlt(productId, product.title, images);
+            altApplied++;
+          }
+
           const variants = product.variants || [];
           const needsSku = variants.some(v => !v.sku || !String(v.sku).trim());
           let finalSkus = variants.map(v => (v.sku && String(v.sku).trim()) ? String(v.sku).trim() : null);
@@ -2220,7 +2344,7 @@ app.post('/admin/backfill-seo-sku', async (req, res) => {
     console.error('Backfill fatal exception:', err.message);
   }
 
-  console.log(`Backfill complete: scanned ${scanned}, SEO applied ${seoApplied}, SKU applied ${skuApplied}, barcode images applied ${barcodeApplied}, errors ${errors}`);
+  console.log(`Backfill complete: scanned ${scanned}, SEO applied ${seoApplied}, SKU applied ${skuApplied}, alt text applied ${altApplied}, barcode images applied ${barcodeApplied}, errors ${errors}`);
 });
 
 // ===== REVIEW REQUEST — sent automatically when an order is fulfilled =====
@@ -2307,5 +2431,16 @@ async function sendReviewRequestEmail(toEmail, firstName, lineItems) {
 }
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Nalea API listening on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Nalea API listening on port ${PORT}`);
+  // Without a signing secret every app-proxy request is rejected, and the only
+  // symptom is a wall of 401s in the network log with a perfectly healthy
+  // service. Say so at boot instead. Names only — never the values.
+  const have = ['SHOPIFY_PROXY_SECRET', 'SHOPIFY_CLIENT_SECRET'].filter(k => process.env[k]);
+  if (have.length === 0) {
+    console.error('WARNING: neither SHOPIFY_PROXY_SECRET nor SHOPIFY_CLIENT_SECRET is set — every app-proxy request will return 401.');
+  } else {
+    console.log(`App-proxy signing secret(s) present: ${have.join(', ')}`);
+  }
+});
 
