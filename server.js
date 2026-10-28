@@ -217,6 +217,20 @@ function verifyProxySignature(query) {
   return false;
 }
 
+// Everything behind the app proxy is one customer's own data: her loyalty
+// balance, her gift cards, her saved cards, whether she has 2FA on. None of it
+// may sit in a shared cache, and the browser must ask again every time rather
+// than revalidate against an ETag — Express adds one to every JSON response,
+// which is why these routes were answering 304 instead of 200.
+//
+// 'private' is the part that matters most: without any Cache-Control at all, an
+// intermediary is free to apply its own heuristics to a response that belongs
+// to one person.
+function noStore(res) {
+  res.set('Cache-Control', 'private, no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
+}
+
 function verifyWebhookHmac(req) {
   const header = req.get('X-Shopify-Hmac-Sha256');
   if (!header || !req.rawBody) return false;
@@ -388,6 +402,7 @@ app.post('/customer', async (req, res) => {
 
 // ===== GAME COUPONS — GET (for profile page display) =====
 app.get('/game-coupons', async (req, res) => {
+  noStore(res);
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.json({ success: true, coupons: [] });
@@ -413,6 +428,7 @@ app.get('/game-coupons', async (req, res) => {
 
 // ===== LOYALTY POINTS — GET balance =====
 app.get('/loyalty', async (req, res) => {
+  noStore(res);
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.json({ success: true, points: 0 });
@@ -477,6 +493,7 @@ app.post('/webhooks/orders-paid', async (req, res) => {
 
 // ===== GIFT CARDS — GET (Shopify's native gift cards issued to this customer) =====
 app.get('/gift-cards', async (req, res) => {
+  noStore(res);
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.json({ success: true, giftCards: [] });
@@ -581,6 +598,7 @@ app.post('/devices/ping', async (req, res) => {
 });
 
 app.get('/devices', async (req, res) => {
+  noStore(res);
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.json({ success: true, devices: [] });
@@ -711,6 +729,7 @@ app.post('/address', async (req, res) => {
 
 // ===== PAYMENT CARDS — GET =====
 app.get('/cards', async (req, res) => {
+  noStore(res);
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.json({ success: true, cards: [] });
@@ -778,8 +797,7 @@ app.post('/cards', async (req, res) => {
 
 // ===== LIKED ITEMS — GET =====
 app.get('/liked', async (req, res) => {
-  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-  res.set('Pragma', 'no-cache');
+  noStore(res);
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.json({ success: true, items: [], removed: [] });
@@ -860,8 +878,7 @@ app.post('/liked', async (req, res) => {
 const STYLE_SLUG = /^[a-z0-9][a-z0-9-]{0,31}$/;
 
 app.get('/style-preference', async (req, res) => {
-  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-  res.set('Pragma', 'no-cache');
+  noStore(res);
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.json({ success: true, style: '' });
@@ -943,7 +960,7 @@ app.post('/style-preference', async (req, res) => {
 
 // ===== PUBLIC AVATARS — returns shop registry for all visitors =====
 app.get('/public-avatars', async (req, res) => {
-  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  noStore(res);
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   try {
     const headers  = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
@@ -963,7 +980,7 @@ app.get('/public-avatars', async (req, res) => {
 
 // ===== PROFILE — GET photo URL + visibility settings =====
 app.get('/profile', async (req, res) => {
-  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  noStore(res);
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.json({ success: true, profile_photo: null, photo_public: false });
@@ -1843,6 +1860,7 @@ app.post('/security/2fa/disable', async (req, res) => {
 // code-entry gate: only if the customer has 2FA on AND this browser isn't a
 // remembered device (device_token from localStorage, if any).
 app.get('/security/2fa/status', async (req, res) => {
+  noStore(res);
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.status(400).json({ error: 'No customer ID' });
@@ -1972,6 +1990,7 @@ app.post('/security/google/unlink', async (req, res) => {
 });
 
 app.get('/security/google/status', async (req, res) => {
+  noStore(res);
   if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.status(400).json({ error: 'No customer ID' });
