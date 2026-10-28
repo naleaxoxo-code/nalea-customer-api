@@ -182,20 +182,39 @@ async function attachBarcodeImagesToProduct(productId, skus, productName) {
 
 app.get('/', (req, res) => res.json({ status: 'Nalea Customer API running ✅' }));
 
+// Shopify signs app-proxy requests with the app's secret. We accept either of
+// the two secrets we hold, because stores have historically been set up with
+// one or the other.
+//
+// The two digests used to be computed side by side inside a single try block.
+// If SHOPIFY_PROXY_SECRET was unset, createHmac threw on that first line, the
+// catch swallowed it, and the client secret — the one Shopify actually signs
+// with — was never reached. Every proxied request came back 401 even though
+// the correct secret was sitting right there in the environment. Each secret
+// now stands on its own, and a missing one is skipped rather than fatal.
 function verifyProxySignature(query) {
   const signature = query.signature;
-  if (!signature) return false;
+  if (!signature || typeof signature !== 'string') return false;
+
   const params = Object.keys(query)
     .filter(k => k !== 'signature')
     .sort()
     .map(k => `${k}=${query[k]}`)
     .join('');
-  try {
-    const h1 = crypto.createHmac('sha256', SHOPIFY_PROXY_SECRET).update(params).digest('hex');
-    const h2 = crypto.createHmac('sha256', SHOPIFY_CLIENT_SECRET).update(params).digest('hex');
-    return crypto.timingSafeEqual(Buffer.from(h1), Buffer.from(signature)) ||
-           crypto.timingSafeEqual(Buffer.from(h2), Buffer.from(signature));
-  } catch { return false; }
+
+  const given = Buffer.from(signature, 'utf8');
+
+  for (const secret of [SHOPIFY_PROXY_SECRET, SHOPIFY_CLIENT_SECRET]) {
+    if (!secret) continue;
+    try {
+      const digest = Buffer.from(crypto.createHmac('sha256', secret).update(params).digest('hex'), 'utf8');
+      // timingSafeEqual throws on a length mismatch, so check that first.
+      if (digest.length === given.length && crypto.timingSafeEqual(digest, given)) return true;
+    } catch {
+      // This secret could not be used; try the next one.
+    }
+  }
+  return false;
 }
 
 function verifyWebhookHmac(req) {
@@ -2317,5 +2336,16 @@ async function sendReviewRequestEmail(toEmail, firstName, lineItems) {
 }
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Nalea API listening on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Nalea API listening on port ${PORT}`);
+  // Without a signing secret every app-proxy request is rejected, and the only
+  // symptom is a wall of 401s in the network log with a perfectly healthy
+  // service. Say so at boot instead. Names only — never the values.
+  const have = ['SHOPIFY_PROXY_SECRET', 'SHOPIFY_CLIENT_SECRET'].filter(k => process.env[k]);
+  if (have.length === 0) {
+    console.error('WARNING: neither SHOPIFY_PROXY_SECRET nor SHOPIFY_CLIENT_SECRET is set — every app-proxy request will return 401.');
+  } else {
+    console.log(`App-proxy signing secret(s) present: ${have.join(', ')}`);
+  }
+});
 
