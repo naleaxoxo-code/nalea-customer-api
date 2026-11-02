@@ -1,3 +1,7 @@
 node_modules/
 .env
 .DS_Store
+
+# Marketing video files staged here for delivery, not part of the service
+*.mp4
+*.mov
