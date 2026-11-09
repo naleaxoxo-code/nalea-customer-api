@@ -30,6 +30,13 @@
     assign rt = 'ok'
   endif
   assign policy_url = shop.refund_policy.url | default: '/policies/refund-policy'
+  assign board_count = 0
+  for block in section.blocks
+    if block.type == 'personalization_board'
+      assign board_count = board_count | plus: 1
+    endif
+  endfor
+  assign ship = p.metafields.custom.shipping_timeline.value
 -%}
 <section
   id="snp-{{ section.id }}"
@@ -162,6 +169,36 @@
 .snp-trust-btn b{color:var(--color-foreground);font-weight:600}
 .snp-trust-btn[data-tone="no"] svg{color:var(--color-foreground)}
 .snp-tip a{color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px;pointer-events:auto}
+.snp-sheet,.snp-sheet *{box-sizing:border-box}
+.snp-sheet{position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:flex-end;padding:3vh 4vw;color:var(--color-foreground)}
+.snp-sheet[hidden]{display:none}
+.snp-sheet-scrim{position:absolute;inset:0;background:color-mix(in oklab,var(--color-background) 60%,transparent)!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:0!important;padding:0!important;cursor:default}
+.snp-sheet-box{position:relative;width:min(420px,100%);max-height:88vh;overflow:auto;overscroll-behavior:contain;border-radius:18px;background:color-mix(in oklab,var(--color-foreground) 6%,var(--color-background));box-shadow:0 30px 80px -20px rgba(0,0,0,.6),0 0 0 1px color-mix(in oklab,var(--color-foreground) 12%,transparent);padding:22px}
+.snp-sheet-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.snp-sheet-hd h3{margin:0;font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--color-foreground)}
+.snp-sheet-sub{margin:0 0 16px;font-size:13px;color:var(--color-muted-foreground)}
+.snp-sheet-x{width:32px!important;height:32px!important;border-radius:50%!important;display:grid!important;place-items:center!important;background:transparent!important;border:0!important;color:var(--color-foreground)!important;padding:0!important}
+.snp-sheet-x svg{width:16px;height:16px}
+.snp-board{margin-bottom:16px}
+.snp-board-t{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-muted-foreground)}
+.snp-board-t em{font-style:normal;color:var(--snp-like)}
+.snp-field{display:block;width:100%;border-radius:10px;border:1px solid color-mix(in oklab,var(--color-foreground) 18%,transparent)!important;background:color-mix(in oklab,var(--color-background) 70%,transparent)!important;color:var(--color-foreground)!important;padding:11px 13px!important;font:inherit;font-size:15px!important;outline:none;box-shadow:none!important;transition:border-color .2s}
+.snp-field:focus{border-color:var(--color-foreground)!important}
+textarea.snp-field{min-height:96px;resize:vertical}
+.snp-board-l{display:block;margin:0 0 6px;font-size:13px;color:var(--color-foreground)}
+.snp-board-h{margin-top:6px;font-size:12px;color:var(--color-muted-foreground)}
+.snp-count-c{margin-top:4px;text-align:right;font-size:11px;color:var(--color-muted-foreground);font-variant-numeric:tabular-nums}
+.snp-drop{position:relative;display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;border:1px dashed color-mix(in oklab,var(--color-foreground) 28%,transparent);cursor:pointer;transition:border-color .2s,background .2s}
+.snp-drop:hover,.snp-drop[data-over="true"]{border-color:var(--color-foreground);background:color-mix(in oklab,var(--color-foreground) 5%,transparent)}
+.snp-drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.snp-drop svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.snp-drop b{display:block;font-size:14px;font-weight:600}.snp-drop span{display:block;font-size:12px;color:var(--color-muted-foreground)}
+.snp-drop img{width:52px;height:52px;object-fit:cover;border-radius:8px;flex:none;margin-left:auto}
+.snp-board[data-bad="true"] .snp-field,.snp-board[data-bad="true"] .snp-drop{border-color:#f87171!important}
+.snp-board-e{display:none;margin-top:6px;font-size:12px;color:#fca5a5}.snp-board[data-bad="true"] .snp-board-e{display:block}
+.snp-sheet-go{width:100%;height:48px;margin-top:6px;background:var(--color-foreground)!important;color:var(--color-background)!important;border:0!important;border-radius:0!important;font-weight:600!important;font-size:13px!important;letter-spacing:.06em!important;cursor:pointer}
+.snp-sheet-go:disabled{opacity:.55;cursor:wait}
+@media (max-width:760px){.snp-sheet{padding:0;justify-content:center}.snp-sheet-box{width:100%;max-height:86vh;border-radius:18px 18px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom))}}
 .snp-pay{display:flex;flex-wrap:wrap;gap:.6cqw}
 .snp-pay span{display:grid;place-items:center;height:max(20px,1.8cqw);min-width:max(32px,2.9cqw);padding:0 .45cqw;border-radius:4px;background:#fff;font:700 max(9px,.75cqw)/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:0;white-space:nowrap}
 .snp-pay svg{height:62%;width:auto;display:block}
@@ -298,6 +335,25 @@
           <span role="listitem" aria-label="Yoco" style="color:#000;font-weight:800;text-transform:lowercase">yoco</span>
         </div>
         <span class="snp-tip" id="snp-tip-{{ section.id }}" role="tooltip">{{ section.settings.pay_tip | escape }}</span>
+        {%- if ship != blank -%}
+        {%- liquid
+          case ship
+            when 'same_day'
+              assign ship_line = '<b>Fast delivery</b> · same or next day'
+            when '7_days'
+              assign ship_line = '<b>Ships in 5–7 business days</b>'
+            when '14_days'
+              assign ship_line = '<b>Made for you</b> · ships in 10–14 business days'
+          endcase
+        -%}
+        {%- if ship_line != blank -%}
+        <button type="button" class="snp-trust-btn" data-ship="{{ ship }}" aria-describedby="snp-stip-{{ section.id }}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/></svg>
+          <span>{{ ship_line }}</span>
+        </button>
+        <span class="snp-tip" id="snp-stip-{{ section.id }}" role="tooltip">{% case ship %}{% when 'same_day' %}Ready to ship. Order before 12:00 for same-day dispatch, delivered same or next day.{% when '7_days' %}Carefully prepared and dispatched with love within 5–7 business days.{% when '14_days' %}Handcrafted and personalised just for you, ready to ship in 10–14 business days. Worth every moment.{% endcase %}</span>
+        {%- endif -%}
+        {%- endif -%}
         {%- if section.settings.show_returns -%}
         <button type="button" class="snp-trust-btn snp-ret" data-rt="{{ rt }}" data-tone="{% if rt == 'ok' %}ok{% else %}no{% endif %}" aria-describedby="snp-rtip-{{ section.id }}">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v4h4"/></svg>
@@ -310,6 +366,47 @@
 
     <div class="snp-toast" role="status" aria-live="polite"><i aria-hidden="true"></i><span>{{ section.settings.toast | escape }}</span><small></small></div>
   </div>
+
+  {%- if board_count > 0 -%}
+  <div class="snp-sheet" role="dialog" aria-modal="true" aria-labelledby="snp-sh-{{ section.id }}" hidden>
+    <button type="button" class="snp-sheet-scrim" aria-label="Close" tabindex="-1"></button>
+    <form class="snp-sheet-box" novalidate>
+      <div class="snp-sheet-hd">
+        <h3 id="snp-sh-{{ section.id }}">Personalise your item</h3>
+        <button type="button" class="snp-sheet-x" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <p class="snp-sheet-sub">Tell us how to make it yours. We'll add these details to your order.</p>
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'personalization_board' -%}
+          {%- assign bt = block.settings.title | default: 'Personalisation' -%}
+          <div class="snp-board" data-type="{{ block.settings.type }}" data-req="{{ block.settings.required }}" data-key="{{ bt | escape }}" {{ block.shopify_attributes }}>
+            <div class="snp-board-t"><span>{{ bt | escape }}</span>{% if block.settings.required %}<em>Required</em>{% endif %}</div>
+            {%- case block.settings.type -%}
+              {%- when 'photo' -%}
+                <label class="snp-board-l" for="snp-f-{{ block.id }}">{{ block.settings.field_label | default: 'Your photo' | escape }}</label>
+                <div class="snp-drop">
+                  <input type="file" id="snp-f-{{ block.id }}" accept="image/*">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l2-2.5h6L17 7h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                  <div><b class="snp-drop-t">Tap to upload your photo</b><span>JPG or PNG, up to 10MB</span></div>
+                  <img alt="" hidden>
+                </div>
+              {%- when 'message' -%}
+                <label class="snp-board-l" for="snp-f-{{ block.id }}">{{ block.settings.field_label | default: 'Your message' | escape }}</label>
+                <textarea class="snp-field" id="snp-f-{{ block.id }}" maxlength="500" placeholder="{{ block.settings.field_placeholder | default: 'Write your message here...' | escape }}"></textarea>
+                <div class="snp-count-c"><span>0</span>/500</div>
+              {%- else -%}
+                <label class="snp-board-l" for="snp-f-{{ block.id }}">{{ block.settings.field_label | default: 'Your name' | escape }}</label>
+                <input class="snp-field" type="text" id="snp-f-{{ block.id }}" maxlength="100" autocomplete="off" placeholder="{{ block.settings.field_placeholder | default: 'Enter here...' | escape }}">
+            {%- endcase -%}
+            {%- if block.settings.hint != blank -%}<div class="snp-board-h">{{ block.settings.hint | escape }}</div>{%- endif -%}
+            <div class="snp-board-e">{% if block.settings.type == 'photo' %}Please add a photo.{% else %}Please fill this in.{% endif %}</div>
+          </div>
+        {%- endif -%}
+      {%- endfor -%}
+      <button type="submit" class="snp-sheet-go">ADD TO CART</button>
+    </form>
+  </div>
+  {%- endif -%}
 
   <div class="snp-viewer" role="dialog" aria-modal="true" aria-label="{{ p.title | escape }} photos" hidden>
     <button type="button" class="snp-scrim" aria-label="Close photos" tabindex="-1"></button>
@@ -371,6 +468,7 @@
   root.dataset.ready = "1";
   var gsap = window.gsap;
   var D = JSON.parse(root.querySelector(".snp-data").textContent);
+  window["snpPerso_" + root.id] = !!root.querySelector(".snp-sheet");
   var $ = function (s, el) { return (el || root).querySelector(s); };
   var STAR = "M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z";
   var HEART = "M12 20.3l-1.4-1.3C5.4 14.3 2 11.2 2 7.4 2 4.4 4.4 2 7.4 2c1.7 0 3.4.8 4.6 2.1C13.2 2.8 14.9 2 16.6 2 19.6 2 22 4.4 22 7.4c0 3.8-3.4 6.9-8.6 11.6z";
@@ -509,7 +607,7 @@
     var st = $(".snp-stock"); st.dataset.tone = tone;
     st.textContent = tone === "out" ? "Sold out" + (ci >= 0 ? " in this colour" : "") : tone === "low" ? "Only " + here.stock + " left" + (size ? " in size " + size : "") : "In stock · ready to ship";
     var cta = $(".snp-cta"); cta.disabled = here.soldOut; cta.dataset.state = cart;
-    $(".snp-cta-idle").textContent = here.soldOut ? "SOLD OUT" : "ADD TO CART";
+    $(".snp-cta-idle").textContent = here.soldOut ? "SOLD OUT" : window["snpPerso_" + root.id] ? "PERSONALISE & ADD" : "ADD TO CART";
     rollPrice(priceOf());
     if (typeof renderReturns === "function") renderReturns();
     var cv = variantFor(active, size) || startV, skuEl = $(".snp-sku");
@@ -598,27 +696,104 @@
   });
 
   var toast = $(".snp-toast");
-  $(".snp-cta").addEventListener("click", function () {
+  var sheet = $(".snp-sheet");
+  var PERSO = !!sheet;
+  function cartAdd(props) {
     var v = variantFor(active, size);
-    if (cart !== "idle" || !v || avail(active, size).soldOut) return;
+    if (cart !== "idle" || !v || avail(active, size).soldOut) return Promise.resolve(false);
     cart = reduced() ? "done" : "busy"; render();
-    var started = Date.now();
-    fetch((window.Shopify && Shopify.routes ? Shopify.routes.root : "/") + "cart/add.js", {
+    var started = Date.now(), item = { id: v.id, quantity: 1 };
+    if (props && Object.keys(props).length) item.properties = props;
+    return fetch((window.Shopify && Shopify.routes ? Shopify.routes.root : "/") + "cart/add.js", {
       method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ items: [{ id: v.id, quantity: 1 }] })
+      body: JSON.stringify({ items: [item] })
     }).then(function (r) { if (!r.ok) throw r; return r.json(); }).then(function () {
       setTimeout(function () {
-        cart = "done"; render(); showToast([variants[active].name, size ? "size " + size : ""].filter(Boolean).join(" · "));
+        cart = "done"; render(); showToast([variants[active].name, size ? "size " + size : ""].filter(Boolean).join(" \u00b7 "));
         document.dispatchEvent(new CustomEvent("cart:refresh", { bubbles: true }));
         fetch("/cart.js").then(function (r) { return r.json(); }).then(function (c) {
           document.querySelectorAll(".cart-count-bubble span[aria-hidden], [data-cart-count]").forEach(function (el) { el.textContent = c.item_count; });
         }).catch(function () {});
         setTimeout(function () { cart = "idle"; render(); }, reduced() ? 1600 : 1450);
       }, Math.max(0, 650 - (Date.now() - started)));
+      return true;
     }).catch(function () {
-      cart = "idle"; render(); showToast("Couldn't add to cart, please try again");
+      cart = "idle"; render(); showToast("Couldn't add to cart, please try again"); return false;
     });
+  }
+  $(".snp-cta").addEventListener("click", function () {
+    if (PERSO) openSheet(); else cartAdd(null);
   });
+
+  // ---- Personalisation sheet ----
+  if (PERSO) {
+    document.body.appendChild(sheet);
+    ["--color-foreground", "--color-background", "--color-muted-foreground", "--snp-like"].forEach(function (k) { sheet.style.setProperty(k, root.style.getPropertyValue(k)); });
+    var box = $(".snp-sheet-box", sheet), boards = Array.prototype.slice.call(sheet.querySelectorAll(".snp-board")), goBtn = $(".snp-sheet-go", sheet), sheetOpener = null;
+    var openSheet = function () {
+      var v = variantFor(active, size); if (!v || avail(active, size).soldOut) return;
+      sheetOpener = document.activeElement; sheet.hidden = false; document.documentElement.style.overflow = "hidden";
+      if (!reduced()) gsap.fromTo(box, { y: 40, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.45, ease: "power3.out" });
+      var first = sheet.querySelector(".snp-field, .snp-drop input"); if (first) setTimeout(function () { first.focus(); }, 60);
+    };
+    var closeSheet = function () {
+      var done = function () { sheet.hidden = true; document.documentElement.style.overflow = ""; if (sheetOpener) sheetOpener.focus(); };
+      if (reduced()) done(); else gsap.to(box, { y: 30, autoAlpha: 0, duration: 0.25, ease: "power2.in", onComplete: done });
+    };
+    $(".snp-sheet-x", sheet).addEventListener("click", closeSheet);
+    $(".snp-sheet-scrim", sheet).addEventListener("click", closeSheet);
+    sheet.addEventListener("keydown", function (e) { if (e.key === "Escape") { e.stopPropagation(); closeSheet(); } });
+    boards.forEach(function (bd) {
+      var ta = bd.querySelector("textarea"), file = bd.querySelector("input[type=file]"), field = bd.querySelector(".snp-field");
+      if (ta) ta.addEventListener("input", function () { bd.querySelector(".snp-count-c span").textContent = ta.value.length; });
+      if (field) field.addEventListener("input", function () { bd.dataset.bad = "false"; });
+      if (file) {
+        var drop = bd.querySelector(".snp-drop"), img = drop.querySelector("img");
+        file.addEventListener("change", function () {
+          bd.dataset.bad = "false"; var fl = file.files && file.files[0];
+          if (fl && fl.size > 10 * 1024 * 1024) { file.value = ""; drop.querySelector(".snp-drop-t").textContent = "That photo is over 10MB, please pick a smaller one"; img.hidden = true; return; }
+          drop.querySelector(".snp-drop-t").textContent = fl ? fl.name : "Tap to upload your photo";
+          if (fl) { var rd = new FileReader(); rd.onload = function () { img.src = rd.result; img.hidden = false; }; rd.readAsDataURL(fl); } else img.hidden = true;
+        });
+        ["dragenter", "dragover"].forEach(function (ev) { drop.addEventListener(ev, function () { drop.dataset.over = "true"; }); });
+        ["dragleave", "drop"].forEach(function (ev) { drop.addEventListener(ev, function () { drop.dataset.over = "false"; }); });
+      }
+    });
+    box.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var firstBad = null;
+      boards.forEach(function (bd) {
+        var inp = bd.querySelector(".snp-field, input[type=file]");
+        var empty = inp.type === "file" ? !(inp.files && inp.files[0]) : !inp.value.trim();
+        var bad = bd.dataset.req === "true" && empty; bd.dataset.bad = String(bad);
+        if (bad && !firstBad) firstBad = bd;
+      });
+      if (firstBad) { firstBad.scrollIntoView({ behavior: "smooth", block: "center" }); var fi = firstBad.querySelector(".snp-field, input"); if (fi) fi.focus(); return; }
+      goBtn.disabled = true; goBtn.textContent = "Uploading\u2026";
+      var props = {}, ups = [];
+      boards.forEach(function (bd) {
+        var key = bd.dataset.key, inp = bd.querySelector(".snp-field, input[type=file]");
+        if (inp.type === "file") {
+          var fl = inp.files && inp.files[0]; if (!fl) return;
+          var fd = new FormData(); fd.append("photo", fl);
+          ups.push(fetch("/apps/nalea/personalization/photo" + location.search, { method: "POST", body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { if (d && d.success && d.url) props[key] = d.url; else throw new Error("upload"); }));
+        } else if (inp.value.trim()) props[key] = inp.value.trim();
+      });
+      Promise.all(ups).then(function () {
+        goBtn.textContent = "Adding\u2026";
+        return cartAdd(props);
+      }).then(function (ok) {
+        goBtn.disabled = false; goBtn.textContent = "ADD TO CART";
+        if (ok) closeSheet();
+      }).catch(function () {
+        goBtn.disabled = false; goBtn.textContent = "ADD TO CART";
+        showToast("Photo upload failed, please try again");
+      });
+    });
+  }
+
   function showToast(note) {
     $("small", toast).textContent = note ? "· " + note : "";
     if (toastTimer) toastTimer.kill(); gsap.killTweensOf(toast);
@@ -863,6 +1038,25 @@
     { "type": "color", "id": "background", "label": "Background colour", "default": "#1a1310" },
     { "type": "color", "id": "muted", "label": "Muted text colour", "default": "#d4c4b8" },
     { "type": "text", "id": "height", "label": "Minimum height", "default": "100svh" }
+  ],
+  "blocks": [
+    {
+      "type": "personalization_board",
+      "name": "Personalisation field",
+      "limit": 10,
+      "settings": [
+        { "type": "text", "id": "title", "label": "Field title", "default": "Personalise Your Item", "info": "Shown in the panel and saved with the order" },
+        { "type": "select", "id": "type", "label": "Type", "default": "text", "options": [
+          { "value": "text", "label": "Name / text" },
+          { "value": "photo", "label": "Photo upload" },
+          { "value": "message", "label": "Message" }
+        ]},
+        { "type": "text", "id": "field_label", "label": "Field label", "default": "Your Name" },
+        { "type": "text", "id": "field_placeholder", "label": "Placeholder", "default": "Enter here..." },
+        { "type": "text", "id": "hint", "label": "Hint (optional)" },
+        { "type": "checkbox", "id": "required", "label": "Required", "default": true }
+      ]
+    }
   ],
   "presets": [{ "name": "Sneaker product hero" }]
 }

@@ -1,0 +1,158 @@
+{
+  "sections": {
+    "nalea_breadcrumb": {
+      "type": "nalea-product-breadcrumb",
+      "settings": {}
+    },
+    "nalea_sku": {
+      "type": "nalea-product-sku",
+      "disabled": true,
+      "settings": {}
+    },
+    "hero": {
+      "type": "sneaker-product-hero",
+      "blocks": {
+        "personalization_board_cTCnN7": {
+          "type": "personalization_board",
+          "settings": {
+            "title": "Box Name",
+            "type": "text",
+            "field_label": "Your Name",
+            "field_placeholder": "Enter here...",
+            "hint": "",
+            "required": true
+          }
+        },
+        "personalization_board_RDUaRq": {
+          "type": "personalization_board",
+          "settings": {
+            "title": "Gown Name",
+            "type": "text",
+            "field_label": "Your Name",
+            "field_placeholder": "Enter here...",
+            "hint": "",
+            "required": true
+          }
+        },
+        "personalization_board_XFkh3V": {
+          "type": "personalization_board",
+          "settings": {
+            "title": "Sleepers Name",
+            "type": "text",
+            "field_label": "Your Name",
+            "field_placeholder": "Enter here...",
+            "hint": "",
+            "required": true
+          }
+        },
+        "personalization_board_YPV7Ui": {
+          "type": "personalization_board",
+          "settings": {
+            "title": "Box Message",
+            "type": "text",
+            "field_label": "Your Messae",
+            "field_placeholder": "Enter here...",
+            "hint": "",
+            "required": false
+          }
+        }
+      },
+      "block_order": [
+        "personalization_board_cTCnN7",
+        "personalization_board_RDUaRq",
+        "personalization_board_XFkh3V",
+        "personalization_board_YPV7Ui"
+      ],
+      "settings": {
+        "show_reviews": false,
+        "height": "calc(100svh - 60px)"
+      }
+    },
+    "reviews": {
+      "type": "product-reviews",
+      "settings": {}
+    },
+    "main": {
+      "type": "nalea-main-product",
+      "blocks": {
+        "personalization_board_cTCnN7": {
+          "type": "personalization_board",
+          "settings": {
+            "title": "Box Name",
+            "type": "text",
+            "field_label": "Your Name",
+            "field_placeholder": "Enter here...",
+            "hint": "",
+            "required": true
+          }
+        },
+        "personalization_board_RDUaRq": {
+          "type": "personalization_board",
+          "settings": {
+            "title": "Gown Name",
+            "type": "text",
+            "field_label": "Your Name",
+            "field_placeholder": "Enter here...",
+            "hint": "",
+            "required": true
+          }
+        },
+        "personalization_board_XFkh3V": {
+          "type": "personalization_board",
+          "settings": {
+            "title": "Sleepers Name",
+            "type": "text",
+            "field_label": "Your Name",
+            "field_placeholder": "Enter here...",
+            "hint": "",
+            "required": true
+          }
+        },
+        "personalization_board_YPV7Ui": {
+          "type": "personalization_board",
+          "settings": {
+            "title": "Box Message",
+            "type": "text",
+            "field_label": "Your Messae",
+            "field_placeholder": "Enter here...",
+            "hint": "",
+            "required": false
+          }
+        }
+      },
+      "block_order": [
+        "personalization_board_cTCnN7",
+        "personalization_board_RDUaRq",
+        "personalization_board_XFkh3V",
+        "personalization_board_YPV7Ui"
+      ],
+      "settings": {
+        "collection_label": "Bridal Collection",
+        "show_rating": true,
+        "rating_score": "4.8",
+        "rating_count": "127",
+        "show_bundle": false,
+        "trust1": "Secure Payments via Yoco",
+        "trust2": "Secure checkout",
+        "trust3": "7-day easy returns",
+        "trust4": "You’ll Earn Reward Points",
+        "loved_label": "View My Loved Items",
+        "loved_url": "",
+        "upsell_eyebrow": "Often Bought Together",
+        "upsell_title": "Complete Your Bridal Look",
+        "occasion": "normal",
+        "occasion_banner_text": "BLACK FRIDAY - Limited Time Deals",
+        "shipping_text": "",
+        "size_text": ""
+      },
+      "disabled": true
+    }
+  },
+  "order": [
+    "nalea_breadcrumb",
+    "nalea_sku",
+    "hero",
+    "reviews",
+    "main"
+  ]
+}
