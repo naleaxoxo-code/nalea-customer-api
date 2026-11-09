@@ -1,0 +1,666 @@
+{%- comment -%}
+  Sneaker Product Hero — a Liquid/vanilla-JS port of the 21st.dev
+  "Sneaker Product Page Hero" React component. Same layout, CSS and GSAP
+  motion, but driven by the real product: Color option -> swatches,
+  Size option -> size buttons, variant price/stock, real Add to Cart.
+
+  Images: each colourway uses the featured image of its first variant
+  (transparent PNG/WebP, side profile, toe left). Extra gallery photos
+  for a colour are product images whose ALT text contains the colour name.
+{%- endcomment -%}
+
+{%- liquid
+  assign p = product
+  if p == blank
+    assign p = all_products[section.settings.product]
+  endif
+-%}
+
+{%- if p != blank -%}
+<section
+  id="snp-{{ section.id }}"
+  class="snp-root"
+  style="min-height:{{ section.settings.height }};--snp-like:{{ section.settings.like_color }};--color-foreground:{{ section.settings.foreground }};--color-background:{{ section.settings.background }};--color-muted-foreground:{{ section.settings.muted }};"
+  aria-label="{{ p.title | escape }}"
+>
+<style>
+#snp-{{ section.id }}.snp-root{position:relative;display:flex;flex-direction:column;width:100%;container-type:inline-size;overflow:hidden;isolation:isolate;
+  color:var(--color-foreground);background:color-mix(in oklab,var(--color-foreground) 4%,var(--color-background));
+  font-family:inherit;-webkit-font-smoothing:antialiased}
+:where(.snp-root) :where(*,*::before,*::after){box-sizing:border-box}
+:where(.snp-root) :where(button){font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;letter-spacing:inherit;text-transform:none;min-height:0;box-shadow:none}
+.snp-root img{max-width:none;display:block}
+.snp-bg{position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .8s ease;pointer-events:none;
+  background:radial-gradient(var(--snp-gs,48% 62%) at calc(50% + var(--mx,0%)) calc(var(--snp-gy,52%) + var(--my,0%)),color-mix(in oklab,var(--t) 42%,transparent),transparent 72%),
+    color-mix(in oklab,var(--t) 15%,color-mix(in oklab,var(--color-foreground) 4%,var(--color-background)))}
+.snp-bg[data-on="true"]{opacity:1}
+.snp-body{position:relative;flex:1;display:grid;grid-template-columns:20cqw minmax(0,1fr) 17cqw;column-gap:3cqw;align-items:start;align-content:center;
+  padding:4cqw 9cqw 4cqw 7.3cqw;overflow:hidden}
+.snp-info{align-self:start;position:relative;z-index:1}
+.snp-eyebrow{margin:0;font-size:max(12px,1.5cqw);color:var(--color-muted-foreground)}
+.snp-title{margin:2cqw 0 0;font-size:max(22px,2.4cqw);line-height:1.18;font-weight:600;letter-spacing:-.01em;max-width:17cqw;text-wrap:balance;color:inherit}
+.snp-desc{margin:3.6cqw 0 0;max-width:19cqw;font-size:max(11px,1.05cqw);line-height:1.45;font-style:italic;color:var(--color-muted-foreground)}
+.snp-desc p{margin:0}
+.snp-thumbs{display:flex;align-items:center;gap:2.4cqw;margin-top:9cqw}
+.snp-thumbset{display:flex;align-items:center;gap:inherit}
+.snp-thumb{flex:none;width:4.6cqw;height:3cqw;overflow:hidden;border-radius:4px;outline-offset:3px;transition:transform .25s}
+.snp-thumb:hover{transform:translateY(-2px)}
+.snp-view{display:block;width:100%;height:100%;background-repeat:no-repeat}
+.snp-more{flex:none;width:3cqw;height:3cqw;display:grid;place-items:center;background:var(--color-foreground)!important;color:var(--color-background)!important;
+  font-size:max(10px,1.05cqw);transition:transform .25s}
+.snp-more:hover{transform:scale(1.08)}
+.snp-stage{position:relative;align-self:stretch;max-height:42cqw;min-height:26cqw}
+.snp-word{position:absolute;left:50%;top:0;translate:-50% -14%;font-size:11cqw;line-height:1;font-weight:800;letter-spacing:-.04em;
+  text-transform:uppercase;white-space:nowrap;color:color-mix(in oklab,var(--t) 34%,transparent);pointer-events:none;user-select:none}
+.snp-float{position:absolute;inset:0}
+.snp-tilt{position:absolute;inset:0;transform-style:preserve-3d}
+.snp-reflects{position:absolute;inset:0;pointer-events:none}
+.snp-shoe.snp-reflect{transform:scaleY(-1);transform-origin:50% 88.5%;filter:blur(.6px);
+  -webkit-mask-image:linear-gradient(to bottom,transparent 52%,#000 88%);mask-image:linear-gradient(to bottom,transparent 52%,#000 88%)}
+.snp-shoe.snp-sheen{display:block;pointer-events:none;filter:none;
+  background:linear-gradient(100deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%) 130% 0/300% 100% no-repeat;
+  -webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+.snp-loupe{position:absolute;left:0;top:0;z-index:3;width:max(130px,15cqw);aspect-ratio:1;border-radius:50%;overflow:hidden;
+  visibility:hidden;opacity:0;pointer-events:none;background:color-mix(in oklab,var(--snp-tint) 18%,var(--color-background));
+  box-shadow:0 0 0 2px var(--color-background),0 18px 44px -12px rgba(0,0,0,.4)}
+.snp-loupe>span{position:absolute;inset:0;background-repeat:no-repeat}
+.snp-hint{position:absolute;left:3%;bottom:4%;transition:opacity .5s;font-size:max(10px,.85cqw);letter-spacing:.12em;text-transform:uppercase;
+  color:var(--color-muted-foreground);pointer-events:none}
+.snp-hint-touch{display:none}
+.snp-hint[data-seen="true"]{opacity:0}
+@media (pointer:fine){.snp-stage{cursor:zoom-in}}
+@media (pointer:coarse){.snp-hint-fine{display:none}.snp-hint-touch{display:inline}}
+.snp-shoe{position:absolute;left:50%;top:50%;width:96%;height:auto;aspect-ratio:16/9;object-fit:contain;translate:-50% -58%;
+  filter:drop-shadow(0 1.6cqw 1.4cqw rgba(0,0,0,.12))}
+.snp-floor{position:absolute;left:18%;right:14%;top:50%;height:4cqw;translate:0 6.6cqw;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(0,0,0,.22),transparent);filter:blur(4px)}
+.snp-buy{align-self:start;font-size:max(11px,1.25cqw);position:relative;z-index:1}
+.snp-label{display:block;font-size:max(12px,1.45cqw);color:var(--color-muted-foreground);letter-spacing:.02em}
+.snp-sizes{display:flex;flex-wrap:wrap;gap:1.6cqw;margin-top:1.5cqw}
+.snp-size{width:max(32px,3.1cqw);height:max(32px,3.1cqw);border-radius:50%!important;display:grid;place-items:center;
+  border:1.5px solid var(--color-foreground)!important;font-size:max(11px,1.15cqw)!important;font-weight:500;transition:background .25s,color .25s,transform .2s}
+.snp-size:not(:disabled):hover{transform:scale(1.07)}
+.snp-size[aria-pressed="true"]{background:var(--color-foreground)!important;color:var(--color-background)!important}
+.snp-size:disabled{opacity:.35;cursor:not-allowed;border-width:1px!important}
+.snp-stock{display:flex;align-items:center;gap:.6cqw;margin-top:1.2cqw;font-size:max(10px,.95cqw);color:var(--color-muted-foreground)}
+.snp-stock::before{content:"";width:max(6px,.55cqw);height:max(6px,.55cqw);border-radius:50%;background:#22c55e}
+.snp-stock[data-tone="low"]{color:#c2410c}
+.snp-stock[data-tone="low"]::before{background:#f97316}
+.snp-stock[data-tone="out"]::before{background:var(--color-muted-foreground)}
+.snp-row{display:flex;align-items:center;justify-content:space-between;margin-top:3cqw}
+.snp-rating{display:flex;align-items:center;gap:.6cqw}
+.snp-stars{position:relative;display:inline-block;color:var(--color-muted-foreground)}
+.snp-starrow{display:flex;gap:.35cqw}
+.snp-starfill{position:absolute;inset:0;color:var(--color-foreground);transition:clip-path .6s cubic-bezier(.2,.8,.2,1)}
+.snp-stars svg{width:max(11px,1.25cqw);height:max(11px,1.25cqw)}
+.snp-count{font-size:max(10px,1cqw);color:var(--color-muted-foreground);font-variant-numeric:tabular-nums}
+.snp-price{display:inline-block;font-weight:600;font-size:max(13px,1.4cqw);font-variant-numeric:tabular-nums}
+.snp-colour{margin-top:3.1cqw}
+.snp-swatches{display:flex;flex-wrap:wrap;gap:2.4cqw;margin-top:3.2cqw}
+.snp-swatch{width:max(30px,3.1cqw);height:max(30px,3.1cqw);border-radius:50%!important;background:var(--sw)!important;
+  box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--color-foreground) 22%,transparent)!important;transition:box-shadow .3s,transform .2s}
+.snp-swatch:hover{transform:scale(1.08)}
+.snp-swatch[aria-pressed="true"]{box-shadow:inset 0 0 0 max(3px,.3cqw) var(--sw),inset 0 0 0 max(6px,.65cqw) var(--color-background),
+  inset 0 0 0 20cqw var(--sw)!important}
+.snp-actions{position:relative;display:flex;align-items:center;gap:3.6cqw;margin-top:4.2cqw}
+.snp-cta{height:max(40px,4.4cqw);padding:0 2cqw!important;background:var(--color-foreground)!important;color:var(--color-background)!important;
+  font-weight:600;font-size:max(11px,1.15cqw)!important;letter-spacing:.02em!important;white-space:nowrap;border-radius:0!important}
+.snp-cta:active{transform:scale(.96)}
+.snp-cta{position:relative;display:grid;place-items:center;min-width:max(150px,11.6cqw);overflow:hidden;transition:transform .15s,background .35s}
+.snp-cta>span{grid-area:1/1;display:inline-flex;align-items:center;gap:.6em;transition:opacity .25s,transform .4s cubic-bezier(.2,.8,.2,1)}
+.snp-cta-busy,.snp-cta-done{opacity:0;transform:translateY(70%)}
+.snp-cta[data-state="busy"] .snp-cta-idle,.snp-cta[data-state="done"] .snp-cta-idle{opacity:0;transform:translateY(-70%)}
+.snp-cta[data-state="busy"] .snp-cta-busy,.snp-cta[data-state="done"] .snp-cta-done{opacity:1;transform:none}
+.snp-cta[data-state="done"]{background:#15803d!important;color:#fff!important}
+.snp-cta-busy i{width:1.15em;height:1.15em;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:snp-spin .7s linear infinite}
+@keyframes snp-spin{to{transform:rotate(360deg)}}
+.snp-cta-done svg{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .45s .12s ease}
+.snp-cta[data-state="done"] .snp-cta-done svg{stroke-dashoffset:0}
+.snp-cta:disabled{opacity:.45;cursor:not-allowed}
+.snp-like{position:relative;width:max(24px,2.4cqw);height:max(24px,2.4cqw);display:grid;place-items:center}
+.snp-like>svg{width:80%;height:80%;overflow:visible}
+.snp-like>svg path{fill:none;stroke:currentColor;stroke-width:1.8;transition:fill .3s,stroke .3s}
+.snp-like[aria-pressed="true"]>svg path{fill:var(--snp-like);stroke:var(--snp-like)}
+.snp-burst{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none}
+.snp-burst svg{position:absolute;left:-6px;top:-6px;width:12px;height:12px;color:var(--snp-like);opacity:0}
+.snp-pill{position:absolute;right:-.4cqw;bottom:calc(100% + 1cqw);padding:.6cqw 1.2cqw;border-radius:999px;white-space:nowrap;
+  background:var(--color-foreground);color:var(--color-background);font-size:max(10px,.95cqw);font-weight:500;
+  visibility:hidden;opacity:0;pointer-events:none}
+.snp-pill b{color:var(--snp-like);font-weight:700}
+.snp-toast{position:absolute;left:50%;bottom:6.6cqw;translate:-50% 0;display:flex;align-items:center;gap:1cqw;padding:1.1cqw 2.2cqw;
+  border-radius:999px;background:var(--color-background);font-size:max(11px,1cqw);font-weight:500;white-space:nowrap;
+  box-shadow:0 6px 24px color-mix(in oklab,var(--color-foreground) 8%,transparent);visibility:hidden;opacity:0;z-index:2}
+.snp-toast i{width:max(9px,1cqw);height:max(9px,1cqw);border-radius:50%;background:#22c55e;
+  box-shadow:0 0 0 3px color-mix(in oklab,#22c55e 25%,transparent)}
+.snp-toast small{font-size:inherit;color:var(--color-muted-foreground);font-weight:400}
+.snp-viewer{position:fixed;inset:0;z-index:60;display:grid;grid-template-columns:minmax(0,1fr);place-items:center;padding:24px;color:var(--color-foreground)}
+.snp-viewer[hidden]{display:none}
+.snp-scrim{position:absolute;inset:0;background:color-mix(in oklab,var(--color-background) 72%,transparent)!important;backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);cursor:zoom-out}
+.snp-box{position:relative;width:min(880px,100%);display:flex;flex-direction:column;gap:14px}
+.snp-frame{position:relative;aspect-ratio:16/10;max-height:72vh;width:100%;border-radius:14px;overflow:hidden;
+  background:radial-gradient(60% 70% at 50% 55%,color-mix(in oklab,var(--snp-tint) 38%,transparent),transparent 75%),
+    color-mix(in oklab,var(--snp-tint) 14%,var(--color-background));
+  box-shadow:0 30px 80px -20px rgba(0,0,0,.35)}
+.snp-frame .snp-view{position:absolute;inset:0;width:auto;height:auto;transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+.snp-frame{cursor:zoom-in}
+.snp-frame[data-zoom="true"]{cursor:zoom-out}
+.snp-vbar{display:flex;align-items:center;gap:12px;font-size:14px}
+.snp-vbar strong{font-weight:600}
+.snp-vbar span{color:var(--color-muted-foreground);font-variant-numeric:tabular-nums}
+.snp-vbtn{width:40px;height:40px;border-radius:50%!important;display:grid;place-items:center;background:var(--color-background)!important;
+  box-shadow:0 0 0 1px color-mix(in oklab,var(--color-foreground) 14%,transparent)!important;transition:transform .2s}
+.snp-vbtn:hover{transform:scale(1.08)}
+.snp-vbtn svg{width:18px;height:18px}
+.snp-nav-l,.snp-nav-r{position:absolute;top:50%;translate:0 -50%}
+.snp-nav-l{left:14px}.snp-nav-r{right:14px}
+.snp-close{margin-left:auto}
+.snp-rail{display:flex;gap:8px;overflow-x:auto;padding:2px}
+.snp-rail button{flex:none;width:76px;height:48px;border-radius:8px!important;overflow:hidden;opacity:.55;transition:opacity .2s;
+  background:color-mix(in oklab,var(--snp-tint) 12%,var(--color-background))!important}
+.snp-rail button[aria-current="true"]{opacity:1;box-shadow:0 0 0 2px var(--color-foreground)!important}
+@container (max-width:760px){
+  .snp-body{grid-template-columns:1fr;grid-template-rows:auto auto auto;padding:24px 20px 72px;row-gap:8px;align-items:start}
+  .snp-desc{max-width:none;margin-top:12px}
+  .snp-thumbs{margin-top:16px;gap:16px}
+  .snp-thumb{width:56px;height:36px}
+  .snp-more{width:36px;height:36px}
+  .snp-stage{order:-1;min-height:60cqw}
+  .snp-word{font-size:20cqw;top:0}
+  .snp-info{display:contents}
+  .snp-eyebrow{order:-3}
+  .snp-title{order:-2;margin-top:4px;max-width:none}
+  .snp-desc,.snp-thumbs{order:2}
+  .snp-floor{height:9cqw;translate:0 15cqw}
+  .snp-buy{order:1}
+  .snp-sizes{gap:10px;margin-top:10px}
+  .snp-row,.snp-colour{margin-top:18px}
+  .snp-rating{gap:6px}
+  .snp-swatches{margin-top:12px;gap:16px}
+  .snp-actions{margin-top:22px;gap:20px}
+  .snp-cta{flex:1}
+  .snp-stock{margin-top:8px;gap:6px}
+  .snp-hint{bottom:2%}
+  .snp-pill{padding:6px 10px;bottom:calc(100% + 8px)}
+  .snp-toast{left:50%;bottom:20px;padding:10px 18px;gap:8px}
+  .snp-viewer{padding:12px}
+  .snp-bg{--snp-gy:22%;--snp-gs:85% 26%}
+  .snp-rail button{width:60px;height:40px}
+  .snp-nav-l{left:8px}.snp-nav-r{right:8px}
+  .snp-vbtn{width:36px;height:36px}
+}
+@media (prefers-reduced-motion: reduce){
+  .snp-root *{transition:none!important;animation:none!important}
+}
+</style>
+
+  <div class="snp-bgs"></div>
+  <div class="snp-body">
+    <div class="snp-info">
+      <p class="snp-eyebrow">{{ section.settings.eyebrow | default: p.type | escape }}</p>
+      <h2 class="snp-title">{{ p.title | escape }}</h2>
+      <div class="snp-desc">{{ p.description | strip_html | truncatewords: section.settings.desc_words }}</div>
+      <div class="snp-thumbs"><span class="snp-thumbset"></span><button type="button" class="snp-more" hidden></button></div>
+    </div>
+
+    <div class="snp-stage">
+      <span class="snp-floor" aria-hidden="true"></span>
+      <div class="snp-reflects" aria-hidden="true"></div>
+      <div class="snp-float"><div class="snp-tilt"><span class="snp-shoe snp-sheen" aria-hidden="true"></span></div></div>
+      <span class="snp-loupe" aria-hidden="true"><span></span></span>
+      <span class="snp-hint" data-seen="false" aria-hidden="true"><span class="snp-hint-fine">Hold to zoom</span><span class="snp-hint-touch">Tap to view</span></span>
+    </div>
+
+    <div class="snp-buy">
+      <div class="snp-size-wrap">
+        <span class="snp-label">SIZE</span>
+        <div class="snp-sizes" role="group" aria-label="Size"></div>
+      </div>
+      <span class="snp-stock" data-tone="ok" aria-live="polite"></span>
+      <div class="snp-row snp-review-row">
+        <span class="snp-label">REVIEWS</span>
+        <span class="snp-rating"><span class="snp-stars" role="img"></span><span class="snp-count" aria-label="reviews"></span></span>
+      </div>
+      <div class="snp-row" aria-live="polite">
+        <span class="snp-label">PRICE</span>
+        <span class="snp-price"></span>
+      </div>
+      <div class="snp-colour-wrap">
+        <span class="snp-label snp-colour">COLOUR</span>
+        <div class="snp-swatches" role="group" aria-label="Colour"></div>
+      </div>
+      <div class="snp-actions">
+        <button type="button" class="snp-cta" data-state="idle" aria-live="polite">
+          <span class="snp-cta-idle">ADD TO CART</span>
+          <span class="snp-cta-busy" aria-hidden="true"><i></i></span>
+          <span class="snp-cta-done"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>ADDED</span>
+        </button>
+        <button type="button" class="snp-like" aria-pressed="false" aria-label="Save to favourites">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="snp-heart"/></svg>
+          <span class="snp-burst" aria-hidden="true"></span>
+        </button>
+        <span class="snp-pill" role="status" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="snp-toast" role="status" aria-live="polite"><i aria-hidden="true"></i><span>{{ section.settings.toast | escape }}</span><small></small></div>
+  </div>
+
+  <div class="snp-viewer" role="dialog" aria-modal="true" aria-label="{{ p.title | escape }} photos" hidden>
+    <button type="button" class="snp-scrim" aria-label="Close photos" tabindex="-1"></button>
+    <div class="snp-box">
+      <div class="snp-vbar">
+        <strong></strong><span></span>
+        <button type="button" class="snp-vbtn snp-close" aria-label="Close photos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="snp-frame" data-zoom="false">
+        <span class="snp-view" role="img"></span>
+        <button type="button" class="snp-vbtn snp-nav-l" aria-label="Previous photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button type="button" class="snp-vbtn snp-nav-r" aria-label="Next photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+      <div class="snp-rail"></div>
+    </div>
+  </div>
+
+  <script type="application/json" class="snp-data">
+    {
+      "options": {{ p.options | json }},
+      "variants": [
+        {%- for v in p.variants -%}
+          {
+            "id": {{ v.id }},
+            "options": {{ v.options | json }},
+            "price": {{ v.price }},
+            "available": {{ v.available | json }},
+            "qty": {{ v.inventory_quantity | default: 0 }},
+            "tracked": {% if v.inventory_management == 'shopify' and v.inventory_policy != 'continue' %}true{% else %}false{% endif %},
+            "image": {% if v.featured_image %}{{ v.featured_image | image_url: width: 1800 | json }}{% else %}null{% endif %}
+          }{% unless forloop.last %},{% endunless %}
+        {%- endfor -%}
+      ],
+      "images": [
+        {%- for img in p.images -%}
+          { "src": {{ img | image_url: width: 1800 | json }}, "alt": {{ img.alt | default: '' | json }} }{% unless forloop.last %},{% endunless %}
+        {%- endfor -%}
+      ],
+      "rating": {{ p.metafields.reviews.rating.value.rating | default: section.settings.rating | json }},
+      "reviews": {{ p.metafields.reviews.rating_count.value | default: section.settings.reviews | json }},
+      "showReviews": {{ section.settings.show_reviews | json }},
+      "currency": {{ cart.currency.symbol | default: '$' | json }},
+      "lowStock": {{ section.settings.low_stock }},
+      "colours": {{ section.settings.colours | json }},
+      "defaultTint": {{ section.settings.default_tint | json }}
+    }
+  </script>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script defer>
+document.addEventListener("DOMContentLoaded", function () {
+  var root = document.getElementById("snp-{{ section.id }}");
+  if (!root || !window.gsap) return;
+  var gsap = window.gsap;
+  var D = JSON.parse(root.querySelector(".snp-data").textContent);
+  var $ = function (s, el) { return (el || root).querySelector(s); };
+  var STAR = "M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z";
+  var HEART = "M12 20.3l-1.4-1.3C5.4 14.3 2 11.2 2 7.4 2 4.4 4.4 2 7.4 2c1.7 0 3.4.8 4.6 2.1C13.2 2.8 14.9 2 16.6 2 19.6 2 22 4.4 22 7.4c0 3.8-3.4 6.9-8.6 11.6z";
+  var REFLECT = 0.24;
+  var reduced = function () { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; };
+  var esc = function (s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; };
+
+  // ---- Model: colours and sizes from the product's options -------------
+  var find = function (re) { for (var i = 0; i < D.options.length; i++) if (re.test(D.options[i])) return i; return -1; };
+  var ci = find(/colou?r/i), si = find(/size/i);
+  var overrides = {};
+  (D.colours || "").split("\n").forEach(function (line) {
+    var m = line.split("="); if (m.length < 2) return;
+    var parts = m[1].split("|");
+    overrides[m[0].trim().toLowerCase()] = { swatch: (parts[0] || "").trim(), tint: (parts[1] || "").trim() };
+  });
+  var uniq = function (idx) {
+    var out = [];
+    D.variants.forEach(function (v) { var o = idx < 0 ? "" : v.options[idx]; if (out.indexOf(o) < 0) out.push(o); });
+    return out;
+  };
+  var colourNames = uniq(ci), sizes = uniq(si);
+  var fallbackImg = D.images[0] ? D.images[0].src : "";
+  var variants = colourNames.map(function (name) {
+    var first = D.variants.filter(function (v) { return ci < 0 || v.options[ci] === name; });
+    var withImg = first.filter(function (v) { return v.image; })[0];
+    var src = withImg ? withImg.image : fallbackImg;
+    var o = overrides[name.toLowerCase()] || {};
+    var swatch = o.swatch || name.toLowerCase().replace(/\s+/g, "");
+    if (!CSS.supports("color", swatch)) swatch = "#888";
+    var extra = D.images.filter(function (im) { return name && im.alt && im.alt.toLowerCase().indexOf(name.toLowerCase()) >= 0 && im.src !== src; });
+    var gallery = [{ src: src, label: "Side" }].concat(extra.map(function (im) { return { src: im.src, label: im.alt }; }));
+    if (gallery.length < 4) gallery = gallery.concat([
+      { src: src, label: "Inside", mirror: true },
+      { src: src, label: "Heel", focus: [0.86, 0.42], zoom: 1.7 },
+      { src: src, label: "Laces", focus: [0.47, 0.34], zoom: 1.7 }
+    ]);
+    return { name: name || "Default", swatch: swatch, tint: o.tint || (CSS.supports("color", swatch) && swatch !== "#888" ? swatch : D.defaultTint), src: src, gallery: gallery };
+  });
+  var variantFor = function (c, s) {
+    return D.variants.filter(function (v) {
+      return (ci < 0 || v.options[ci] === colourNames[c]) && (si < 0 || v.options[si] === s);
+    })[0];
+  };
+  var avail = function (c, s) {
+    var v = variantFor(c, s);
+    if (!v || !v.available) return { soldOut: true, stock: 0 };
+    return { soldOut: false, stock: v.tracked ? v.qty : undefined };
+  };
+  var firstFree = function (c) { for (var i = 0; i < sizes.length; i++) if (!avail(c, sizes[i]).soldOut) return sizes[i]; return sizes[0]; };
+
+  // ---- State ---------------------------------------------------------
+  var params = new URLSearchParams(location.search), startId = Number(params.get("variant"));
+  var startV = D.variants.filter(function (v) { return v.id === startId; })[0] || D.variants.filter(function (v) { return v.available; })[0] || D.variants[0];
+  var active = Math.max(0, ci < 0 ? 0 : colourNames.indexOf(startV.options[ci]));
+  var size = si < 0 ? "" : (avail(active, startV.options[si]).soldOut ? firstFree(active) : startV.options[si]);
+  var thumbSet = active, cart = "idle", liked = false, viewer = null, vZoom = false, holding = false, lastPointer = "mouse";
+  var opener = null, toastTimer = null;
+  var fmt = function (n) { return D.currency + (Math.round(n * 100) % 100 ? (n).toFixed(2) : Math.round(n)); };
+  var priceOf = function () { var v = variantFor(active, size) || startV; return v.price / 100; };
+
+  // ---- Build DOM ----------------------------------------------------
+  var tintOf = function (v) { return v.tint || v.swatch; };
+  var bgs = $(".snp-bgs"), stage = $(".snp-stage"), reflects = $(".snp-reflects"), tilt = $(".snp-tilt"), sheen = $(".snp-sheen");
+  var shoes = [], words = [], refls = [], bgEls = [];
+  variants.forEach(function (v, i) {
+    var bg = document.createElement("span"); bg.className = "snp-bg"; bg.setAttribute("aria-hidden", "true"); bg.style.setProperty("--t", tintOf(v)); bgs.appendChild(bg); bgEls.push(bg);
+    var w = document.createElement("span"); w.className = "snp-word"; w.setAttribute("aria-hidden", "true"); w.style.setProperty("--t", tintOf(v)); w.textContent = v.name; stage.insertBefore(w, stage.firstChild); words.push(w);
+    var r = document.createElement("img"); r.className = "snp-shoe snp-reflect"; r.src = v.src; r.alt = ""; r.draggable = false; reflects.appendChild(r); refls.push(r);
+    var s = document.createElement("img"); s.className = "snp-shoe"; s.src = v.src; s.draggable = false; tilt.insertBefore(s, sheen); shoes.push(s);
+  });
+
+  if (si < 0) $(".snp-size-wrap").style.display = "none";
+  if (ci < 0 || variants.length < 2) $(".snp-colour-wrap").style.display = "none";
+  var sizeBtns = sizes.map(function (s) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "snp-size"; b.textContent = s;
+    b.addEventListener("click", function () { size = s; render(); });
+    $(".snp-sizes").appendChild(b); return b;
+  });
+  var swatchBtns = variants.map(function (v, i) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "snp-swatch"; b.setAttribute("aria-label", v.name); b.style.setProperty("--sw", v.swatch);
+    b.addEventListener("click", function () { pick(i); });
+    $(".snp-swatches").appendChild(b); return b;
+  });
+  $(".snp-heart").setAttribute("d", HEART);
+  var burst = $(".snp-burst");
+  for (var h = 0; h < 7; h++) burst.insertAdjacentHTML("beforeend", '<svg viewBox="0 0 24 24"><path d="' + HEART + '" fill="currentColor"/></svg>');
+
+  var rating = Math.min(5, Math.max(0, Number(D.rating) || 0));
+  if (!D.showReviews) $(".snp-review-row").style.display = "none";
+  var row = function (fill) { var s = ""; for (var i = 0; i < 5; i++) s += '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="' + STAR + '" fill="' + (fill ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>'; return s; };
+  var stars = $(".snp-stars");
+  stars.setAttribute("aria-label", rating.toFixed(1) + " out of 5 stars");
+  stars.innerHTML = '<span class="snp-starrow">' + row(false) + '</span><span class="snp-starrow snp-starfill" style="clip-path:inset(0 ' + (100 - rating * 20) + '% 0 0)">' + row(true) + "</span>";
+  $(".snp-count").textContent = "(" + (D.reviews || 0) + ")";
+  var priceEl = $(".snp-price"), shownPrice = priceOf();
+  priceEl.textContent = fmt(shownPrice);
+
+  // ---- Initial visibility --------------------------------------------
+  shoes.forEach(function (el, i) { gsap.set(el, { yPercent: 0, rotation: 0, autoAlpha: i === active ? 1 : 0 }); });
+  words.forEach(function (el, i) { gsap.set(el, { yPercent: 0, autoAlpha: i === active ? 1 : 0 }); });
+  refls.forEach(function (el, i) { gsap.set(el, { autoAlpha: i === active ? REFLECT : 0 }); });
+
+  // ---- Views / thumbnails ---------------------------------------------
+  var focusPosition = function (f, z) { if (z <= 1) return 50; var p = (f * z - 0.5) / (z - 1); return Math.round(Math.min(1, Math.max(0, p)) * 1000) / 10; };
+  var viewStyle = function (el, v) {
+    var z = v.zoom || 1, f = v.focus || [0.5, 0.5];
+    el.style.backgroundImage = 'url("' + v.src + '")';
+    el.style.backgroundSize = z <= 1 ? "contain" : z * 100 + "% auto";
+    el.style.backgroundPosition = focusPosition(f[0], z) + "% " + focusPosition(f[1], z) + "%";
+    el.style.transform = v.mirror ? "scaleX(-1)" : "";
+  };
+  var views = function () { return variants[thumbSet].gallery; };
+  var thumbsEl = $(".snp-thumbset"), moreBtn = $(".snp-more");
+  var renderThumbs = function () {
+    thumbsEl.innerHTML = "";
+    views().slice(0, 3).forEach(function (vw, i) {
+      var b = document.createElement("button"); b.type = "button"; b.className = "snp-thumb"; b.setAttribute("aria-label", "View " + (vw.label || "photo " + (i + 1)));
+      var s = document.createElement("span"); s.className = "snp-view"; viewStyle(s, vw); b.appendChild(s);
+      b.addEventListener("click", function () { openViewer(i); }); thumbsEl.appendChild(b);
+    });
+    var more = Math.max(0, views().length - 3);
+    moreBtn.hidden = !more; moreBtn.textContent = "+" + more; moreBtn.setAttribute("aria-label", "View all " + views().length + " photos");
+  };
+  moreBtn.addEventListener("click", function () { openViewer(3); });
+
+  // ---- Render ---------------------------------------------------------
+  function render() {
+    var v = variants[active];
+    root.style.setProperty("--snp-tint", tintOf(v));
+    bgEls.forEach(function (el, i) { el.dataset.on = String(i === active); });
+    words.forEach(function (el, i) { el.style.visibility = i === active ? "visible" : el.style.visibility; });
+    shoes.forEach(function (el, i) { el.alt = i === active ? $(".snp-title").textContent + " in " + variants[i].name : ""; if (i !== active) el.setAttribute("aria-hidden", "true"); else el.removeAttribute("aria-hidden"); });
+    sheen.style.webkitMaskImage = sheen.style.maskImage = 'url("' + v.src + '")';
+    sizeBtns.forEach(function (b, i) {
+      var a = avail(active, sizes[i]);
+      b.disabled = a.soldOut; b.setAttribute("aria-pressed", String(size === sizes[i]));
+      b.setAttribute("aria-label", a.soldOut ? "Size " + sizes[i] + ", sold out" : "Size " + sizes[i]);
+    });
+    swatchBtns.forEach(function (b, i) { b.setAttribute("aria-pressed", String(i === active)); });
+    var here = avail(active, size);
+    var tone = here.soldOut ? "out" : here.stock !== undefined && here.stock <= D.lowStock ? "low" : "ok";
+    var st = $(".snp-stock"); st.dataset.tone = tone;
+    st.textContent = tone === "out" ? "Sold out in this colour" : tone === "low" ? "Only " + here.stock + " left" + (size ? " in size " + size : "") : "In stock · ships in 2 days";
+    var cta = $(".snp-cta"); cta.disabled = here.soldOut; cta.dataset.state = cart;
+    $(".snp-cta-idle").textContent = here.soldOut ? "SOLD OUT" : "ADD TO CART";
+    rollPrice(priceOf());
+    var vv = variantFor(active, size);
+    if (vv && history.replaceState) { var u = new URL(location.href); u.searchParams.set("variant", vv.id); history.replaceState(null, "", u); }
+  }
+
+  var priceTween;
+  function rollPrice(to) {
+    var from = shownPrice; shownPrice = to;
+    if (from === to) return;
+    if (priceTween) priceTween.kill();
+    if (reduced()) { priceEl.textContent = fmt(to); return; }
+    var o = { p: from };
+    priceTween = gsap.to(o, { p: to, duration: 0.6, ease: "power2.out", onUpdate: function () { priceEl.textContent = fmt(o.p); }, onComplete: function () { priceEl.textContent = fmt(to); } });
+    gsap.fromTo(priceEl, { y: to > from ? 8 : -8, opacity: 0.4 }, { y: 0, opacity: 1, duration: 0.45, ease: "power2.out" });
+  }
+
+  // ---- Float, tilt, sweep -----------------------------------------------
+  var floatEl = $(".snp-float"), floor = $(".snp-floor");
+  if (!reduced()) {
+    var tl = gsap.timeline({ repeat: -1, yoyo: true, defaults: { duration: 2.6, ease: "sine.inOut" } });
+    tl.to(floatEl, { y: "-1.1cqw" }, 0).to(floor, { scaleX: 0.88, opacity: 0.65 }, 0).to(reflects, { y: "1.1cqw" }, 0);
+    new IntersectionObserver(function (e) { e[0].isIntersecting ? tl.resume() : tl.pause(); }).observe(root);
+  }
+  if (!reduced() && window.matchMedia("(pointer: fine)").matches) {
+    gsap.set(tilt, { transformPerspective: 1100 });
+    var ry = gsap.quickTo(tilt, "rotationY", { duration: 0.8, ease: "power3.out" });
+    var rx = gsap.quickTo(tilt, "rotationX", { duration: 0.8, ease: "power3.out" });
+    var fx = gsap.quickTo(floor, "x", { duration: 0.9, ease: "power3.out" });
+    var glow = { x: 0, y: 0 };
+    var drift = function (x, y) { gsap.to(glow, { x: x, y: y, duration: 1, ease: "power3.out", overwrite: true, onUpdate: function () { root.style.setProperty("--mx", glow.x.toFixed(2) + "%"); root.style.setProperty("--my", glow.y.toFixed(2) + "%"); } }); };
+    root.addEventListener("pointermove", function (e) {
+      if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
+      var r = stage.getBoundingClientRect();
+      var nx = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width) * 2 - 1));
+      var ny = Math.max(-1, Math.min(1, ((e.clientY - r.top) / r.height) * 2 - 1));
+      var k = holding ? 0 : 1;
+      ry(nx * 12 * k); rx(-ny * 7 * k); fx(-nx * 14 * k); drift(nx * 8, ny * 6);
+    });
+    root.addEventListener("pointerleave", function () { ry(0); rx(0); fx(0); drift(0, 0); });
+  }
+  var sweep = function (delay) { if (reduced()) return; gsap.fromTo(sheen, { backgroundPosition: "130% 0%" }, { backgroundPosition: "-30% 0%", duration: 1.2, ease: "power2.inOut", delay: delay }); };
+  sweep(0.6);
+
+  // ---- Colour swap ----------------------------------------------------
+  function pick(next) {
+    var prev = active; if (next === prev) return;
+    active = next;
+    if (avail(next, size).soldOut) size = firstFree(next);
+    var rm = reduced();
+    refls.forEach(function (el) { gsap.killTweensOf(el); });
+    gsap.to(refls[prev], { autoAlpha: 0, duration: rm ? 0 : 0.25 });
+    gsap.to(refls[next], { autoAlpha: REFLECT, duration: rm ? 0 : 0.6, delay: rm ? 0 : 0.45 });
+    [shoes, words].forEach(function (list) { list.forEach(function (el, i) { gsap.killTweensOf(el); if (i !== prev && i !== next) gsap.set(el, { autoAlpha: 0, yPercent: 0, rotation: 0 }); }); });
+    render();
+    if (rm) {
+      [shoes, words].forEach(function (list) { gsap.set(list[prev], { autoAlpha: 0, yPercent: 0, rotation: 0 }); gsap.set(list[next], { autoAlpha: 1, yPercent: 0, rotation: 0 }); });
+      thumbSet = next; renderThumbs(); return;
+    }
+    gsap.to(shoes[prev], { yPercent: -130, rotation: -7, autoAlpha: 0, duration: 0.45, ease: "power2.in" });
+    gsap.fromTo(shoes[next], { yPercent: 130, rotation: 9, autoAlpha: 0 }, { yPercent: 0, rotation: 0, autoAlpha: 1, duration: 0.7, ease: "back.out(1.3)", delay: 0.06 });
+    sweep(0.55);
+    gsap.to(words[prev], { yPercent: -70, autoAlpha: 0, duration: 0.55, ease: "power2.in" });
+    gsap.fromTo(words[next], { yPercent: 70, autoAlpha: 0 }, { yPercent: 0, autoAlpha: 1, duration: 0.9, ease: "power3.out", delay: 0.1 });
+    gsap.to(thumbsEl, { autoAlpha: 0, x: -8, duration: 0.16, ease: "power1.in", onComplete: function () {
+      thumbSet = next; renderThumbs();
+      gsap.fromTo(thumbsEl, { autoAlpha: 0, x: 8 }, { autoAlpha: 1, x: 0, duration: 0.3, ease: "power2.out" });
+    } });
+  }
+
+  // ---- Like -------------------------------------------------------------
+  var likeBtn = $(".snp-like"), pill = $(".snp-pill");
+  likeBtn.addEventListener("click", function () {
+    liked = !liked;
+    likeBtn.setAttribute("aria-pressed", String(liked));
+    pill.innerHTML = (liked ? "<b>♥ </b>" : "") + (liked ? "Saved to favourites" : "Removed from favourites");
+    gsap.killTweensOf(pill);
+    if (reduced()) { gsap.set(pill, { autoAlpha: 1, y: 0 }); gsap.to(pill, { autoAlpha: 0, duration: 0, delay: 1.6 }); return; }
+    gsap.timeline().fromTo(pill, { autoAlpha: 0, y: 6, scale: 0.9 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.35, ease: "back.out(2)" }).to(pill, { autoAlpha: 0, y: -10, duration: 0.4, ease: "power2.in" }, "+=1.1");
+    gsap.fromTo(likeBtn.firstElementChild, { scale: liked ? 0.5 : 1.2 }, { scale: 1, duration: 0.55, ease: "back.out(3)" });
+    if (!liked) return;
+    Array.prototype.forEach.call(burst.children, function (hh, i) {
+      var a = (-90 + (i - 3) * 26 + gsap.utils.random(-8, 8)) * (Math.PI / 180), d = gsap.utils.random(26, 46);
+      gsap.fromTo(hh, { x: 0, y: 0, scale: 0.4, autoAlpha: 1, rotation: 0 }, { x: Math.cos(a) * d, y: Math.sin(a) * d, scale: gsap.utils.random(0.6, 1), rotation: gsap.utils.random(-30, 30), autoAlpha: 0, duration: gsap.utils.random(0.6, 0.9), ease: "power2.out" });
+    });
+  });
+
+  // ---- Add to cart (real Shopify cart) ----------------------------------
+  var toast = $(".snp-toast");
+  $(".snp-cta").addEventListener("click", function () {
+    var v = variantFor(active, size);
+    if (cart !== "idle" || !v || avail(active, size).soldOut) return;
+    cart = reduced() ? "done" : "busy"; render();
+    var started = Date.now();
+    fetch((window.Shopify && Shopify.routes ? Shopify.routes.root : "/") + "cart/add.js", {
+      method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ items: [{ id: v.id, quantity: 1 }] })
+    }).then(function (r) { if (!r.ok) throw r; return r.json(); }).then(function () {
+      setTimeout(function () {
+        cart = "done"; render(); showToast(variants[active].name + (size ? " · size " + size : ""));
+        document.dispatchEvent(new CustomEvent("cart:refresh", { bubbles: true }));
+        fetch("/cart.js").then(function (r) { return r.json(); }).then(function (c) {
+          document.querySelectorAll(".cart-count-bubble span[aria-hidden], [data-cart-count]").forEach(function (el) { el.textContent = c.item_count; });
+        }).catch(function () {});
+        setTimeout(function () { cart = "idle"; render(); }, reduced() ? 1600 : 1450);
+      }, Math.max(0, 650 - (Date.now() - started)));
+    }).catch(function () {
+      cart = "idle"; render(); showToast("Couldn't add to cart — please try again");
+    });
+  });
+  function showToast(note) {
+    $("small", toast).textContent = note ? "· " + note : "";
+    if (toastTimer) toastTimer.kill(); gsap.killTweensOf(toast);
+    if (reduced()) { gsap.set(toast, { autoAlpha: 1, y: 0 }); toastTimer = gsap.delayedCall(3, function () { gsap.set(toast, { autoAlpha: 0 }); }); return; }
+    gsap.fromTo(toast, { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: "power3.out" });
+    toastTimer = gsap.delayedCall(3, function () { gsap.to(toast, { autoAlpha: 0, y: 8, duration: 0.35, ease: "power2.in" }); });
+  }
+
+  // ---- Loupe ------------------------------------------------------------
+  var loupe = $(".snp-loupe"), loupeImg = $(".snp-loupe > span");
+  var placeLoupe = function (e) {
+    var img = shoes[active], st = stage.getBoundingClientRect(), r = img.getBoundingClientRect(), L = loupe.offsetWidth, Z = 2.2;
+    gsap.set(loupe, { x: e.clientX - st.left - L / 2, y: e.clientY - st.top - L / 2 });
+    loupeImg.style.backgroundSize = r.width * Z + "px " + r.height * Z + "px";
+    loupeImg.style.backgroundPosition = -((e.clientX - r.left) * Z - L / 2) + "px " + -((e.clientY - r.top) * Z - L / 2) + "px";
+  };
+  stage.addEventListener("pointerdown", function (e) {
+    lastPointer = e.pointerType;
+    if (e.pointerType === "touch" || e.button !== 0) return;
+    holding = true; $(".snp-hint").dataset.seen = "true";
+    stage.setPointerCapture(e.pointerId);
+    loupeImg.style.backgroundImage = 'url("' + variants[active].src + '")';
+    gsap.to(tilt, { rotationX: 0, rotationY: 0, duration: 0.3 });
+    placeLoupe(e);
+    gsap.fromTo(loupe, { autoAlpha: 0, scale: 0.6 }, { autoAlpha: 1, scale: 1, duration: reduced() ? 0 : 0.3, ease: "back.out(2)" });
+  });
+  stage.addEventListener("pointermove", function (e) { if (holding) placeLoupe(e); });
+  var up = function () { if (!holding) return; holding = false; gsap.to(loupe, { autoAlpha: 0, scale: 0.7, duration: reduced() ? 0 : 0.2 }); };
+  stage.addEventListener("pointerup", up); stage.addEventListener("pointercancel", up);
+  stage.addEventListener("click", function () { if (lastPointer === "touch") openViewer(0); });
+
+  // ---- Gallery viewer -----------------------------------------------------
+  var viewerEl = $(".snp-viewer"), frame = $(".snp-frame"), frameView = $(".snp-frame .snp-view"), rail = $(".snp-rail");
+  document.body.appendChild(viewerEl);
+  ["--color-foreground", "--color-background", "--color-muted-foreground"].forEach(function (k) { viewerEl.style.setProperty(k, root.style.getPropertyValue(k)); });
+  function renderViewer() {
+    var vs = views(), vw = vs[viewer];
+    viewerEl.style.setProperty("--snp-tint", tintOf(variants[active]));
+    $("strong", viewerEl).textContent = vw.label || "Photo";
+    $(".snp-vbar span", viewerEl).textContent = viewer + 1 + " / " + vs.length;
+    viewStyle(frameView, vw);
+    frameView.style.transform = (vw.mirror ? "scaleX(-1) " : "") + "scale(" + (vZoom ? 2.2 : 1) + ")";
+    frameView.setAttribute("aria-label", variants[thumbSet].name + " " + (vw.label || ""));
+    frame.dataset.zoom = String(vZoom);
+    rail.innerHTML = "";
+    vs.forEach(function (x, i) {
+      var b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-label", "Show " + (x.label || "photo " + (i + 1))); b.setAttribute("aria-current", String(i === viewer));
+      var s = document.createElement("span"); s.className = "snp-view"; viewStyle(s, x); b.appendChild(s);
+      b.addEventListener("click", function () { vZoom = false; setViewer(i); }); rail.appendChild(b);
+    });
+  }
+  function setViewer(i) {
+    viewer = i; renderViewer();
+    if (!reduced()) gsap.fromTo(frame, { autoAlpha: 0.2, scale: 0.985 }, { autoAlpha: 1, scale: 1, duration: 0.35, ease: "power2.out" });
+  }
+  function openViewer(i) {
+    opener = document.activeElement; viewer = i; vZoom = false; viewerEl.hidden = false; renderViewer();
+    $(".snp-close", viewerEl).focus();
+    if (!reduced()) gsap.fromTo($(".snp-box", viewerEl), { autoAlpha: 0, scale: 0.94, y: 16 }, { autoAlpha: 1, scale: 1, y: 0, duration: 0.45, ease: "power3.out" });
+  }
+  function closeViewer() { viewer = null; vZoom = false; viewerEl.hidden = true; if (opener) opener.focus(); }
+  function step(d) { vZoom = false; var n = views().length; setViewer((viewer + d + n) % n); }
+  $(".snp-scrim", viewerEl).addEventListener("click", closeViewer);
+  $(".snp-close", viewerEl).addEventListener("click", closeViewer);
+  $(".snp-nav-l", viewerEl).addEventListener("click", function () { step(-1); });
+  $(".snp-nav-r", viewerEl).addEventListener("click", function () { step(1); });
+  frame.addEventListener("click", function (e) { if (e.target.closest("button")) return; vZoom = !vZoom; renderViewer(); });
+  frame.addEventListener("pointermove", function (e) {
+    if (!vZoom) return; var r = frame.getBoundingClientRect();
+    frameView.style.transformOrigin = ((e.clientX - r.left) / r.width) * 100 + "% " + ((e.clientY - r.top) / r.height) * 100 + "%";
+  });
+  window.addEventListener("keydown", function (e) {
+    if (viewer === null) return;
+    if (e.key === "Escape") closeViewer(); else if (e.key === "ArrowRight") step(1); else if (e.key === "ArrowLeft") step(-1);
+  });
+
+  renderThumbs();
+  render();
+});
+</script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Sneaker product hero",
+  "tag": "div",
+  "class": "section-sneaker-product-hero",
+  "settings": [
+    { "type": "product", "id": "product", "label": "Product (only used outside product pages)" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow text", "info": "Defaults to the product type", "default": "Women's Racing Shoe" },
+    { "type": "range", "id": "desc_words", "label": "Description length (words)", "min": 10, "max": 80, "step": 2, "default": 30 },
+    { "type": "textarea", "id": "colours", "label": "Colour swatches", "info": "One per line: Colour name = swatch | backdrop tint. Example: Cloud = #e4e4e4 | #ff9f6e", "default": "Onyx = #1d1d1f | #7fd8bd\nCloud = #e4e4e4 | #ff9f6e\nCobalt = #2f4fd0 | #5b7cff" },
+    { "type": "color", "id": "default_tint", "label": "Fallback backdrop tint", "default": "#ff9f6e" },
+    { "type": "checkbox", "id": "show_reviews", "label": "Show reviews row", "default": true },
+    { "type": "text", "id": "rating", "label": "Fallback rating (if no review app)", "default": "4.5" },
+    { "type": "text", "id": "reviews", "label": "Fallback review count", "default": "120" },
+    { "type": "range", "id": "low_stock", "label": "Show 'Only N left' at or below", "min": 1, "max": 20, "step": 1, "default": 3 },
+    { "type": "text", "id": "toast", "label": "Add to cart message", "default": "Shopping Cart Updated" },
+    { "type": "color", "id": "like_color", "label": "Heart colour", "default": "#e11d48" },
+    { "type": "color", "id": "foreground", "label": "Text colour", "default": "#ffffff" },
+    { "type": "color", "id": "background", "label": "Background colour", "default": "#1a1310" },
+    { "type": "color", "id": "muted", "label": "Muted text colour", "default": "#d4c4b8" },
+    { "type": "text", "id": "height", "label": "Minimum height", "default": "100svh" }
+  ],
+  "presets": [{ "name": "Sneaker product hero" }]
+}
+{% endschema %}
