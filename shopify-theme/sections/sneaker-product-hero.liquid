@@ -1,14 +1,3 @@
-{%- comment -%}
-  Sneaker Product Hero — a Liquid/vanilla-JS port of the 21st.dev
-  "Sneaker Product Page Hero" React component. Same layout, CSS and GSAP
-  motion, but driven by the real product: Color option -> swatches,
-  Size option -> size buttons, variant price/stock, real Add to Cart.
-
-  Images: each colourway uses the featured image of its first variant
-  (transparent PNG/WebP, side profile, toe left). Extra gallery photos
-  for a colour are product images whose ALT text contains the colour name.
-{%- endcomment -%}
-
 {%- liquid
   assign p = product
   if p == blank
@@ -24,67 +13,51 @@
   aria-label="{{ p.title | escape }}"
 >
 <style>
-#snp-{{ section.id }}.snp-root{position:relative;display:flex;flex-direction:column;width:100%;container-type:inline-size;overflow:hidden;isolation:isolate;
-  color:var(--color-foreground);background:color-mix(in oklab,var(--color-foreground) 4%,var(--color-background));
-  font-family:inherit;-webkit-font-smoothing:antialiased}
+#snp-{{ section.id }}.snp-root{position:relative;display:flex;flex-direction:column;width:100%;container-type:inline-size;overflow:hidden;isolation:isolate;color:var(--color-foreground);background:color-mix(in oklab,var(--color-foreground) 4%,var(--color-background));font-family:inherit;-webkit-font-smoothing:antialiased}
 :where(.snp-root) :where(*,*::before,*::after){box-sizing:border-box}
 :where(.snp-root) :where(button){font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;letter-spacing:inherit;text-transform:none;min-height:0;box-shadow:none}
 .snp-root img{max-width:none;display:block}
-.snp-bg{position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .8s ease;pointer-events:none;
-  background:radial-gradient(var(--snp-gs,48% 62%) at calc(50% + var(--mx,0%)) calc(var(--snp-gy,52%) + var(--my,0%)),color-mix(in oklab,var(--t) 42%,transparent),transparent 72%),
-    color-mix(in oklab,var(--t) 15%,color-mix(in oklab,var(--color-foreground) 4%,var(--color-background)))}
+.snp-bg{position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .8s ease;pointer-events:none;background:radial-gradient(var(--snp-gs,48% 62%) at calc(50% + var(--mx,0%)) calc(var(--snp-gy,52%) + var(--my,0%)),color-mix(in oklab,var(--t) 42%,transparent),transparent 72%),color-mix(in oklab,var(--t) 15%,color-mix(in oklab,var(--color-foreground) 4%,var(--color-background)))}
 .snp-bg[data-on="true"]{opacity:1}
-.snp-body{position:relative;flex:1;display:grid;grid-template-columns:20cqw minmax(0,1fr) 17cqw;column-gap:3cqw;align-items:start;align-content:center;
-  padding:4cqw 9cqw 4cqw 7.3cqw;overflow:hidden}
+.snp-body{position:relative;flex:1;display:grid;grid-template-columns:20cqw minmax(0,1fr) 17cqw;column-gap:3cqw;align-items:start;align-content:center;padding:4cqw 9cqw 4cqw 7.3cqw;overflow:hidden}
 .snp-info{align-self:start;position:relative;z-index:1}
 .snp-eyebrow{margin:0;font-size:max(12px,1.5cqw);color:var(--color-muted-foreground)}
 .snp-title{margin:2cqw 0 0;font-size:max(22px,2.4cqw);line-height:1.18;font-weight:600;letter-spacing:-.01em;max-width:17cqw;text-wrap:balance;color:inherit}
 .snp-desc{margin:3.6cqw 0 0;max-width:19cqw;font-size:max(11px,1.05cqw);line-height:1.45;font-style:italic;color:var(--color-muted-foreground)}
-.snp-desc p{margin:0}
 .snp-thumbs{display:flex;align-items:center;gap:2.4cqw;margin-top:9cqw}
 .snp-thumbset{display:flex;align-items:center;gap:inherit}
 .snp-thumb{flex:none;width:4.6cqw;height:3cqw;overflow:hidden;border-radius:4px;outline-offset:3px;transition:transform .25s}
 .snp-thumb:hover{transform:translateY(-2px)}
 .snp-view{display:block;width:100%;height:100%;background-repeat:no-repeat}
-.snp-more{flex:none;width:3cqw;height:3cqw;display:grid;place-items:center;background:var(--color-foreground)!important;color:var(--color-background)!important;
-  font-size:max(10px,1.05cqw);transition:transform .25s}
+.snp-more{flex:none;width:3cqw;height:3cqw;display:grid;place-items:center;background:var(--color-foreground)!important;color:var(--color-background)!important;font-size:max(10px,1.05cqw);transition:transform .25s}
+.snp-more[hidden]{display:none}
 .snp-more:hover{transform:scale(1.08)}
 .snp-stage{position:relative;align-self:stretch;max-height:42cqw;min-height:26cqw}
-.snp-word{position:absolute;left:50%;top:0;translate:-50% -14%;font-size:11cqw;line-height:1;font-weight:800;letter-spacing:-.04em;
-  text-transform:uppercase;white-space:nowrap;color:color-mix(in oklab,var(--t) 34%,transparent);pointer-events:none;user-select:none}
+.snp-word{position:absolute;left:50%;top:0;translate:-50% -14%;font-size:11cqw;line-height:1;font-weight:800;letter-spacing:-.04em;text-transform:uppercase;white-space:nowrap;color:color-mix(in oklab,var(--t) 34%,transparent);pointer-events:none;user-select:none}
 .snp-float{position:absolute;inset:0}
 .snp-tilt{position:absolute;inset:0;transform-style:preserve-3d}
 .snp-reflects{position:absolute;inset:0;pointer-events:none}
-.snp-shoe.snp-reflect{transform:scaleY(-1);transform-origin:50% 88.5%;filter:blur(.6px);
-  -webkit-mask-image:linear-gradient(to bottom,transparent 52%,#000 88%);mask-image:linear-gradient(to bottom,transparent 52%,#000 88%)}
-.snp-shoe.snp-sheen{display:block;pointer-events:none;filter:none;
-  background:linear-gradient(100deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%) 130% 0/300% 100% no-repeat;
-  -webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
-.snp-loupe{position:absolute;left:0;top:0;z-index:3;width:max(130px,15cqw);aspect-ratio:1;border-radius:50%;overflow:hidden;
-  visibility:hidden;opacity:0;pointer-events:none;background:color-mix(in oklab,var(--snp-tint) 18%,var(--color-background));
-  box-shadow:0 0 0 2px var(--color-background),0 18px 44px -12px rgba(0,0,0,.4)}
+.snp-shoe.snp-reflect{transform:scaleY(-1);transform-origin:50% 88.5%;filter:blur(.6px);-webkit-mask-image:linear-gradient(to bottom,transparent 52%,#000 88%);mask-image:linear-gradient(to bottom,transparent 52%,#000 88%)}
+.snp-shoe.snp-sheen{display:block;pointer-events:none;filter:none;background:linear-gradient(100deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%) 130% 0/300% 100% no-repeat;-webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}
+.snp-loupe{position:absolute;left:0;top:0;z-index:3;width:max(130px,15cqw);aspect-ratio:1;border-radius:50%;overflow:hidden;visibility:hidden;opacity:0;pointer-events:none;background:color-mix(in oklab,var(--snp-tint) 18%,var(--color-background));box-shadow:0 0 0 2px var(--color-background),0 18px 44px -12px rgba(0,0,0,.4)}
 .snp-loupe>span{position:absolute;inset:0;background-repeat:no-repeat}
-.snp-hint{position:absolute;left:3%;bottom:4%;transition:opacity .5s;font-size:max(10px,.85cqw);letter-spacing:.12em;text-transform:uppercase;
-  color:var(--color-muted-foreground);pointer-events:none}
+.snp-hint{position:absolute;left:3%;bottom:4%;transition:opacity .5s;font-size:max(10px,.85cqw);letter-spacing:.12em;text-transform:uppercase;color:var(--color-muted-foreground);pointer-events:none}
 .snp-hint-touch{display:none}
 .snp-hint[data-seen="true"]{opacity:0}
 @media (pointer:fine){.snp-stage{cursor:zoom-in}}
 @media (pointer:coarse){.snp-hint-fine{display:none}.snp-hint-touch{display:inline}}
-.snp-shoe{position:absolute;left:50%;top:50%;width:96%;height:auto;aspect-ratio:16/9;object-fit:contain;translate:-50% -58%;
-  filter:drop-shadow(0 1.6cqw 1.4cqw rgba(0,0,0,.12))}
-.snp-floor{position:absolute;left:18%;right:14%;top:50%;height:4cqw;translate:0 6.6cqw;border-radius:50%;
-  background:radial-gradient(closest-side,rgba(0,0,0,.22),transparent);filter:blur(4px)}
+.snp-shoe{position:absolute;left:50%;top:50%;width:96%;height:auto;aspect-ratio:16/9;object-fit:contain;translate:-50% -58%;filter:drop-shadow(0 1.6cqw 1.4cqw rgba(0,0,0,.12))}
+.snp-floor{position:absolute;left:18%;right:14%;top:50%;height:4cqw;translate:0 6.6cqw;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.22),transparent);filter:blur(4px)}
 .snp-buy{align-self:start;font-size:max(11px,1.25cqw);position:relative;z-index:1}
 .snp-label{display:block;font-size:max(12px,1.45cqw);color:var(--color-muted-foreground);letter-spacing:.02em}
 .snp-sizes{display:flex;flex-wrap:wrap;gap:1.6cqw;margin-top:1.5cqw}
-.snp-size{width:max(32px,3.1cqw);height:max(32px,3.1cqw);border-radius:50%!important;display:grid;place-items:center;
-  border:1.5px solid var(--color-foreground)!important;font-size:max(11px,1.15cqw)!important;font-weight:500;transition:background .25s,color .25s,transform .2s}
+.snp-size{width:max(32px,3.1cqw);height:max(32px,3.1cqw);border-radius:50%!important;display:grid;place-items:center;border:1.5px solid var(--color-foreground)!important;font-size:max(11px,1.15cqw)!important;font-weight:500;transition:background .25s,color .25s,transform .2s}
 .snp-size:not(:disabled):hover{transform:scale(1.07)}
 .snp-size[aria-pressed="true"]{background:var(--color-foreground)!important;color:var(--color-background)!important}
 .snp-size:disabled{opacity:.35;cursor:not-allowed;border-width:1px!important}
 .snp-stock{display:flex;align-items:center;gap:.6cqw;margin-top:1.2cqw;font-size:max(10px,.95cqw);color:var(--color-muted-foreground)}
 .snp-stock::before{content:"";width:max(6px,.55cqw);height:max(6px,.55cqw);border-radius:50%;background:#22c55e}
-.snp-stock[data-tone="low"]{color:#c2410c}
+.snp-stock[data-tone="low"]{color:#f97316}
 .snp-stock[data-tone="low"]::before{background:#f97316}
 .snp-stock[data-tone="out"]::before{background:var(--color-muted-foreground)}
 .snp-row{display:flex;align-items:center;justify-content:space-between;margin-top:3cqw}
@@ -95,18 +68,23 @@
 .snp-stars svg{width:max(11px,1.25cqw);height:max(11px,1.25cqw)}
 .snp-count{font-size:max(10px,1cqw);color:var(--color-muted-foreground);font-variant-numeric:tabular-nums}
 .snp-price{display:inline-block;font-weight:600;font-size:max(13px,1.4cqw);font-variant-numeric:tabular-nums}
+.snp-sku{position:relative;display:flex;align-items:center;justify-content:space-between;margin-top:1.4cqw;cursor:pointer;user-select:none;outline-offset:4px}
+.snp-sku[hidden]{display:none}
+.snp-sku-code{display:inline-flex;align-items:center;gap:.7cqw;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:max(11px,1.05cqw);letter-spacing:.04em;color:var(--color-foreground);transition:opacity .2s}
+.snp-sku:hover .snp-sku-code{opacity:.8}
+.snp-bars{display:flex;align-items:flex-end;gap:1.5px;height:max(12px,1.1cqw)}
+.snp-bars i{display:block;background:var(--color-muted-foreground);border-radius:.5px}
+.snp-sku-ic{width:max(12px,1cqw);height:max(12px,1cqw);flex:none;color:var(--color-muted-foreground);transition:color .2s}
+.snp-sku[data-copied="true"] .snp-sku-ic{color:#22c55e}
+.snp-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .snp-colour{margin-top:3.1cqw}
 .snp-swatches{display:flex;flex-wrap:wrap;gap:2.4cqw;margin-top:3.2cqw}
-.snp-swatch{width:max(30px,3.1cqw);height:max(30px,3.1cqw);border-radius:50%!important;background:var(--sw)!important;
-  box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--color-foreground) 22%,transparent)!important;transition:box-shadow .3s,transform .2s}
+.snp-swatch{width:max(30px,3.1cqw);height:max(30px,3.1cqw);border-radius:50%!important;background:var(--sw)!important;box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--color-foreground) 22%,transparent)!important;transition:box-shadow .3s,transform .2s}
 .snp-swatch:hover{transform:scale(1.08)}
-.snp-swatch[aria-pressed="true"]{box-shadow:inset 0 0 0 max(3px,.3cqw) var(--sw),inset 0 0 0 max(6px,.65cqw) var(--color-background),
-  inset 0 0 0 20cqw var(--sw)!important}
+.snp-swatch[aria-pressed="true"]{box-shadow:inset 0 0 0 max(3px,.3cqw) var(--sw),inset 0 0 0 max(6px,.65cqw) var(--color-background),inset 0 0 0 20cqw var(--sw)!important}
 .snp-actions{position:relative;display:flex;align-items:center;gap:3.6cqw;margin-top:4.2cqw}
-.snp-cta{height:max(40px,4.4cqw);padding:0 2cqw!important;background:var(--color-foreground)!important;color:var(--color-background)!important;
-  font-weight:600;font-size:max(11px,1.15cqw)!important;letter-spacing:.02em!important;white-space:nowrap;border-radius:0!important}
+.snp-cta{position:relative;display:grid;place-items:center;min-width:max(150px,11.6cqw);overflow:hidden;height:max(40px,4.4cqw);padding:0 2cqw!important;background:var(--color-foreground)!important;color:var(--color-background)!important;font-weight:600;font-size:max(11px,1.15cqw)!important;letter-spacing:.02em!important;white-space:nowrap;border-radius:0!important;transition:transform .15s,background .35s}
 .snp-cta:active{transform:scale(.96)}
-.snp-cta{position:relative;display:grid;place-items:center;min-width:max(150px,11.6cqw);overflow:hidden;transition:transform .15s,background .35s}
 .snp-cta>span{grid-area:1/1;display:inline-flex;align-items:center;gap:.6em;transition:opacity .25s,transform .4s cubic-bezier(.2,.8,.2,1)}
 .snp-cta-busy,.snp-cta-done{opacity:0;transform:translateY(70%)}
 .snp-cta[data-state="busy"] .snp-cta-idle,.snp-cta[data-state="done"] .snp-cta-idle{opacity:0;transform:translateY(-70%)}
@@ -114,8 +92,7 @@
 .snp-cta[data-state="done"]{background:#15803d!important;color:#fff!important}
 .snp-cta-busy i{width:1.15em;height:1.15em;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:snp-spin .7s linear infinite}
 @keyframes snp-spin{to{transform:rotate(360deg)}}
-.snp-cta-done svg{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;
-  stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .45s .12s ease}
+.snp-cta-done svg{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .45s .12s ease}
 .snp-cta[data-state="done"] .snp-cta-done svg{stroke-dashoffset:0}
 .snp-cta:disabled{opacity:.45;cursor:not-allowed}
 .snp-like{position:relative;width:max(24px,2.4cqw);height:max(24px,2.4cqw);display:grid;place-items:center}
@@ -124,41 +101,29 @@
 .snp-like[aria-pressed="true"]>svg path{fill:var(--snp-like);stroke:var(--snp-like)}
 .snp-burst{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none}
 .snp-burst svg{position:absolute;left:-6px;top:-6px;width:12px;height:12px;color:var(--snp-like);opacity:0}
-.snp-pill{position:absolute;right:-.4cqw;bottom:calc(100% + 1cqw);padding:.6cqw 1.2cqw;border-radius:999px;white-space:nowrap;
-  background:var(--color-foreground);color:var(--color-background);font-size:max(10px,.95cqw);font-weight:500;
-  visibility:hidden;opacity:0;pointer-events:none}
+.snp-pill{position:absolute;right:-.4cqw;bottom:calc(100% + 1cqw);padding:.6cqw 1.2cqw;border-radius:999px;white-space:nowrap;background:var(--color-foreground);color:var(--color-background);font-size:max(10px,.95cqw);font-weight:500;visibility:hidden;opacity:0;pointer-events:none}
 .snp-pill b{color:var(--snp-like);font-weight:700}
-.snp-toast{position:absolute;left:50%;bottom:6.6cqw;translate:-50% 0;display:flex;align-items:center;gap:1cqw;padding:1.1cqw 2.2cqw;
-  border-radius:999px;background:var(--color-background);font-size:max(11px,1cqw);font-weight:500;white-space:nowrap;
-  box-shadow:0 6px 24px color-mix(in oklab,var(--color-foreground) 8%,transparent);visibility:hidden;opacity:0;z-index:2}
-.snp-toast i{width:max(9px,1cqw);height:max(9px,1cqw);border-radius:50%;background:#22c55e;
-  box-shadow:0 0 0 3px color-mix(in oklab,#22c55e 25%,transparent)}
+.snp-toast{position:absolute;left:50%;bottom:6.6cqw;translate:-50% 0;display:flex;align-items:center;gap:1cqw;padding:1.1cqw 2.2cqw;border-radius:999px;background:var(--color-background);font-size:max(11px,1cqw);font-weight:500;white-space:nowrap;box-shadow:0 6px 24px color-mix(in oklab,var(--color-foreground) 8%,transparent);visibility:hidden;opacity:0;z-index:2}
+.snp-toast i{width:max(9px,1cqw);height:max(9px,1cqw);border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px color-mix(in oklab,#22c55e 25%,transparent)}
 .snp-toast small{font-size:inherit;color:var(--color-muted-foreground);font-weight:400}
-.snp-viewer{position:fixed;inset:0;z-index:60;display:grid;grid-template-columns:minmax(0,1fr);place-items:center;padding:24px;color:var(--color-foreground)}
+.snp-viewer{position:fixed;inset:0;z-index:9999;display:grid;grid-template-columns:minmax(0,1fr);place-items:center;padding:24px;color:var(--color-foreground)}
 .snp-viewer[hidden]{display:none}
-.snp-scrim{position:absolute;inset:0;background:color-mix(in oklab,var(--color-background) 72%,transparent)!important;backdrop-filter:blur(14px);
-  -webkit-backdrop-filter:blur(14px);cursor:zoom-out}
+.snp-scrim{position:absolute;inset:0;background:color-mix(in oklab,var(--color-background) 72%,transparent)!important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);cursor:zoom-out}
 .snp-box{position:relative;width:min(880px,100%);display:flex;flex-direction:column;gap:14px}
-.snp-frame{position:relative;aspect-ratio:16/10;max-height:72vh;width:100%;border-radius:14px;overflow:hidden;
-  background:radial-gradient(60% 70% at 50% 55%,color-mix(in oklab,var(--snp-tint) 38%,transparent),transparent 75%),
-    color-mix(in oklab,var(--snp-tint) 14%,var(--color-background));
-  box-shadow:0 30px 80px -20px rgba(0,0,0,.35)}
+.snp-frame{position:relative;aspect-ratio:16/10;max-height:72vh;width:100%;border-radius:14px;overflow:hidden;cursor:zoom-in;background:radial-gradient(60% 70% at 50% 55%,color-mix(in oklab,var(--snp-tint) 38%,transparent),transparent 75%),color-mix(in oklab,var(--snp-tint) 14%,var(--color-background));box-shadow:0 30px 80px -20px rgba(0,0,0,.35)}
 .snp-frame .snp-view{position:absolute;inset:0;width:auto;height:auto;transition:transform .45s cubic-bezier(.2,.8,.2,1)}
-.snp-frame{cursor:zoom-in}
 .snp-frame[data-zoom="true"]{cursor:zoom-out}
 .snp-vbar{display:flex;align-items:center;gap:12px;font-size:14px}
 .snp-vbar strong{font-weight:600}
 .snp-vbar span{color:var(--color-muted-foreground);font-variant-numeric:tabular-nums}
-.snp-vbtn{width:40px;height:40px;border-radius:50%!important;display:grid;place-items:center;background:var(--color-background)!important;
-  box-shadow:0 0 0 1px color-mix(in oklab,var(--color-foreground) 14%,transparent)!important;transition:transform .2s}
+.snp-vbtn{width:40px;height:40px;border-radius:50%!important;display:grid;place-items:center;background:var(--color-background)!important;color:var(--color-foreground)!important;box-shadow:0 0 0 1px color-mix(in oklab,var(--color-foreground) 14%,transparent)!important;transition:transform .2s}
 .snp-vbtn:hover{transform:scale(1.08)}
 .snp-vbtn svg{width:18px;height:18px}
 .snp-nav-l,.snp-nav-r{position:absolute;top:50%;translate:0 -50%}
 .snp-nav-l{left:14px}.snp-nav-r{right:14px}
 .snp-close{margin-left:auto}
 .snp-rail{display:flex;gap:8px;overflow-x:auto;padding:2px}
-.snp-rail button{flex:none;width:76px;height:48px;border-radius:8px!important;overflow:hidden;opacity:.55;transition:opacity .2s;
-  background:color-mix(in oklab,var(--snp-tint) 12%,var(--color-background))!important}
+.snp-rail button{flex:none;width:76px;height:48px;border-radius:8px!important;overflow:hidden;opacity:.55;transition:opacity .2s;background:color-mix(in oklab,var(--snp-tint) 12%,var(--color-background))!important}
 .snp-rail button[aria-current="true"]{opacity:1;box-shadow:0 0 0 2px var(--color-foreground)!important}
 @container (max-width:760px){
   .snp-body{grid-template-columns:1fr;grid-template-rows:auto auto auto;padding:24px 20px 72px;row-gap:8px;align-items:start}
@@ -176,6 +141,8 @@
   .snp-buy{order:1}
   .snp-sizes{gap:10px;margin-top:10px}
   .snp-row,.snp-colour{margin-top:18px}
+  .snp-sku{margin-top:8px}
+  .snp-sku-code{gap:8px}
   .snp-rating{gap:6px}
   .snp-swatches{margin-top:12px;gap:16px}
   .snp-actions{margin-top:22px;gap:20px}
@@ -184,21 +151,16 @@
   .snp-hint{bottom:2%}
   .snp-pill{padding:6px 10px;bottom:calc(100% + 8px)}
   .snp-toast{left:50%;bottom:20px;padding:10px 18px;gap:8px}
-  .snp-viewer{padding:12px}
   .snp-bg{--snp-gy:22%;--snp-gs:85% 26%}
-  .snp-rail button{width:60px;height:40px}
-  .snp-nav-l{left:8px}.snp-nav-r{right:8px}
-  .snp-vbtn{width:36px;height:36px}
 }
-@media (prefers-reduced-motion: reduce){
-  .snp-root *{transition:none!important;animation:none!important}
-}
+@media (max-width:760px){.snp-viewer{padding:12px}.snp-rail button{width:60px;height:40px}.snp-nav-l{left:8px}.snp-nav-r{right:8px}.snp-vbtn{width:36px;height:36px}}
+@media (prefers-reduced-motion: reduce){.snp-root *,.snp-viewer *{transition:none!important;animation:none!important}}
 </style>
 
   <div class="snp-bgs"></div>
   <div class="snp-body">
     <div class="snp-info">
-      <p class="snp-eyebrow">{{ section.settings.eyebrow | default: p.type | escape }}</p>
+      <p class="snp-eyebrow">{{ section.settings.eyebrow | default: p.type | default: p.vendor | escape }}</p>
       <h2 class="snp-title">{{ p.title | escape }}</h2>
       <div class="snp-desc">{{ p.description | strip_html | truncatewords: section.settings.desc_words }}</div>
       <div class="snp-thumbs"><span class="snp-thumbset"></span><button type="button" class="snp-more" hidden></button></div>
@@ -225,6 +187,11 @@
       <div class="snp-row" aria-live="polite">
         <span class="snp-label">PRICE</span>
         <span class="snp-price"></span>
+      </div>
+      <div class="snp-sku" role="button" tabindex="0" title="Click to copy" data-copied="false" hidden>
+        <span class="snp-label">SKU</span>
+        <span class="snp-sku-code"><span class="snp-bars" aria-hidden="true"></span><span class="snp-sku-val"></span><svg class="snp-sku-ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/></svg></span>
+        <span class="snp-sr snp-sku-live" role="status"></span>
       </div>
       <div class="snp-colour-wrap">
         <span class="snp-label snp-colour">COLOUR</span>
@@ -272,6 +239,7 @@
             "id": {{ v.id }},
             "options": {{ v.options | json }},
             "price": {{ v.price }},
+            "sku": {{ v.sku | json }},
             "available": {{ v.available | json }},
             "qty": {{ v.inventory_quantity | default: 0 }},
             "tracked": {% if v.inventory_management == 'shopify' and v.inventory_policy != 'continue' %}true{% else %}false{% endif %},
@@ -287,7 +255,7 @@
       "rating": {{ p.metafields.reviews.rating.value.rating | default: section.settings.rating | json }},
       "reviews": {{ p.metafields.reviews.rating_count.value | default: section.settings.reviews | json }},
       "showReviews": {{ section.settings.show_reviews | json }},
-      "currency": {{ cart.currency.symbol | default: '$' | json }},
+      "currency": {{ cart.currency.symbol | default: 'R' | json }},
       "lowStock": {{ section.settings.low_stock }},
       "colours": {{ section.settings.colours | json }},
       "defaultTint": {{ section.settings.default_tint | json }}
@@ -296,10 +264,12 @@
 </section>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
-<script defer>
-document.addEventListener("DOMContentLoaded", function () {
+<script>
+(function () {
+  function boot() {
   var root = document.getElementById("snp-{{ section.id }}");
-  if (!root || !window.gsap) return;
+  if (!root || !window.gsap || root.dataset.ready) return;
+  root.dataset.ready = "1";
   var gsap = window.gsap;
   var D = JSON.parse(root.querySelector(".snp-data").textContent);
   var $ = function (s, el) { return (el || root).querySelector(s); };
@@ -307,9 +277,7 @@ document.addEventListener("DOMContentLoaded", function () {
   var HEART = "M12 20.3l-1.4-1.3C5.4 14.3 2 11.2 2 7.4 2 4.4 4.4 2 7.4 2c1.7 0 3.4.8 4.6 2.1C13.2 2.8 14.9 2 16.6 2 19.6 2 22 4.4 22 7.4c0 3.8-3.4 6.9-8.6 11.6z";
   var REFLECT = 0.24;
   var reduced = function () { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; };
-  var esc = function (s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; };
 
-  // ---- Model: colours and sizes from the product's options -------------
   var find = function (re) { for (var i = 0; i < D.options.length; i++) if (re.test(D.options[i])) return i; return -1; };
   var ci = find(/colou?r/i), si = find(/size/i);
   var overrides = {};
@@ -331,15 +299,15 @@ document.addEventListener("DOMContentLoaded", function () {
     var src = withImg ? withImg.image : fallbackImg;
     var o = overrides[name.toLowerCase()] || {};
     var swatch = o.swatch || name.toLowerCase().replace(/\s+/g, "");
-    if (!CSS.supports("color", swatch)) swatch = "#888";
-    var extra = D.images.filter(function (im) { return name && im.alt && im.alt.toLowerCase().indexOf(name.toLowerCase()) >= 0 && im.src !== src; });
-    var gallery = [{ src: src, label: "Side" }].concat(extra.map(function (im) { return { src: im.src, label: im.alt }; }));
+    var known = CSS.supports("color", swatch);
+    if (!known) swatch = "#888";
+    var extra = D.images.filter(function (im) { return im.src !== src && (ci < 0 || colourNames.length < 2 || (name && im.alt && im.alt.toLowerCase().indexOf(name.toLowerCase()) >= 0)); });
+    var gallery = [{ src: src, label: "Main" }].concat(extra.map(function (im) { return { src: im.src, label: im.alt || "Photo" }; }));
     if (gallery.length < 4) gallery = gallery.concat([
-      { src: src, label: "Inside", mirror: true },
-      { src: src, label: "Heel", focus: [0.86, 0.42], zoom: 1.7 },
-      { src: src, label: "Laces", focus: [0.47, 0.34], zoom: 1.7 }
+      { src: src, label: "Mirrored", mirror: true },
+      { src: src, label: "Close-up", focus: [0.5, 0.45], zoom: 1.8 }
     ]);
-    return { name: name || "Default", swatch: swatch, tint: o.tint || (CSS.supports("color", swatch) && swatch !== "#888" ? swatch : D.defaultTint), src: src, gallery: gallery };
+    return { name: name || "", swatch: swatch, tint: o.tint || (known ? swatch : D.defaultTint), src: src, gallery: gallery };
   });
   var variantFor = function (c, s) {
     return D.variants.filter(function (v) {
@@ -353,21 +321,20 @@ document.addEventListener("DOMContentLoaded", function () {
   };
   var firstFree = function (c) { for (var i = 0; i < sizes.length; i++) if (!avail(c, sizes[i]).soldOut) return sizes[i]; return sizes[0]; };
 
-  // ---- State ---------------------------------------------------------
   var params = new URLSearchParams(location.search), startId = Number(params.get("variant"));
   var startV = D.variants.filter(function (v) { return v.id === startId; })[0] || D.variants.filter(function (v) { return v.available; })[0] || D.variants[0];
   var active = Math.max(0, ci < 0 ? 0 : colourNames.indexOf(startV.options[ci]));
   var size = si < 0 ? "" : (avail(active, startV.options[si]).soldOut ? firstFree(active) : startV.options[si]);
   var thumbSet = active, cart = "idle", liked = false, viewer = null, vZoom = false, holding = false, lastPointer = "mouse";
   var opener = null, toastTimer = null;
-  var fmt = function (n) { return D.currency + (Math.round(n * 100) % 100 ? (n).toFixed(2) : Math.round(n)); };
+  var fmt = function (n) { var r = Math.round(n * 100) / 100; return D.currency + (r % 1 ? r.toFixed(2) : Math.round(r)); };
   var priceOf = function () { var v = variantFor(active, size) || startV; return v.price / 100; };
 
-  // ---- Build DOM ----------------------------------------------------
   var tintOf = function (v) { return v.tint || v.swatch; };
   var bgs = $(".snp-bgs"), stage = $(".snp-stage"), reflects = $(".snp-reflects"), tilt = $(".snp-tilt"), sheen = $(".snp-sheen");
+  var title = $(".snp-title").textContent;
   var shoes = [], words = [], refls = [], bgEls = [];
-  variants.forEach(function (v, i) {
+  variants.forEach(function (v) {
     var bg = document.createElement("span"); bg.className = "snp-bg"; bg.setAttribute("aria-hidden", "true"); bg.style.setProperty("--t", tintOf(v)); bgs.appendChild(bg); bgEls.push(bg);
     var w = document.createElement("span"); w.className = "snp-word"; w.setAttribute("aria-hidden", "true"); w.style.setProperty("--t", tintOf(v)); w.textContent = v.name; stage.insertBefore(w, stage.firstChild); words.push(w);
     var r = document.createElement("img"); r.className = "snp-shoe snp-reflect"; r.src = v.src; r.alt = ""; r.draggable = false; reflects.appendChild(r); refls.push(r);
@@ -400,12 +367,10 @@ document.addEventListener("DOMContentLoaded", function () {
   var priceEl = $(".snp-price"), shownPrice = priceOf();
   priceEl.textContent = fmt(shownPrice);
 
-  // ---- Initial visibility --------------------------------------------
   shoes.forEach(function (el, i) { gsap.set(el, { yPercent: 0, rotation: 0, autoAlpha: i === active ? 1 : 0 }); });
   words.forEach(function (el, i) { gsap.set(el, { yPercent: 0, autoAlpha: i === active ? 1 : 0 }); });
   refls.forEach(function (el, i) { gsap.set(el, { autoAlpha: i === active ? REFLECT : 0 }); });
 
-  // ---- Views / thumbnails ---------------------------------------------
   var focusPosition = function (f, z) { if (z <= 1) return 50; var p = (f * z - 0.5) / (z - 1); return Math.round(Math.min(1, Math.max(0, p)) * 1000) / 10; };
   var viewStyle = function (el, v) {
     var z = v.zoom || 1, f = v.focus || [0.5, 0.5];
@@ -428,13 +393,11 @@ document.addEventListener("DOMContentLoaded", function () {
   };
   moreBtn.addEventListener("click", function () { openViewer(3); });
 
-  // ---- Render ---------------------------------------------------------
   function render() {
     var v = variants[active];
     root.style.setProperty("--snp-tint", tintOf(v));
     bgEls.forEach(function (el, i) { el.dataset.on = String(i === active); });
-    words.forEach(function (el, i) { el.style.visibility = i === active ? "visible" : el.style.visibility; });
-    shoes.forEach(function (el, i) { el.alt = i === active ? $(".snp-title").textContent + " in " + variants[i].name : ""; if (i !== active) el.setAttribute("aria-hidden", "true"); else el.removeAttribute("aria-hidden"); });
+    shoes.forEach(function (el, i) { el.alt = i === active ? title + (variants[i].name ? " in " + variants[i].name : "") : ""; if (i !== active) el.setAttribute("aria-hidden", "true"); else el.removeAttribute("aria-hidden"); });
     sheen.style.webkitMaskImage = sheen.style.maskImage = 'url("' + v.src + '")';
     sizeBtns.forEach(function (b, i) {
       var a = avail(active, sizes[i]);
@@ -445,12 +408,15 @@ document.addEventListener("DOMContentLoaded", function () {
     var here = avail(active, size);
     var tone = here.soldOut ? "out" : here.stock !== undefined && here.stock <= D.lowStock ? "low" : "ok";
     var st = $(".snp-stock"); st.dataset.tone = tone;
-    st.textContent = tone === "out" ? "Sold out in this colour" : tone === "low" ? "Only " + here.stock + " left" + (size ? " in size " + size : "") : "In stock · ships in 2 days";
+    st.textContent = tone === "out" ? "Sold out" + (ci >= 0 ? " in this colour" : "") : tone === "low" ? "Only " + here.stock + " left" + (size ? " in size " + size : "") : "In stock · ready to ship";
     var cta = $(".snp-cta"); cta.disabled = here.soldOut; cta.dataset.state = cart;
     $(".snp-cta-idle").textContent = here.soldOut ? "SOLD OUT" : "ADD TO CART";
     rollPrice(priceOf());
+    var cv = variantFor(active, size) || startV, skuEl = $(".snp-sku");
+    skuEl.hidden = !cv.sku; $(".snp-sku-val").textContent = cv.sku || ""; skuEl.dataset.sku = cv.sku || "";
+    skuEl.setAttribute("aria-label", "SKU " + (cv.sku || "") + ", click to copy");
     var vv = variantFor(active, size);
-    if (vv && history.replaceState) { var u = new URL(location.href); u.searchParams.set("variant", vv.id); history.replaceState(null, "", u); }
+    if (vv && D.variants.length > 1 && history.replaceState) { var u = new URL(location.href); u.searchParams.set("variant", vv.id); history.replaceState(history.state, "", u); }
   }
 
   var priceTween;
@@ -464,7 +430,6 @@ document.addEventListener("DOMContentLoaded", function () {
     gsap.fromTo(priceEl, { y: to > from ? 8 : -8, opacity: 0.4 }, { y: 0, opacity: 1, duration: 0.45, ease: "power2.out" });
   }
 
-  // ---- Float, tilt, sweep -----------------------------------------------
   var floatEl = $(".snp-float"), floor = $(".snp-floor");
   if (!reduced()) {
     var tl = gsap.timeline({ repeat: -1, yoyo: true, defaults: { duration: 2.6, ease: "sine.inOut" } });
@@ -491,7 +456,6 @@ document.addEventListener("DOMContentLoaded", function () {
   var sweep = function (delay) { if (reduced()) return; gsap.fromTo(sheen, { backgroundPosition: "130% 0%" }, { backgroundPosition: "-30% 0%", duration: 1.2, ease: "power2.inOut", delay: delay }); };
   sweep(0.6);
 
-  // ---- Colour swap ----------------------------------------------------
   function pick(next) {
     var prev = active; if (next === prev) return;
     active = next;
@@ -517,7 +481,6 @@ document.addEventListener("DOMContentLoaded", function () {
     } });
   }
 
-  // ---- Like -------------------------------------------------------------
   var likeBtn = $(".snp-like"), pill = $(".snp-pill");
   likeBtn.addEventListener("click", function () {
     liked = !liked;
@@ -534,7 +497,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // ---- Add to cart (real Shopify cart) ----------------------------------
   var toast = $(".snp-toast");
   $(".snp-cta").addEventListener("click", function () {
     var v = variantFor(active, size);
@@ -546,7 +508,7 @@ document.addEventListener("DOMContentLoaded", function () {
       body: JSON.stringify({ items: [{ id: v.id, quantity: 1 }] })
     }).then(function (r) { if (!r.ok) throw r; return r.json(); }).then(function () {
       setTimeout(function () {
-        cart = "done"; render(); showToast(variants[active].name + (size ? " · size " + size : ""));
+        cart = "done"; render(); showToast([variants[active].name, size ? "size " + size : ""].filter(Boolean).join(" · "));
         document.dispatchEvent(new CustomEvent("cart:refresh", { bubbles: true }));
         fetch("/cart.js").then(function (r) { return r.json(); }).then(function (c) {
           document.querySelectorAll(".cart-count-bubble span[aria-hidden], [data-cart-count]").forEach(function (el) { el.textContent = c.item_count; });
@@ -554,7 +516,7 @@ document.addEventListener("DOMContentLoaded", function () {
         setTimeout(function () { cart = "idle"; render(); }, reduced() ? 1600 : 1450);
       }, Math.max(0, 650 - (Date.now() - started)));
     }).catch(function () {
-      cart = "idle"; render(); showToast("Couldn't add to cart — please try again");
+      cart = "idle"; render(); showToast("Couldn't add to cart, please try again");
     });
   });
   function showToast(note) {
@@ -565,7 +527,6 @@ document.addEventListener("DOMContentLoaded", function () {
     toastTimer = gsap.delayedCall(3, function () { gsap.to(toast, { autoAlpha: 0, y: 8, duration: 0.35, ease: "power2.in" }); });
   }
 
-  // ---- Loupe ------------------------------------------------------------
   var loupe = $(".snp-loupe"), loupeImg = $(".snp-loupe > span");
   var placeLoupe = function (e) {
     var img = shoes[active], st = stage.getBoundingClientRect(), r = img.getBoundingClientRect(), L = loupe.offsetWidth, Z = 2.2;
@@ -588,8 +549,7 @@ document.addEventListener("DOMContentLoaded", function () {
   stage.addEventListener("pointerup", up); stage.addEventListener("pointercancel", up);
   stage.addEventListener("click", function () { if (lastPointer === "touch") openViewer(0); });
 
-  // ---- Gallery viewer -----------------------------------------------------
-  var viewerEl = $(".snp-viewer"), frame = $(".snp-frame"), frameView = $(".snp-frame .snp-view"), rail = $(".snp-rail");
+  var viewerEl = $(".snp-viewer"), frame = $(".snp-frame", viewerEl), frameView = $(".snp-frame .snp-view", viewerEl), rail = $(".snp-rail", viewerEl);
   document.body.appendChild(viewerEl);
   ["--color-foreground", "--color-background", "--color-muted-foreground"].forEach(function (k) { viewerEl.style.setProperty(k, root.style.getPropertyValue(k)); });
   function renderViewer() {
@@ -599,7 +559,7 @@ document.addEventListener("DOMContentLoaded", function () {
     $(".snp-vbar span", viewerEl).textContent = viewer + 1 + " / " + vs.length;
     viewStyle(frameView, vw);
     frameView.style.transform = (vw.mirror ? "scaleX(-1) " : "") + "scale(" + (vZoom ? 2.2 : 1) + ")";
-    frameView.setAttribute("aria-label", variants[thumbSet].name + " " + (vw.label || ""));
+    frameView.setAttribute("aria-label", (variants[thumbSet].name + " " + (vw.label || "")).trim());
     frame.dataset.zoom = String(vZoom);
     rail.innerHTML = "";
     vs.forEach(function (x, i) {
@@ -613,7 +573,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!reduced()) gsap.fromTo(frame, { autoAlpha: 0.2, scale: 0.985 }, { autoAlpha: 1, scale: 1, duration: 0.35, ease: "power2.out" });
   }
   function openViewer(i) {
-    opener = document.activeElement; viewer = i; vZoom = false; viewerEl.hidden = false; renderViewer();
+    opener = document.activeElement; viewer = Math.min(i, views().length - 1); vZoom = false; viewerEl.hidden = false; renderViewer();
     $(".snp-close", viewerEl).focus();
     if (!reduced()) gsap.fromTo($(".snp-box", viewerEl), { autoAlpha: 0, scale: 0.94, y: 16 }, { autoAlpha: 1, scale: 1, y: 0, duration: 0.45, ease: "power3.out" });
   }
@@ -633,9 +593,27 @@ document.addEventListener("DOMContentLoaded", function () {
     if (e.key === "Escape") closeViewer(); else if (e.key === "ArrowRight") step(1); else if (e.key === "ArrowLeft") step(-1);
   });
 
+  var BARS = [2,1,3,1,1,2,1,3,2,1,1,2];
+  $(".snp-bars").innerHTML = BARS.map(function (b) { return '<i style="width:' + (b === 1 ? 1.5 : b === 2 ? 2.2 : 3) + 'px;height:' + (40 + b * 20) + '%"></i>'; }).join("");
+  var skuIc = $(".snp-sku-ic"), COPY = skuIc.innerHTML, TICK = '<path d="M4 10.5l4 4 8-9"/>', skuTimer;
+  function copySku() {
+    var el = $(".snp-sku"), code = el.dataset.sku; if (!code) return;
+    var done = function () {
+      el.dataset.copied = "true"; skuIc.innerHTML = TICK; $(".snp-sku-live").textContent = "SKU copied";
+      clearTimeout(skuTimer); skuTimer = setTimeout(function () { el.dataset.copied = "false"; skuIc.innerHTML = COPY; $(".snp-sku-live").textContent = ""; }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, done);
+    else { var ta = document.createElement("textarea"); ta.value = code; ta.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (e) {} ta.remove(); done(); }
+  }
+  $(".snp-sku").addEventListener("click", copySku);
+  $(".snp-sku").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); copySku(); } });
+
   renderThumbs();
   render();
-});
+  }
+  function wait() { if (window.gsap) boot(); else setTimeout(wait, 50); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wait); else wait();
+})();
 </script>
 {%- endif -%}
 
@@ -648,7 +626,7 @@ document.addEventListener("DOMContentLoaded", function () {
     { "type": "product", "id": "product", "label": "Product (only used outside product pages)" },
     { "type": "text", "id": "eyebrow", "label": "Eyebrow text", "info": "Leave empty to use the product type" },
     { "type": "range", "id": "desc_words", "label": "Description length (words)", "min": 10, "max": 80, "step": 2, "default": 30 },
-    { "type": "textarea", "id": "colours", "label": "Colour swatches", "info": "One per line: Colour name = swatch | backdrop tint. Example: Cloud = #e4e4e4 | #ff9f6e", "default": "Gold = #d4af37 | #e8c46a\nSilver = #c0c0c8 | #9fb4d8\nRose gold = #e0a899 | #f2a7a0\nWhite = #f4f4f4 | #ff9f6e\nBlack = #1d1d1f | #7fd8bd" },
+    { "type": "textarea", "id": "colours", "label": "Colour swatches", "info": "One per line: Colour name = swatch | backdrop tint", "default": "Gold = #d4af37 | #e8c46a\nSilver = #c0c0c8 | #9fb4d8\nRose gold = #e0a899 | #f2a7a0\nWhite = #f4f4f4 | #ff9f6e\nBlack = #1d1d1f | #7fd8bd" },
     { "type": "color", "id": "default_tint", "label": "Fallback backdrop tint", "default": "#ff9f6e" },
     { "type": "checkbox", "id": "show_reviews", "label": "Show reviews row", "default": true },
     { "type": "text", "id": "rating", "label": "Fallback rating (if no review app)", "default": "4.5" },
