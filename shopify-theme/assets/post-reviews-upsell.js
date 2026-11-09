@@ -92,87 +92,315 @@
   var ARROW_L = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
   var ARROW_R = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
 
-  /* ========== 1) CLOTHING RAIL ========== */
+  /* ========== 1) CLOTHING RAIL (port of 21st.dev ClothingRailHero) ========== */
+  var VB_W = 200, VB_H = 310, ASPECT = VB_W / VB_H, HOOK_TOP = 4, REST = -70, PERSP = 1100, GAP = 0.035;
+  var HOOK = "M100,36 L100,-0.4 C100,-3.4 102.2,-4.2 103.9,-2.8 C104.9,-2 105.4,-1.2 105.6,-0.2";
+  var HOOK_HI = "M99.5,30 L99.5,-0.2 C99.5,-2.4 101,-3.2 102.4,-2.6";
+  var BAR = "M38,57 Q70,38 100,36 Q130,38 162,57";
+  var BAR_HI = "M40,54.5 Q71,35.5 100,33.5 Q129,35.5 160,54.5";
+  var railUid = 0;
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function lambert(a) { var r = (a * Math.PI) / 180; return 0.66 + 0.34 * Math.max(0, Math.sin(r) * 0.42 + Math.cos(r) * 0.91); }
+  function footprint(h, angle, sideW) { var e = clamp(1 - angle / REST, 0, 1), k = e * e * (3 - 2 * e); return h * ASPECT * (sideW + (0.94 - sideW) * k); }
+  function railDefs(u) {
+    return '<svg aria-hidden="true" width="0" height="0" style="position:absolute" focusable="false"><defs>' +
+      '<linearGradient id="' + u + '-wood" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="color-mix(in oklab, sienna 55%, white)"/><stop offset=".45" stop-color="color-mix(in oklab, sienna 80%, black)"/><stop offset="1" stop-color="color-mix(in oklab, sienna 45%, black)"/></linearGradient>' +
+      '<linearGradient id="' + u + '-grain" gradientUnits="userSpaceOnUse" spreadMethod="repeat" x1="0" x2="11" y1="0" y2=".6"><stop offset="0" stop-color="black" stop-opacity="0"/><stop offset=".45" stop-color="black" stop-opacity=".16"/><stop offset=".6" stop-color="white" stop-opacity=".08"/><stop offset="1" stop-color="black" stop-opacity="0"/></linearGradient>' +
+      '<linearGradient id="' + u + '-chrome" gradientUnits="userSpaceOnUse" x1="98.5" x2="101.7" y1="0" y2="0"><stop offset="0" stop-color="color-mix(in oklab, white 45%, gray)"/><stop offset=".35" stop-color="white"/><stop offset=".78" stop-color="color-mix(in oklab, gray 65%, black)"/><stop offset="1" stop-color="color-mix(in oklab, gray 75%, white)"/></linearGradient>' +
+      "</defs></svg>";
+  }
+  function hangerSvg(u) {
+    return '<svg aria-hidden="true" viewBox="0 0 200 310" preserveAspectRatio="xMidYMin meet" class="npx-hsvg">' +
+      '<path d="' + BAR + '" fill="none" stroke="black" stroke-opacity=".25" stroke-width="9.5" stroke-linecap="round" transform="translate(.6 1.6)"/>' +
+      '<path d="' + BAR + '" fill="none" stroke="url(#' + u + '-wood)" stroke-width="8.5" stroke-linecap="round"/>' +
+      '<path d="' + BAR + '" fill="none" stroke="url(#' + u + '-grain)" stroke-width="8.5" stroke-linecap="round"/>' +
+      '<path d="' + BAR_HI + '" fill="none" stroke="white" stroke-opacity=".3" stroke-width="1.1" stroke-linecap="round"/>' +
+      '<path d="' + HOOK + '" fill="none" stroke="black" stroke-opacity=".28" stroke-width="3.4" stroke-linecap="round" transform="translate(.9 1.1)"/>' +
+      '<path d="' + HOOK + '" fill="none" stroke="url(#' + u + '-chrome)" stroke-width="2.6" stroke-linecap="round"/>' +
+      '<path d="' + HOOK_HI + '" fill="none" stroke="white" stroke-opacity=".6" stroke-width=".6" stroke-linecap="round"/>' +
+      '<ellipse cx="105.9" cy=".6" rx="1.9" ry=".9" fill="black" fill-opacity=".4"/>' +
+      '<rect x="96" y="27" width="8" height="9" rx="2" fill="url(#' + u + '-chrome)"/><rect x="97.2" y="28.2" width="2" height="6.6" rx="1" fill="white" fill-opacity=".5"/></svg>';
+  }
+
+  /* Product photos sit on white; cut the white away (flood fill from the edges)
+     and trim to the piece, so it hangs like the cut-outs in the original. */
+  var cutCache = {};
+  function cutout(src) {
+    if (cutCache[src]) return cutCache[src];
+    cutCache[src] = new Promise(function (res) {
+      var img = new Image(); img.crossOrigin = "anonymous";
+      img.onload = function () {
+        try {
+          var s = Math.min(1, 520 / Math.max(img.width, img.height)), w = Math.round(img.width * s), h = Math.round(img.height * s);
+          var c = document.createElement("canvas"); c.width = w; c.height = h;
+          var x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h);
+          var d = x.getImageData(0, 0, w, h), p = d.data, seen = new Uint8Array(w * h), st = [], bg = 0;
+          function light(i) { var r = p[i * 4], g = p[i * 4 + 1], b = p[i * 4 + 2]; return r > 232 && g > 232 && b > 232 && Math.max(r, g, b) - Math.min(r, g, b) < 18; }
+          for (var i = 0; i < w; i++) { st.push(i, (h - 1) * w + i); }
+          for (var j = 0; j < h; j++) { st.push(j * w, j * w + w - 1); }
+          while (st.length) {
+            var k = st.pop(); if (seen[k]) continue; seen[k] = 1;
+            if (!light(k)) continue; p[k * 4 + 3] = 0; bg++;
+            var cx = k % w, cy = (k / w) | 0;
+            if (cx > 0) st.push(k - 1); if (cx < w - 1) st.push(k + 1); if (cy > 0) st.push(k - w); if (cy < h - 1) st.push(k + w);
+          }
+          if (bg < w * h * 0.12) return res({ src: src, cut: false });
+          var x0 = w, y0 = h, x1 = 0, y1 = 0;
+          for (var q = 0; q < w * h; q++) if (p[q * 4 + 3]) { var qx = q % w, qy = (q / w) | 0; if (qx < x0) x0 = qx; if (qx > x1) x1 = qx; if (qy < y0) y0 = qy; if (qy > y1) y1 = qy; }
+          // feather the edge one pixel so it doesn't look jagged
+          for (var e = 0; e < w * h; e++) if (p[e * 4 + 3] && ((e % w > 0 && !p[(e - 1) * 4 + 3]) || (e % w < w - 1 && !p[(e + 1) * 4 + 3]) || (e >= w && !p[(e - w) * 4 + 3]) || (e < w * h - w && !p[(e + w) * 4 + 3]))) p[e * 4 + 3] = 150;
+          x.putImageData(d, 0, 0);
+          var t = document.createElement("canvas"); t.width = x1 - x0 + 1; t.height = y1 - y0 + 1;
+          t.getContext("2d").drawImage(c, x0, y0, t.width, t.height, 0, 0, t.width, t.height);
+          res({ src: t.toDataURL("image/png"), cut: true });
+        } catch (err) { res({ src: src, cut: false }); }
+      };
+      img.onerror = function () { res({ src: src, cut: false }); };
+      img.src = src;
+    });
+    return cutCache[src];
+  }
+
   function buildRail(products) {
+    var u = "npxr" + (++railUid), n = products.length, sideW = 0.4;
     var sec = el("section", "npx-sec npx-rail");
-    sec.setAttribute("aria-label", "Complete The Moment");
-    sec.appendChild(head("You might also love", "Complete The Moment"));
-    var stage = el("div", "npx-rail-stage");
-    stage.appendChild(el("div", "npx-rail-bar", '<i></i><i></i>'));
-    var track = el("div", "npx-rail-track");
-    stage.appendChild(track);
-    sec.appendChild(stage);
-
-    var items = products.map(function (p, i) {
-      var it = el("button", "npx-hang");
-      it.type = "button";
-      it.setAttribute("aria-label", p.title + ", " + money(p.price) + ". Open details");
-      it.innerHTML =
-        '<svg class="npx-hook" viewBox="0 0 120 70" aria-hidden="true"><path d="M60 4c-7 0-11 5-11 10s4 8 9 9v9"/><path d="M58 32 10 62h100z" /></svg>' +
-        '<span class="npx-garment"><span class="npx-face npx-front"><img alt="" loading="lazy" src="' + esc(sized(p.featured_image, 500)) + '"></span>' +
-        '<span class="npx-face npx-back"><img alt="" loading="lazy" src="' + esc(sized(p.images[1] || p.featured_image, 500)) + '"></span></span>' +
-        '<span class="npx-tag"><b>' + esc(p.title) + "</b><em>" + money(p.price) + "</em></span>";
-      it.addEventListener("click", function (e) { if (moved) { e.preventDefault(); return; } openDialog(p); });
-      track.appendChild(it);
-      return { el: it, swing: 0, v: 0 };
-    });
-
-    // Drag along the rail; hangers swing with the velocity and turn to face the centre.
-    var x = 0, minX = 0, vx = 0, drag = null, moved = false, raf = 0;
-    function bounds() { minX = Math.min(0, stage.clientWidth - track.scrollWidth - 24); x = Math.max(minX, Math.min(0, x)); }
-    function frame() {
-      raf = 0;
-      if (!drag) { x += vx; vx *= 0.92; if (x > 0 || x < minX) { x = Math.max(minX, Math.min(0, x)); vx = 0; } }
-      track.style.transform = "translate3d(" + x.toFixed(1) + "px,0,0)";
-      var mid = stage.getBoundingClientRect().left + stage.clientWidth / 2, live = Math.abs(vx) > 0.05;
-      items.forEach(function (o) {
-        var r = o.el.getBoundingClientRect(), d = (r.left + r.width / 2 - mid) / stage.clientWidth;
-        o.v += (-vx * 0.9 - o.swing) * 0.08; o.v *= 0.88; o.swing += o.v;
-        if (Math.abs(o.v) > 0.01 || Math.abs(o.swing) > 0.05) live = true;
-        o.el.style.setProperty("--sw", o.swing.toFixed(2) + "deg");
-        o.el.style.setProperty("--ty", (d * -38).toFixed(1) + "deg");
+    sec.setAttribute("aria-roledescription", "clothing rail"); sec.setAttribute("aria-label", "Complete The Moment");
+    sec.innerHTML = railDefs(u) +
+      '<header class="npx-rail-hd"><span class="npx-eye">You might also love \u00b7 ' + n + ' pieces on the rail</span><h2 class="npx-title">Complete The Moment</h2></header>' +
+      '<div class="npx-rstage" role="group" aria-label="Complete The Moment"><div class="npx-bar" aria-hidden="true"><i class="npx-bar-sh"></i><i class="npx-bar-chrome"></i><i class="npx-bar-brush"></i><b class="npx-bracket"><s></s><s></s></b><b class="npx-bracket npx-r"><s></s><s></s></b></div></div>' +
+      '<div class="npx-rcap" aria-live="polite"><p class="npx-capname">Brush along the rail, slide a hanger, tap a piece to see more.</p><p class="npx-capdesc"></p><div class="npx-capact"></div></div>';
+    var stage = sec.querySelector(".npx-rstage"), bar = sec.querySelector(".npx-bar");
+    var capName = sec.querySelector(".npx-capname"), capDesc = sec.querySelector(".npx-capdesc"), capAct = sec.querySelector(".npx-capact"), capDefault = capName.textContent;
+    var S = { x: [], vx: [], tx: [], turn: [], vturn: [], tturn: [], swing: [], vswing: [], tag: [], vtag: [], drag: -1, grab: 0, free: 0, last: 0, raf: 0 };
+    var size = { w: 0, h: 260 }, active = null, playing = true, ptr = { id: -1 };
+    var els = products.map(function (p, i) {
+      var b = el("button", "npx-slot"); b.type = "button"; b.setAttribute("aria-label", p.title + ", " + money(p.price)); b.dataset.i = i;
+      b.innerHTML =
+        '<span class="npx-sw"><span class="npx-shw" aria-hidden="true"><span class="npx-sh"></span></span>' +
+        '<span class="npx-turn">' +
+        ["front", "back"].map(function (side) {
+          return '<span class="npx-face" data-face="' + side + '">' + hangerSvg(u) + '<span class="npx-drape"><img alt="" draggable="false" class="npx-ph"><span class="npx-shade"></span></span></span>';
+        }).join("") +
+        '</span><span class="npx-tagw" aria-hidden="true"><span class="npx-string"></span><span class="npx-ptag"><i></i>' + money(p.price) + "</span></span></span>";
+      stage.appendChild(b);
+      var o = { b: b, sw: b.querySelector(".npx-sw"), turn: b.querySelector(".npx-turn"), sh: b.querySelector(".npx-sh"), drape: b.querySelector('[data-face="front"] .npx-drape'), shade: b.querySelector('[data-face="front"] .npx-shade'), tag: b.querySelector(".npx-tagw") };
+      var imgs = b.querySelectorAll(".npx-ph"), front = sized(p.featured_image, 600), back = sized(p.images[1] || p.featured_image, 600);
+      imgs[0].src = front; imgs[1].src = back;
+      Promise.all([cutout(front), cutout(back)]).then(function (r) {
+        imgs[0].src = r[0].src; imgs[1].src = r[1].src;
+        b.classList.toggle("is-cut", r[0].cut);
+        var m = 'url("' + r[0].src + '") top center / contain no-repeat';
+        if (r[0].cut) [o.sh, o.shade].forEach(function (x) { x.style.webkitMask = m; x.style.mask = m; });
+        b.querySelector('[data-face="back"] .npx-shade').style.cssText = r[1].cut ? '-webkit-mask:url("' + r[1].src + '") top center / contain no-repeat;mask:url("' + r[1].src + '") top center / contain no-repeat' : "";
       });
-      if (live || drag) raf = requestAnimationFrame(frame);
-    }
-    function kick() { if (!raf) raf = requestAnimationFrame(frame); }
-    stage.addEventListener("pointerdown", function (e) { drag = { x: e.clientX, x0: x, t: e.timeStamp, last: e.clientX }; moved = false; vx = 0; kick(); });
-    window.addEventListener("pointermove", function (e) {
-      if (!drag) return; var dx = e.clientX - drag.x;
-      if (Math.abs(dx) > 6) moved = true;
-      vx = e.clientX - drag.last; drag.last = e.clientX;
-      x = Math.max(minX - 60, Math.min(60, drag.x0 + dx)); kick();
+      S.x[i] = S.tx[i] = 0; S.vx[i] = 0; S.turn[i] = S.tturn[i] = REST; S.vturn[i] = 0; S.swing[i] = S.vswing[i] = S.tag[i] = S.vtag[i] = 0;
+      return o;
     });
-    window.addEventListener("pointerup", function () { if (drag) { drag = null; kick(); } });
-    stage.addEventListener("wheel", function (e) { if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) { e.preventDefault(); vx = -e.deltaX * 0.3; kick(); } }, { passive: false });
-    var nav = el("div", "npx-nav");
-    var pb = el("button", "npx-arrow", ARROW_L), nb = el("button", "npx-arrow", ARROW_R);
-    pb.type = nb.type = "button"; pb.setAttribute("aria-label", "Slide rail left"); nb.setAttribute("aria-label", "Slide rail right");
-    pb.onclick = function () { vx = 14; kick(); }; nb.onclick = function () { vx = -14; kick(); };
-    nav.appendChild(pb); nav.appendChild(nb); sec.querySelector(".npx-hd").appendChild(nav);
-    window.addEventListener("resize", function () { bounds(); kick(); });
-    setTimeout(function () { bounds(); items.forEach(function (o, i) { o.v = (i % 2 ? 1 : -1) * 1.2; }); kick(); }, 60);
 
-    // Detail dialog with front / back spin and quick add.
-    var dlg = el("dialog", "npx-dlg");
-    sec.appendChild(dlg);
-    function openDialog(p) {
-      var back = p.images[1] || p.featured_image;
+    function targets() {
+      var h = size.h, feet = products.map(function (_, i) { return footprint(h, i === active ? 0 : REST, sideW) + h * GAP; });
+      var total = feet.reduce(function (a, f) { return a + f; }, 0), cur = (size.w - total) / 2;
+      return feet.map(function (f) { var x = cur + f / 2; cur += f; return x; });
+    }
+    function layout() {
+      var h = size.h, boxW = h * ASPECT, railY = Math.round(h * 0.07) + 10, railR = Math.max(3, Math.round((4.6 / VB_H) * h * 10) / 10);
+      stage.style.height = Math.round(railY + h + h * 0.05 + 12) + "px";
+      bar.style.top = railY - railR + "px"; bar.style.height = railR * 2 + "px";
+      els.forEach(function (o, i) {
+        o.b.style.top = railY - (HOOK_TOP / VB_H) * h + "px"; o.b.style.width = boxW + "px"; o.b.style.height = h + "px";
+        o.b.querySelector(".npx-shw").style.filter = "blur(" + Math.max(3, h * 0.022).toFixed(1) + "px)";
+        o.tag.style.top = (32 / VB_H) * h + "px";
+      });
+      var xs = targets(); for (var i = 0; i < n; i++) { S.tx[i] = xs[i]; S.tturn[i] = i === active ? 0 : REST; }
+    }
+    function paint(i) {
+      var h = size.h, w = h * ASPECT, o = els[i], a = S.turn[i], e = clamp(1 - a / REST, 0, 1);
+      o.b.style.transform = "translate3d(" + (S.x[i] - w / 2).toFixed(2) + "px,0,0)";
+      o.b.style.zIndex = i === active ? 30 : 10 + i;
+      o.sw.style.transform = "rotate(" + S.swing[i].toFixed(3) + "deg)";
+      o.turn.style.transform = "perspective(" + PERSP + "px) rotateY(" + a.toFixed(2) + "deg)";
+      o.drape.style.setProperty("--drape", clamp(-S.vswing[i] * 0.018, -5, 5).toFixed(3) + "deg");
+      o.shade.style.opacity = (1 - lambert(a)).toFixed(3);
+      o.sh.style.transform = "translate3d(" + (w * 0.05).toFixed(1) + "px," + (h * 0.035).toFixed(1) + "px,0) scaleX(" + Math.max(0.12, Math.abs(Math.cos((a * Math.PI) / 180))).toFixed(3) + ")";
+      o.tag.style.transform = "rotate(" + (-12 + S.tag[i]).toFixed(2) + "deg)";
+    }
+    function step(now) {
+      var dt = S.last ? Math.min(0.034, (now - S.last) / 1000) : 1 / 60, h = size.h, busy = false, sdt = dt / 2;
+      S.last = now;
+      for (var k = 0; k < 2; k++) {
+        for (var i = 0; i < n; i++) {
+          var before = S.vx[i];
+          if (i !== S.drag) {
+            var rest = now > S.free, stiff = rest ? 130 : 0, damp = rest ? 2 * Math.sqrt(130) * 0.86 : 3.2;
+            S.vx[i] = before + (-stiff * (S.x[i] - S.tx[i]) - damp * before) * sdt; S.x[i] += S.vx[i] * sdt;
+          }
+          var acc = (S.vx[i] - before) / sdt;
+          S.vturn[i] += (-150 * (S.turn[i] - S.tturn[i]) - 2 * Math.sqrt(150) * 0.78 * S.vturn[i]) * sdt; S.turn[i] += S.vturn[i] * sdt;
+          S.vswing[i] += (-24 * S.swing[i] - 2.1 * S.vswing[i] - clamp(acc, -6000, 6000) * 0.0045) * sdt;
+          S.swing[i] = clamp(S.swing[i] + S.vswing[i] * sdt, -12, 12);
+          S.vtag[i] += (-46 * (S.tag[i] - S.swing[i] * 0.6) - 3.4 * S.vtag[i] - S.vswing[i] * 0.9) * sdt;
+          S.tag[i] = clamp(S.tag[i] + S.vtag[i] * sdt, -30, 30);
+        }
+        for (var pass = 0; pass < 2; pass++) for (var j = 0; j < n - 1; j++) {
+          var a = S.x[j], b = S.x[j + 1], gap = (footprint(h, S.turn[j], sideW) + footprint(h, S.turn[j + 1], sideW)) / 2 + h * 0.012, ov = gap - (b - a);
+          if (ov <= 0) continue;
+          if (j === S.drag) S.x[j + 1] = b + ov; else if (j + 1 === S.drag) S.x[j] = a - ov; else { S.x[j] = a - ov / 2; S.x[j + 1] = b + ov / 2; }
+          if (S.vx[j] > S.vx[j + 1]) { var sh = (S.vx[j] + S.vx[j + 1]) / 2; if (j !== S.drag) S.vx[j] = sh; if (j + 1 !== S.drag) S.vx[j + 1] = sh; }
+        }
+        var edge = h * 0.06, first = edge + footprint(h, S.turn[0], sideW) / 2, last = size.w - edge - footprint(h, S.turn[n - 1], sideW) / 2;
+        if (S.x[0] < first) { S.x[0] = first; S.vx[0] = Math.abs(S.vx[0]) * 0.3; }
+        if (S.x[n - 1] > last) { S.x[n - 1] = last; S.vx[n - 1] = -Math.abs(S.vx[n - 1]) * 0.3; }
+      }
+      for (var q = 0; q < n; q++) {
+        paint(q);
+        if (Math.abs(S.vx[q]) > 0.4 || (now > S.free && Math.abs(S.x[q] - S.tx[q]) > 0.25) || Math.abs(S.turn[q] - S.tturn[q]) > 0.05 || Math.abs(S.vturn[q]) > 0.05 || Math.abs(S.swing[q]) > 0.02 || Math.abs(S.vswing[q]) > 0.05 || Math.abs(S.tag[q]) > 0.05 || Math.abs(S.vtag[q]) > 0.08) busy = true;
+      }
+      if (S.drag >= 0 || now < S.free) busy = true;
+      if (busy) S.raf = requestAnimationFrame(step); else { S.raf = 0; S.last = 0; }
+    }
+    function kick() {
+      if (reduced) { for (var i = 0; i < n; i++) { S.x[i] = S.tx[i]; S.turn[i] = S.tturn[i]; paint(i); } return; }
+      if (!S.raf) { S.last = 0; S.raf = requestAnimationFrame(step); }
+    }
+    function impulse(i, amt) { if (reduced || i < 0 || i >= n) return; S.vswing[i] += amt; kick(); }
+    function caption() {
+      var p = active === null ? null : products[active];
+      capName.textContent = p ? p.title : capDefault;
+      capDesc.textContent = p && p.desc ? p.desc.slice(0, 120) + (p.desc.length > 120 ? "\u2026" : "") : "";
+      capAct.innerHTML = "";
+      if (p) {
+        var add = el("button", "npx-pill", p.variants[0].available ? "Quick add \u00b7 " + money(p.price) : "Sold out"); add.type = "button"; add.disabled = !p.variants[0].available;
+        add.onclick = function () { addToCart(add, p.variants[0], "Quick add \u00b7 " + money(p.price)); };
+        var view = el("a", "npx-link", "View piece"); view.href = p.url;
+        capAct.appendChild(add); capAct.appendChild(view);
+      }
+    }
+    function choose(i) {
+      if (i === active) return;
+      if (i !== null) { impulse(i - 1, -30); impulse(i + 1, 30); }
+      if (active !== null) { impulse(active - 1, 14); impulse(active + 1, -14); }
+      active = i; layout(); kick(); caption();
+    }
+    function nearest(cx, cy) {
+      var r = stage.getBoundingClientRect(), x = cx - r.left, y = cy - r.top, best = null, dist = Infinity;
+      if (y < 0 || y > size.h + 46) return null;
+      for (var i = 0; i < n; i++) { var half = footprint(size.h, S.turn[i], sideW) / 2 + 4, d = Math.abs(x - S.x[i]); if (d < half && d < dist) { best = i; dist = d; } }
+      return best;
+    }
+    function stop() { playing = false; }
+    stage.addEventListener("pointerdown", function (e) {
+      if (e.button) return; var now = performance.now();
+      ptr = { id: e.pointerId, index: nearest(e.clientX, e.clientY), x: e.clientX, y: e.clientY, moved: false, kind: e.pointerType, lastX: e.clientX, lastT: now, v: 0 };
+      if (ptr.index === null) ptr.index = -1;
+    });
+    stage.addEventListener("pointermove", function (e) {
+      if (ptr.id === e.pointerId) {
+        var dx = e.clientX - ptr.x, now = performance.now();
+        if (!ptr.moved && Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(e.clientY - ptr.y)) {
+          ptr.moved = true; stop(); stage.setPointerCapture(e.pointerId);
+          if (ptr.index >= 0) { S.drag = ptr.index; S.grab = e.clientX - stage.getBoundingClientRect().left - S.x[ptr.index]; }
+        }
+        if (ptr.moved) {
+          var v = (e.clientX - ptr.lastX) / Math.max(1, now - ptr.lastT); ptr.v = ptr.v * 0.6 + v * 0.4; ptr.lastX = e.clientX; ptr.lastT = now;
+          if (S.drag >= 0) { S.vx[S.drag] = ptr.v * 1000; S.x[S.drag] = e.clientX - stage.getBoundingClientRect().left - S.grab; S.free = now + 900; kick(); }
+        }
+        return;
+      }
+      if (e.pointerType !== "mouse" || dlg.open) return;
+      var hit = nearest(e.clientX, e.clientY);
+      if (active !== null && hit !== active) {
+        var box = stage.getBoundingClientRect();
+        if (Math.abs(e.clientX - box.left - S.x[active]) < footprint(size.h, 0, sideW) / 2 + 14) return;
+      }
+      if (hit !== null) { stop(); choose(hit); }
+    });
+    function finish(e, cancel) {
+      if (ptr.id !== e.pointerId) return;
+      if (stage.hasPointerCapture(e.pointerId)) stage.releasePointerCapture(e.pointerId);
+      var p = ptr; ptr = { id: -1 };
+      if (S.drag >= 0) { S.drag = -1; S.free = performance.now() + 700; kick(); return; }
+      if (cancel || p.moved || p.index < 0) return;
+      stop();
+      if (p.kind !== "mouse" && active !== p.index) choose(p.index); else openDetail(p.index);
+    }
+    stage.addEventListener("pointerup", function (e) { finish(e, false); });
+    stage.addEventListener("pointercancel", function (e) { finish(e, true); });
+    stage.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse" && ptr.id < 0 && !dlg.open) choose(null); });
+    els.forEach(function (o, i) {
+      o.b.addEventListener("click", function (e) { if (e.detail === 0) openDetail(i); });
+      o.b.addEventListener("focus", function () { if (ptr.id < 0) { stop(); choose(i); } });
+    });
+    stage.addEventListener("keydown", function (e) {
+      if (["ArrowRight", "ArrowLeft"].indexOf(e.key) < 0) return; e.preventDefault(); stop();
+      var nx = clamp((active === null ? 0 : active) + (e.key === "ArrowRight" ? 1 : -1), 0, n - 1); choose(nx); els[nx].b.focus({ preventScroll: true });
+    });
+
+    // Detail: the piece lifts off the rail, turn it with a drag or Front / Back.
+    var dlg = el("dialog", "npx-dlg npx-rdlg"); sec.appendChild(dlg);
+    function openDetail(i) {
+      var p = products[i], o = els[i], fi = o.b.querySelectorAll(".npx-ph");
       dlg.innerHTML =
-        '<button type="button" class="npx-dlg-x" aria-label="Close">\u00d7</button>' +
-        '<div class="npx-spin"><div class="npx-spin-in"><img class="npx-front" alt="' + esc(p.title) + '" src="' + esc(sized(p.featured_image, 800)) + '"><img class="npx-back" alt="" src="' + esc(sized(back, 800)) + '"></div></div>' +
-        '<div class="npx-dlg-body"><span class="npx-eye">' + esc(p.type || "Nalea XoXo") + '</span><h3>' + esc(p.title) + "</h3>" +
+        '<button type="button" class="npx-dlg-x">Close <svg viewBox="0 0 16 16"><path d="M3 3l10 10M13 3L3 13"/></svg></button>' +
+        '<div class="npx-dfig"><div class="npx-dwire" aria-hidden="true"></div><div class="npx-dspin-w"><div class="npx-dspin">' +
+        ["front", "back"].map(function (side, k) { return '<div class="npx-dface" data-face="' + side + '">' + hangerSvg(u) + '<img alt="' + (k ? "" : esc(p.title)) + '" src="' + fi[k].src + '" class="npx-ph' + (o.b.classList.contains("is-cut") ? "" : " npx-boxed") + '"></div>'; }).join("") +
+        '</div></div></div><div class="npx-dinfo"><p class="npx-dnum">' + String(i + 1).padStart(2, "0") + " / " + String(n).padStart(2, "0") + '</p><h3>' + esc(p.title) + "</h3>" +
         '<p class="npx-price">' + money(p.price) + (p.compare_at_price > p.price ? " <s>" + money(p.compare_at_price) + "</s>" : "") + "</p>" +
-        (p.desc ? '<p class="npx-desc">' + esc(p.desc.slice(0, 220)) + (p.desc.length > 220 ? "\u2026" : "") + "</p>" : "") +
-        '<div class="npx-dlg-act"><button type="button" class="npx-btn npx-turn">Turn around</button>' +
-        '<button type="button" class="npx-btn npx-add">Quick add</button><a class="npx-link" href="' + esc(p.url) + '">View product</a></div></div>';
-      var spun = false;
-      dlg.querySelector(".npx-turn").onclick = function () { spun = !spun; dlg.querySelector(".npx-spin-in").style.transform = "rotateY(" + (spun ? 180 : 0) + "deg)"; };
-      if (back === p.featured_image) dlg.querySelector(".npx-turn").hidden = true;
+        (p.desc ? '<p class="npx-desc">' + esc(p.desc.slice(0, 240)) + (p.desc.length > 240 ? "\u2026" : "") + "</p>" : "") +
+        '<div class="npx-fb"><button type="button" aria-pressed="true" data-s="front">Front</button><button type="button" aria-pressed="false" data-s="back">Back</button></div>' +
+        '<div class="npx-dlg-act"><button type="button" class="npx-pill npx-add"' + (p.variants[0].available ? "" : " disabled") + ">" + (p.variants[0].available ? "Quick add" : "Sold out") + '</button><a class="npx-link" href="' + esc(p.url) + '">View piece</a></div></div>';
+      var spin = dlg.querySelector(".npx-dspin"), A = { v: 0, t: 0, vel: 0, raf: 0, last: 0, drag: false };
+      function loop(now) {
+        var dt = A.last ? Math.min(0.034, (now - A.last) / 1000) : 1 / 60; A.last = now;
+        A.vel += (-90 * (A.v - A.t) - 2 * Math.sqrt(90) * 0.82 * A.vel) * dt; A.v += A.vel * dt;
+        spin.style.transform = "rotateY(" + A.v.toFixed(2) + "deg)";
+        if (Math.abs(A.v - A.t) < 0.05 && Math.abs(A.vel) < 0.05) { A.raf = 0; A.last = 0; return; }
+        A.raf = requestAnimationFrame(loop);
+      }
+      function turnTo(s) {
+        var base = Math.round(A.v / 360) * 360; A.t = base + (s === "back" ? 180 : 0);
+        dlg.querySelectorAll(".npx-fb button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.s === s); });
+        if (reduced) { A.v = A.t; spin.style.transform = "rotateY(" + A.v + "deg)"; } else if (!A.raf) A.raf = requestAnimationFrame(loop);
+      }
+      dlg.querySelectorAll(".npx-fb button").forEach(function (b) { b.onclick = function () { turnTo(b.dataset.s); }; });
+      var w = dlg.querySelector(".npx-dspin-w");
+      w.addEventListener("pointerdown", function (e) { A.drag = true; A.sx = e.clientX; A.sa = A.v; cancelAnimationFrame(A.raf); A.raf = 0; w.setPointerCapture(e.pointerId); });
+      w.addEventListener("pointermove", function (e) { if (!A.drag) return; A.v = clamp(A.sa + (e.clientX - A.sx) * 0.45, A.sa - 220, A.sa + 220); spin.style.transform = "rotateY(" + A.v.toFixed(2) + "deg)"; });
+      w.addEventListener("pointerup", function () { if (!A.drag) return; A.drag = false; var f = ((A.v % 360) + 360) % 360; turnTo(f > 90 && f < 270 ? "back" : "front"); });
       dlg.querySelector(".npx-add").onclick = function (e) { addToCart(e.currentTarget, p.variants[0], "Quick add"); };
       dlg.querySelector(".npx-dlg-x").onclick = function () { dlg.close(); };
+      o.b.style.visibility = "hidden";
       if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+      var fig = dlg.querySelector(".npx-dfig"), from = o.turn.getBoundingClientRect(), to = fig.getBoundingClientRect();
+      if (!reduced && from.width && fig.animate) {
+        var sc = from.height / to.height, dx = from.left + from.width / 2 - (to.left + to.width / 2), dy = from.top - to.top, lift = Math.min(90, Math.abs(dy) * 0.25 + 30);
+        fig.animate([{ transform: "translate(" + dx + "px," + dy + "px) scale(" + sc + ")" }, { transform: "translate(" + dx * 0.4 + "px," + (dy * 0.4 - lift) + "px) scale(" + ((sc + 1) / 2) * 1.03 + ") rotate(" + (dx > 0 ? -2.5 : 2.5) + "deg)", offset: 0.5 }, { transform: "none" }], { duration: 680, easing: "cubic-bezier(.22,.85,.3,1)" });
+      }
+      dlg.onclose = function () { o.b.style.visibility = ""; impulse(i, (i % 2 ? 1 : -1) * 44); };
     }
     dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+
+    // Size: the pieces fill the rail width, capped so the section stays compact.
+    function measure() {
+      var w = stage.clientWidth; if (!w) return;
+      var restK = footprint(1, REST, sideW) + GAP, actK = footprint(1, 0, sideW) + GAP, fit = (w - 24) / (n * restK + (actK - restK));
+      var cap = Math.max(180, Math.min(330, window.innerHeight * 0.6 - 150));
+      size = { w: w, h: Math.round(Math.max(170, Math.min(cap, fit))) };
+      var fresh = !S.init; layout();
+      if (fresh) { S.init = 1; for (var i = 0; i < n; i++) { S.x[i] = S.tx[i]; paint(i); } }
+      kick();
+    }
+    if ("ResizeObserver" in window) new ResizeObserver(measure).observe(stage);
+    setTimeout(function () { measure(); if (!reduced) products.forEach(function (_, i) { setTimeout(function () { impulse(i, 46 - i * 2.5); }, 120 + i * 55); }); }, 30);
+
+    // Autoplay: each piece turns to the front in turn until the visitor touches the rail.
+    var vis = false;
+    if ("IntersectionObserver" in window) new IntersectionObserver(function (es) { vis = es[0].isIntersecting; }, { threshold: 0.4 }).observe(stage);
+    (function tick() {
+      setTimeout(function () {
+        if (playing && vis && !reduced && !document.hidden && !dlg.open) choose(active === null ? 0 : (active + 1) % n);
+        if (playing) tick();
+      }, active === null ? 1100 : 2600);
+    })();
     return sec;
   }
 
@@ -398,29 +626,56 @@
       ".npx-btn:disabled{opacity:.5;cursor:default}.npx-link{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:inherit;text-underline-offset:3px}" +
       ".npx-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}" +
       /* rail */
-      ".npx-rail-stage{position:relative;height:calc(100% - 70px);margin-top:6px;overflow:hidden;cursor:grab;touch-action:pan-y;user-select:none;perspective:900px}" +
-      ".npx-rail-stage:active{cursor:grabbing}" +
-      ".npx-rail-bar{position:absolute;left:0;right:0;top:22px;height:8px;border-radius:8px;background:linear-gradient(180deg,#d7b98c,#a07b4d 55%,#7a5a35);box-shadow:0 3px 8px rgba(0,0,0,.18)}" +
-      ".npx-rail-bar i{position:absolute;top:-14px;width:6px;height:20px;border-radius:3px;background:#8a6a42}.npx-rail-bar i:first-child{left:3%}.npx-rail-bar i:last-child{right:3%}" +
-      ".npx-rail-track{position:absolute;left:0;top:18px;bottom:0;display:flex;gap:clamp(14px,2.4vw,34px);padding:0 4%;will-change:transform}" +
-      ".npx-hang{--sw:0deg;--ty:0deg;position:relative;flex:none;width:clamp(150px,17vw,220px);height:100%;padding:0!important;border:0!important;background:none!important;color:inherit!important;cursor:pointer;transform-origin:50% 8px;transform:rotate(var(--sw));box-shadow:none!important}" +
-      ".npx-hook{display:block;width:44%;margin:0 auto;height:auto;fill:none;stroke:#7a5a35;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}" +
-      ".npx-garment{position:relative;display:block;width:88%;margin:-3px auto 0;aspect-ratio:4/5;transform-style:preserve-3d;transform:rotateY(var(--ty));transition:transform .2s linear}" +
-      ".npx-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 14px 28px -16px rgba(0,0,0,.45)}" +
-      ".npx-face img{width:100%;height:100%;object-fit:cover;display:block}.npx-back{transform:rotateY(180deg)}" +
-      ".npx-hang:hover .npx-garment,.npx-hang:focus-visible .npx-garment{transform:rotateY(180deg)}" +
-      ".npx-tag{display:flex;flex-direction:column;gap:2px;width:88%;margin:8px auto 0;text-align:left;font-size:12px;line-height:1.3}" +
-      ".npx-tag b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.npx-tag em{font-style:normal;color:color-mix(in oklab,currentColor 60%,transparent)}" +
-      ".npx-dlg{max-width:min(760px,92vw);width:100%;padding:0;border:0;border-radius:16px;background:var(--background,#fff);color:var(--foreground,#111)}" +
-      ".npx-dlg[open]{display:grid;grid-template-columns:1fr 1fr}.npx-dlg::backdrop{background:rgba(10,8,6,.55);backdrop-filter:blur(4px)}" +
-      ".npx-dlg-x{position:absolute;right:10px;top:8px;z-index:2;border:0!important;background:none!important;font-size:26px;color:inherit!important;cursor:pointer}" +
-      ".npx-spin{perspective:1000px;background:color-mix(in oklab,var(--foreground,#111) 4%,var(--background,#fff))}" +
-      ".npx-spin-in{position:relative;aspect-ratio:4/5;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.3,.7,.2,1)}" +
-      ".npx-spin-in img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;backface-visibility:hidden}" +
-      ".npx-dlg-body{padding:28px 24px;display:flex;flex-direction:column;gap:10px}.npx-dlg-body h3{margin:0;font-size:22px}" +
-      ".npx-price{margin:0;font-size:18px}.npx-price s{opacity:.5;font-size:.8em}.npx-desc{margin:0;font-size:13px;line-height:1.5;opacity:.75}" +
-      ".npx-dlg-act{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:auto}.npx-turn{background:transparent;color:inherit;border:1px solid currentColor}" +
-      "@media (max-width:640px){.npx-dlg[open]{grid-template-columns:1fr;max-height:90svh;overflow:auto}}" +
+      ".npx-rail{height:auto;padding-bottom:6px}" +
+      ".npx-rail-hd{display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:clamp(14px,2.4vw,26px);text-align:center}" +
+      ".npx-rail-hd .npx-eye{letter-spacing:.28em}" +
+      ".npx-rstage{position:relative;width:100%;margin-top:10px;touch-action:pan-y;user-select:none;overflow-x:clip;--mf:color-mix(in oklab,var(--foreground,#111) 55%,var(--background,#fff))}" +
+      ".npx-bar{position:absolute;left:0;right:0;z-index:0;pointer-events:none}" +
+      ".npx-bar i,.npx-bar b{position:absolute;display:block}" +
+      ".npx-bar-sh{left:0;right:0;top:calc(100% + 1px);height:12px;border-radius:99px;background:color-mix(in oklab,var(--foreground,#111) 10%,transparent);filter:blur(5px)}" +
+      ".npx-bar-chrome{inset:0;border-radius:99px;background:linear-gradient(to bottom,color-mix(in oklab,var(--mf) 35%,white) 0%,white 18%,color-mix(in oklab,var(--mf) 70%,white) 38%,var(--mf) 62%,color-mix(in oklab,var(--mf) 55%,black) 100%);box-shadow:0 1px 0 color-mix(in oklab,var(--foreground,#111) 18%,transparent)}" +
+      ".npx-bar-brush{inset:0;border-radius:99px;opacity:.4;mix-blend-mode:overlay;background:repeating-linear-gradient(90deg,transparent 0 2px,color-mix(in oklab,white 40%,transparent) 2px 3px,transparent 3px 7px)}" +
+      ".npx-bracket{left:6px;top:50%;width:16px;height:28px;transform:translateY(-50%);border-radius:3px;background:linear-gradient(to right,color-mix(in oklab,var(--mf) 60%,white),var(--mf) 55%,color-mix(in oklab,var(--mf) 60%,black));box-shadow:0 3px 6px color-mix(in oklab,var(--foreground,#111) 18%,transparent)}" +
+      ".npx-bracket.npx-r{left:auto;right:6px}.npx-bracket s{position:absolute;left:50%;top:4px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:color-mix(in oklab,var(--foreground,#111) 35%,transparent)}.npx-bracket s+s{top:auto;bottom:4px}" +
+      ".npx-slot{position:absolute;left:0;padding:0!important;margin:0;border:0!important;border-radius:12px!important;background:none!important;box-shadow:none!important;color:inherit!important;cursor:pointer;outline:none}" +
+      ".npx-slot:focus-visible{outline:2px solid currentColor;outline-offset:4px}" +
+      ".npx-sw{position:absolute;inset:0;transform-origin:50% 1.3%}" +
+      ".npx-shw{position:absolute;inset:0;pointer-events:none}.npx-sh{position:absolute;left:0;right:0;top:8%;bottom:0;display:block;background:#000;opacity:.16}" +
+      ".npx-slot:not(.is-cut) .npx-sh{border-radius:10px;left:8%;right:8%;bottom:20%}" +
+      ".npx-turn{position:absolute;inset:0;transform-style:preserve-3d;border-radius:8px}" +
+      ".npx-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}.npx-face[data-face=back]{transform:rotateY(180deg)}" +
+      ".npx-hsvg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;z-index:2}" +
+      ".npx-drape{position:absolute;inset:0;transform-origin:top;transform:skewX(var(--drape,0deg))}" +
+      ".npx-face[data-face=back] .npx-drape{transform:skewX(calc(var(--drape,0deg) * -1))}" +
+      ".npx-ph{position:absolute;left:0;right:0;top:8%;bottom:0;width:100%;height:92%;max-width:none;object-fit:contain;object-position:top;pointer-events:none;user-select:none}" +
+      ".npx-slot:not(.is-cut) .npx-ph,.npx-boxed{left:8%;width:84%;height:auto!important;aspect-ratio:1;object-fit:cover;border-radius:6px;box-shadow:0 10px 20px -12px rgba(0,0,0,.5)}" +
+      ".npx-shade{position:absolute;left:0;right:0;top:8%;bottom:0;background:#000;pointer-events:none;opacity:.2}" +
+      ".npx-slot:not(.is-cut) .npx-shade{left:8%;right:8%;bottom:auto;aspect-ratio:1;border-radius:6px}" +
+      ".npx-tagw{position:absolute;left:50%;transform-origin:top;pointer-events:none;z-index:3}" +
+      ".npx-string{display:block;width:1px;height:14px;margin-left:3px;background:color-mix(in oklab,var(--foreground,#111) 35%,transparent)}" +
+      ".npx-ptag{position:relative;display:block;transform:translateX(calc(-50% + 3px));white-space:nowrap;border-radius:3px;border:1px solid color-mix(in oklab,var(--foreground,#111) 10%,transparent);background:var(--background,#fff);color:var(--foreground,#111);padding:8px 6px 4px;font-size:9px;font-weight:600;line-height:1;letter-spacing:.04em;box-shadow:0 2px 6px color-mix(in oklab,var(--foreground,#111) 18%,transparent)}" +
+      ".npx-ptag i{position:absolute;left:50%;top:3px;width:3px;height:3px;margin-left:-1.5px;border-radius:50%;background:color-mix(in oklab,var(--foreground,#111) 30%,transparent)}" +
+      ".npx-rcap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:2px 16px 14px;text-align:center;min-height:96px}" +
+      ".npx-capname{margin:0;font-size:14px;font-weight:500}.npx-capdesc{margin:0;max-width:46ch;font-size:13px;line-height:1.5;color:color-mix(in oklab,currentColor 60%,transparent)}.npx-capdesc:empty{display:none}" +
+      ".npx-capact{display:flex;gap:14px;align-items:center}.npx-capact:empty{display:none}" +
+      ".npx-pill{appearance:none;border:0;border-radius:999px!important;padding:9px 18px;font:inherit;font-size:13px;font-weight:500;cursor:pointer;background:var(--foreground,#111)!important;color:var(--background,#fff)!important}" +
+      ".npx-pill:disabled{opacity:.5;cursor:default}" +
+      ".npx-dlg{max-width:min(980px,94vw);width:100%;padding:0;border:0;border-radius:18px;background:var(--background,#fff);color:var(--foreground,#111);overflow:visible}" +
+      ".npx-rdlg[open]{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,22rem);gap:32px;align-items:center;padding:40px 32px 32px;background:color-mix(in oklab,var(--background,#fff) 94%,transparent)}" +
+      ".npx-dlg::backdrop{background:color-mix(in oklab,var(--background,#000) 80%,transparent);backdrop-filter:blur(14px)}" +
+      ".npx-dlg-x{position:absolute;right:14px;top:12px;z-index:3;display:inline-flex;align-items:center;gap:6px;border:0!important;background:none!important;color:color-mix(in oklab,currentColor 60%,transparent)!important;font:inherit;font-size:12px;cursor:pointer}" +
+      ".npx-dlg-x svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}" +
+      ".npx-dfig{position:relative;margin:0 auto;aspect-ratio:200/310;height:min(56vh,480px);transform-origin:top}" +
+      ".npx-dwire{position:absolute;left:50%;width:3px;height:40vh;top:calc(-40vh + 1.3%);margin-left:-1.5px;border-radius:99px;background:linear-gradient(to right,color-mix(in oklab,gray 50%,white),gray,color-mix(in oklab,gray 50%,black))}" +
+      ".npx-dspin-w{position:absolute;inset:0;perspective:1400px;cursor:grab;touch-action:pan-y}.npx-dspin{position:absolute;inset:0;transform-style:preserve-3d}" +
+      ".npx-dface{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}.npx-dface[data-face=back]{transform:rotateY(180deg)}" +
+      ".npx-dinfo{display:flex;flex-direction:column;gap:12px}.npx-dinfo h3{margin:0;font-size:clamp(22px,2.4vw,30px);font-weight:500;letter-spacing:-.01em}" +
+      ".npx-dnum{margin:0;font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.2em;opacity:.6}" +
+      ".npx-fb{display:flex;gap:22px}.npx-fb button{position:relative;padding:0 0 6px!important;border:0!important;background:none!important;color:color-mix(in oklab,currentColor 55%,transparent)!important;font:inherit;font-size:14px;cursor:pointer}" +
+      ".npx-fb button[aria-pressed=true]{color:inherit!important}.npx-fb button::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .3s}.npx-fb button[aria-pressed=true]::after{transform:none}" +
+      ".npx-price{margin:0;font-size:18px}.npx-price s{opacity:.5;font-size:.8em}.npx-desc{margin:0;font-size:13px;line-height:1.55;opacity:.72}" +
+      ".npx-dlg-act{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:4px}" +
+      "@media (max-width:700px){.npx-rdlg[open]{grid-template-columns:1fr;max-height:92svh;overflow:auto;padding:36px 18px 22px;gap:16px}.npx-dfig{height:min(44svh,360px)}.npx-dwire{display:none}.npx-dinfo{text-align:center;align-items:center}}" +
       /* orbit */
       ".npx-orbit{container-type:inline-size;touch-action:pan-y}@media (max-width:639px){.npx-orbit{height:auto;min-height:0}}" +
       ".npx-oc{position:absolute;left:50%;top:50%;width:960px;height:520px;transform:translate(-50%,-50%) scale(var(--s,1))}" +
