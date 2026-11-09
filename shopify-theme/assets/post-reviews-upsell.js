@@ -1,7 +1,8 @@
 /* Post-reviews upsells — Nalea XoXo
- * 1) Clothing rail   — "Complete The Moment"      (related 1-4)
+ * 1) Clothing rail   — "Complete The Moment"      (10: related, topped up)
  * 2) Orbit carousel  — "Add These For Under R49"  (10 shuffled, <= R49)
- * 3) Runway lookbook — "You'll Also Adore"        (related 5-8)
+ * 3) Runway lookbook — "You'll Also Adore"        (8: more related, topped up)
+ * No product appears in more than one of the three.
  * Compact (~60svh each), one continuous background that matches the product
  * hero + reviews tint. Arrows, swipe and gentle autoplay — no scroll pinning.
  */
@@ -768,18 +769,29 @@
     syncTint(wrap);
 
     Promise.all([
-      fetch("/recommendations/products.json?product_id=" + encodeURIComponent(productId) + "&limit=8&intent=related").then(function (r) { return r.json(); }).then(function (d) { return (d && d.products) || []; }).catch(function () { return []; }),
+      fetch("/recommendations/products.json?product_id=" + encodeURIComponent(productId) + "&limit=10&intent=related").then(function (r) { return r.json(); }).then(function (d) { return (d && d.products) || []; }).catch(function () { return []; }),
       fetch("/products.json?limit=250").then(function (r) { return r.json(); }).then(function (d) { return (d && d.products) || []; }).catch(function () { return []; })
     ]).then(function (res) {
-      var general = res[1].filter(function (p) { return String(p.id) !== String(productId); }).map(normStore);
-      var related = res[0].map(normRec).filter(function (p) { return p.price > 0 && p.featured_image; }), seen = {};
-      related.forEach(function (p) { seen[p.url] = true; });
-      general.forEach(function (p) { if (!seen[p.url] && related.length < 8) { related.push(p); seen[p.url] = true; } });
-      var relA = related.slice(0, 4), relB = related.length >= 8 ? related.slice(4, 8) : related.slice(0, 4);
-      var cheap = general.filter(function (p) { return p.price > 0 && p.price <= PRICE_CAP_CENTS && p.featured_image; });
-      for (var i = cheap.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = cheap[i]; cheap[i] = cheap[j]; cheap[j] = t; }
-      cheap = cheap.slice(0, 10);
-
+      var general = res[1].filter(function (p) { return String(p.id) !== String(productId); }).map(normStore).filter(function (p) { return p.featured_image && p.price > 0; });
+      var related = res[0].map(normRec).filter(function (p) { return p.price > 0 && p.featured_image; });
+      var used = {};
+      function take(list, max, test) {
+        var out = [];
+        for (var k = 0; k < list.length && out.length < max; k++) { var p = list[k]; if (used[p.url] || (test && !test(p))) continue; used[p.url] = true; out.push(p); }
+        return out;
+      }
+      function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+      var cheapTest = function (p) { return p.price > 0 && p.price <= PRICE_CAP_CENTS; };
+      // Rail: 10 related first, topped up from the store. No product shows twice across the three.
+      var relA = take(related, 10);
+      var rest = shuffle(general);
+      // Keep enough under-R49 pieces for the orbit before the rail tops up from the store.
+      var cheapPool = rest.filter(function (p) { return !used[p.url] && cheapTest(p); });
+      var reserve = {}; cheapPool.slice(0, 10).forEach(function (p) { reserve[p.url] = true; });
+      relA = relA.concat(take(rest, 10 - relA.length, function (p) { return !reserve[p.url]; }));
+      var cheap = take(cheapPool, 10);
+      var relB = take(related, 8);
+      relB = relB.concat(take(rest, 8 - relB.length));
       loadGsap(function () {
         if (relA.length) wrap.appendChild(buildRail(relA));
         if (cheap.length) wrap.appendChild(buildOrbit(cheap));
