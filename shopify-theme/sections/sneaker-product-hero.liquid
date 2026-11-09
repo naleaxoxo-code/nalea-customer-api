@@ -160,7 +160,7 @@
 .snp-trust-btn:hover,.snp-trust-btn:focus-visible{color:var(--color-foreground)!important}
 .snp-trust-btn svg{width:max(13px,1.1cqw);height:max(13px,1.1cqw);flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .snp-trust-btn b{color:var(--color-foreground);font-weight:600}
-.snp-trust-btn[data-tone="no"] svg{color:var(--color-muted-foreground)}
+.snp-trust-btn[data-tone="no"] svg{color:var(--color-foreground)}
 .snp-tip a{color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px;pointer-events:auto}
 .snp-pay{display:flex;flex-wrap:wrap;gap:.6cqw}
 .snp-pay span{display:grid;place-items:center;height:max(20px,1.8cqw);min-width:max(32px,2.9cqw);padding:0 .45cqw;border-radius:4px;background:#fff;font:700 max(9px,.75cqw)/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:0;white-space:nowrap}
@@ -765,20 +765,26 @@
   descFade();
 
   // ---- Trust lines (secure checkout + returns) with info bubbles ----
+  var FIX = " If anything arrives damaged or isn't what you ordered, we'll make it right.";
   var RT = {
-    ok: ["<b>" + D.returnDays + "-day returns</b>", "Return unused items in their original packaging, with proof of purchase, within " + D.returnDays + " days of delivery. Return shipping is paid by you."],
-    personal: ["Made just for you, so it can't be returned", "Personalised items can't be returned. If it arrives damaged or wrong, contact us and we'll make it right."],
-    hygiene: ["Hygiene item, so it can't be returned", "For hygiene reasons, beauty and personal-care items can't be returned. If it arrives damaged or wrong, contact us and we'll make it right."],
-    gift: ["Gift cards can't be returned", "Gift cards are non-refundable."],
-    final: ["Final sale, so it can't be returned", "This item is final sale. If it arrives damaged or wrong, contact us and we'll make it right."],
-    sale: ["Sale item, so it can't be returned", "Sale items can't be returned. If it arrives damaged or wrong, contact us and we'll make it right."]
+    ok: ["<b>" + D.returnDays + "-day returns</b>", "Changed your mind? Send unused items back in their original packaging, with proof of purchase, within " + D.returnDays + " days of delivery. Return shipping is on you."],
+    personal: ["<b>Made just for you</b> \u00b7 final sale", "Each piece is personalised to your order, so it's one of a kind and can't be returned." + FIX],
+    hygiene: ["<b>Sealed fresh for you</b> \u00b7 final sale", "Every beauty and personal-care item reaches you sealed and unused, never opened or tried by anyone else. To keep it that way for everyone, these can't be returned." + FIX],
+    gift: ["<b>Delivered instantly</b> \u00b7 final sale", "Gift cards are sent straight away and can't be refunded."],
+    final: ["<b>Special price</b> \u00b7 final sale", "This one's priced to go, so it's final sale." + FIX],
+    sale: ["<b>On sale now</b> \u00b7 final sale", "You're getting this at a reduced price, so it's final sale." + FIX]
   };
+  var IC_RET = '<path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v4h4"/>';
+  var IC_SEAL = '<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>';
+  var IC_HEART = '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>';
+  var IC_TAG = '<path d="M3 12V4h8l9 9-8 8z"/><circle cx="7.5" cy="7.5" r="1.3"/>';
   var retBtn = $(".snp-ret");
   function renderReturns() {
     if (!retBtn) return;
     var v = variantFor(active, size) || startV, k = retBtn.dataset.rt;
     if (k === "ok" && v.compare > v.price) k = "sale";
     $(".snp-ret-text").innerHTML = RT[k][0];
+    retBtn.querySelector("svg").innerHTML = k === "ok" ? IC_RET : k === "hygiene" ? IC_SEAL : k === "personal" ? IC_HEART : IC_TAG;
     $(".snp-rtip-text").textContent = RT[k][1];
     retBtn.dataset.tone = k === "ok" ? "ok" : "no";
   }
