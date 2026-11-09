@@ -1389,6 +1389,71 @@ app.get('/reviews', async (req, res) => {
   }
 });
 
+// ===== PRODUCT LIKES — public like count per product (separate from the saved-items heart) =====
+// Stored on the product as custom.likes: [{ cid, photo }]. Only the count and the
+// photos of people who allow their picture on reviews ever leave the server.
+async function readLikes(pid, headers, apiBase) {
+  const mf = (await (await fetch(`${apiBase}/products/${pid}/metafields.json?namespace=custom&key=likes`, { headers })).json()).metafields?.[0];
+  let list = [];
+  if (mf) { try { list = JSON.parse(mf.value); } catch {} }
+  return { mf, list: Array.isArray(list) ? list : [] };
+}
+function likesView(list, customerId) {
+  return {
+    count: list.length,
+    heads: list.slice(-5).reverse().map(l => l.photo || null),
+    mine: !!customerId && list.some(l => String(l.cid) === String(customerId)),
+  };
+}
+
+app.get('/likes', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const ids = String(req.query.ids || '').split(',').map(x => x.replace(/[^0-9]/g, '')).filter(Boolean).slice(0, 20);
+  const customerId = req.query.logged_in_customer_id;
+  const headers = { 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const apiBase = `https://${SHOPIFY_STORE}/admin/api/2024-04`;
+  try {
+    const out = {};
+    await Promise.all(ids.map(async (pid) => { out[pid] = likesView((await readLikes(pid, headers, apiBase)).list, customerId); }));
+    return res.json({ success: true, likes: out });
+  } catch (err) {
+    console.error('Likes GET error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/likes', async (req, res) => {
+  if (!verifyProxySignature(req.query)) return res.status(401).json({ error: 'Unauthorized' });
+  const customerId = req.query.logged_in_customer_id;
+  if (!customerId) return res.status(401).json({ error: 'Sign in to like' });
+  const pid = String(req.body?.product_id || '').replace(/[^0-9]/g, '');
+  if (!pid) return res.status(400).json({ error: 'product_id required' });
+  const headers = { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': SHOPIFY_ADMIN_TOKEN };
+  const apiBase = `https://${SHOPIFY_STORE}/admin/api/2024-04`;
+  try {
+    const { mf, list } = await readLikes(pid, headers, apiBase);
+    const at = list.findIndex(l => String(l.cid) === String(customerId));
+    if (at >= 0) list.splice(at, 1);
+    else {
+      // Only show a face if the customer chose to show their photo on reviews.
+      const cmf = (await (await fetch(`${apiBase}/customers/${customerId}/metafields.json?namespace=custom`, { headers })).json()).metafields || [];
+      const photo = cmf.find(m => m.key === 'profile_photo')?.value || null;
+      const pub = cmf.find(m => m.key === 'show_on_reviews')?.value !== 'false';
+      list.push({ cid: String(customerId), photo: pub && /^https:\/\//.test(photo || '') ? photo : null });
+    }
+    const value = JSON.stringify(list);
+    const r = mf
+      ? await fetch(`${apiBase}/products/${pid}/metafields/${mf.id}.json`, { method: 'PUT', headers, body: JSON.stringify({ metafield: { id: mf.id, value, type: 'json' } }) })
+      : await fetch(`${apiBase}/products/${pid}/metafields.json`, { method: 'POST', headers, body: JSON.stringify({ metafield: { namespace: 'custom', key: 'likes', value, type: 'json' } }) });
+    if (!r.ok) { console.error('Likes save error:', r.status, await r.text()); return res.status(500).json({ error: 'Could not save' }); }
+    return res.json({ success: true, ...likesView(list, customerId) });
+  } catch (err) {
+    console.error('Likes POST error:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ===== PERSONALIZATION BOARD — photo upload =====
 // Called by the product page JS when a customer uploads a photo on a personalization board.
 // Returns a CDN URL that gets stored as a Shopify line-item property on the order.
