@@ -142,7 +142,20 @@
           var c = document.createElement("canvas"); c.width = w; c.height = h;
           var x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h);
           var d = x.getImageData(0, 0, w, h), p = d.data, seen = new Uint8Array(w * h), st = [], bg = 0;
-          function light(i) { var r = p[i * 4], g = p[i * 4 + 1], b = p[i * 4 + 2]; return r > 232 && g > 232 && b > 232 && Math.max(r, g, b) - Math.min(r, g, b) < 18; }
+          // Background = the plain colour around the edge (white, dark, any flat colour).
+          var br = [], bgc = [0, 0, 0];
+          for (var ex = 0; ex < w; ex += 4) { br.push(ex, (h - 1) * w + ex); }
+          for (var ey = 0; ey < h; ey += 4) { br.push(ey * w, ey * w + w - 1); }
+          br.forEach(function (k2) { bgc[0] += p[k2 * 4]; bgc[1] += p[k2 * 4 + 1]; bgc[2] += p[k2 * 4 + 2]; });
+          bgc = bgc.map(function (v) { return v / br.length; });
+          var flat = br.filter(function (k2) { return Math.abs(p[k2 * 4] - bgc[0]) + Math.abs(p[k2 * 4 + 1] - bgc[1]) + Math.abs(p[k2 * 4 + 2] - bgc[2]) < 54; }).length / br.length;
+          if (flat < 0.8) return res({ src: src, cut: false });
+          var isWhite = bgc[0] > 232 && bgc[1] > 232 && bgc[2] > 232;
+          function light(i) {
+            var r = p[i * 4], g = p[i * 4 + 1], b = p[i * 4 + 2];
+            if (isWhite) return r > 232 && g > 232 && b > 232 && Math.max(r, g, b) - Math.min(r, g, b) < 18;
+            return Math.abs(r - bgc[0]) + Math.abs(g - bgc[1]) + Math.abs(b - bgc[2]) < 46;
+          }
           for (var i = 0; i < w; i++) { st.push(i, (h - 1) * w + i); }
           for (var j = 0; j < h; j++) { st.push(j * w, j * w + w - 1); }
           while (st.length) {
