@@ -6,10 +6,20 @@
   Shopify cart. Only renders on /collections/all and hides the regular collection
   section there; every other collection keeps its normal page.
 {%- endcomment -%}
-{%- if collection.handle == 'all' or section.settings.everywhere -%}
+{%- liquid
+  assign mode = ''
+  if template.name == 'search'
+    assign mode = 'search'
+  elsif template.name == 'collection'
+    if collection.handle == 'all' or section.settings.everywhere
+      assign mode = 'collection'
+    endif
+  endif
+-%}
+{%- if mode != '' -%}
 <style>
   /* hide the theme's regular collection section on this page */
-  [id^="shopify-section-"][id$="__main"]:not(:has(.pshelf)) { display: none !important; }
+  [id^="shopify-section-"][id$="__main"]:not(:has(.pshelf)){% if mode == 'search' %}, [id^="shopify-section-"][id$="__search"]:not(:has(.pshelf)){% endif %} { display: none !important; }
 </style>
 <div class="pshelf" id="pshelf-{{ section.id }}">
 <style>
@@ -23,6 +33,19 @@
 .ps-bag b{position:absolute;top:-6px;right:-6px;display:grid;place-items:center;height:18px;min-width:18px;padding:0 4px;border-radius:9px;background:#111;color:#fff;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
 .ps-bag b[hidden]{display:none}
 .ps-main{margin:0 auto;width:100%;max-width:1080px;padding:64px 20px 48px}
+.ps-head{max-width:1080px;margin:0 auto;padding:40px 32px 8px;text-align:center}
+.ps-eye{margin:0;font-size:11px;font-weight:600;letter-spacing:.3em;text-transform:uppercase;color:#8f8982}
+.ps-h1{margin:8px 0 0;font-size:clamp(34px,5vw,56px);line-height:1.04;font-weight:600;letter-spacing:-.025em;color:#111}
+.ps-count{margin:10px 0 0;font-size:14px;color:#6f6a64;font-variant-numeric:tabular-nums}
+.ps-sub{margin:8px auto 0;max-width:60ch;font-size:16px;color:#6f6a64}
+.ps-sort{display:inline-flex;align-items:center;gap:10px;margin-top:22px;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#8f8982}
+.ps-sort select{appearance:none;-webkit-appearance:none;height:40px;padding:0 36px 0 14px;border-radius:10px;border:1px solid #d9d4cd;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f6a64' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center/14px;font:inherit;font-size:14px;letter-spacing:0;text-transform:none;color:#111;cursor:pointer}
+.ps-search{position:relative;max-width:560px;margin:16px auto 0}
+.ps-search svg{position:absolute;left:18px;top:50%;width:18px;height:18px;translate:0 -50%;fill:none;stroke:#6f6a64;stroke-width:2;stroke-linecap:round}
+.ps-search input[type=search]{width:100%;height:54px;padding:0 20px 0 50px;border-radius:14px;border:1px solid #d9d4cd;background:#fff;font:inherit;font-size:17px;color:#111;outline:none;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+.ps-search input[type=search]:focus{border-color:#111}
+.ps-empty{text-align:center;color:#6f6a64;font-size:16px;margin:40px 0}
+.ps-main{padding-top:24px!important}
 .ps-cat{margin:0 0 18px;padding:0 12px;font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#6f6a64}
 @media(min-width:640px){.ps-cat{padding:0 32px}}
 .ps-row{position:relative;margin-bottom:56px}
@@ -120,44 +143,39 @@
   </a>
 
   <main class="ps-main">
+  <header class="ps-head">
+    {%- if mode == 'search' -%}
+      <p class="ps-eye">Search</p>
+      <form class="ps-search" action="{{ routes.search_url }}" method="get" role="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" name="q" value="{{ search.terms | escape }}" placeholder="What are you looking for?" aria-label="Search products" autocomplete="off">
+        <input type="hidden" name="type" value="product">
+      </form>
+      {%- if search.performed -%}<p class="ps-count">{{ search.results_count }} {% if search.results_count == 1 %}result{% else %}results{% endif %} for “{{ search.terms | escape }}”</p>{%- endif -%}
+    {%- else -%}
+      <p class="ps-eye">Collection</p>
+      <h1 class="ps-h1">{% if collection.handle == 'all' %}{{ section.settings.all_title }}{% else %}{{ collection.title | escape }}{% endif %}</h1>
+      <p class="ps-count">{{ collection.products_count }} {% if collection.products_count == 1 %}piece{% else %}pieces{% endif %}</p>
+      {%- if collection.description != blank -%}<p class="ps-sub">{{ collection.description | strip_html | truncatewords: 30 }}</p>{%- endif -%}
+      <label class="ps-sort"><span>Sort</span>
+        <select onchange="var u=new URL(location.href);u.searchParams.set('sort_by',this.value);u.searchParams.delete('page');location.href=u">
+          {%- assign sb = collection.sort_by | default: collection.default_sort_by -%}
+          {%- for o in collection.sort_options -%}<option value="{{ o.value }}"{% if o.value == sb %} selected{% endif %}>{{ o.name }}</option>{%- endfor -%}
+        </select>
+      </label>
+    {%- endif -%}
+  </header>
+  {%- if mode == 'search' -%}
+  {%- paginate search.results by 48 -%}
+    {%- assign list = search.results -%}
+    {%- if search.performed and search.results_count == 0 -%}<p class="ps-empty">Nothing found. Try another word, like “candle” or “necklace”.</p>{%- endif -%}
+    {%- render 'nalea-shelf-items', list: list, other_label: section.settings.other_label -%}
+    {%- if paginate.pages > 1 -%}<nav class="ps-more" aria-label="More results">{%- if paginate.previous -%}<a href="{{ paginate.previous.url }}">Previous</a>{%- endif -%}{%- if paginate.next -%}<a href="{{ paginate.next.url }}">Show more</a>{%- endif -%}</nav>{%- endif -%}
+  {%- endpaginate -%}
+  {%- else -%}
   {%- paginate collection.products by 250 -%}
-    {%- assign shown = 0 -%}
-    {%- assign types = collection.all_types | sort_natural -%}
-    {%- assign groups = types | join: '|~|' | append: '|~|__none__' | split: '|~|' -%}
-    {%- for t in groups -%}
-      {%- capture items -%}
-        {%- for p in collection.products -%}
-          {%- if t == '__none__' -%}{%- if p.type != blank -%}{%- continue -%}{%- endif -%}{%- elsif p.type != t -%}{%- continue -%}{%- endif -%}
-          {{ p.id }},
-        {%- endfor -%}
-      {%- endcapture -%}
-      {%- assign ids = items | strip | split: ',' -%}
-      {%- if ids.size == 0 -%}{%- continue -%}{%- endif -%}
-      <h2 class="ps-cat">{% if t == '__none__' %}{{ section.settings.other_label }}{% else %}{{ t | escape }}{% endif %}</h2>
-      {%- assign row_n = 0 -%}
-      {%- for p in collection.products -%}
-        {%- if t == '__none__' -%}{%- if p.type != blank -%}{%- continue -%}{%- endif -%}{%- elsif p.type != t -%}{%- continue -%}{%- endif -%}
-        {%- assign m = row_n | modulo: 4 -%}
-        {%- if m == 0 -%}<section class="ps-row" aria-label="{{ t | escape }}"><div class="ps-grid">{%- capture names -%}{%- endcapture -%}{%- endif -%}
-        {%- assign img = p.featured_media.preview_image | default: p.featured_image -%}
-        <div class="ps-cell">
-          <button type="button" class="ps-item" data-pid="{{ p.id }}" data-url="{{ p.url }}" data-perso="{% if p.template_suffix contains 'custom' %}true{% else %}false{% endif %}" data-ship="{{ p.metafields.custom.shipping_timeline.value }}" aria-label="{{ p.title | escape }}, {{ p.price | money_without_trailing_zeros | strip_html }}">
-            <span class="ps-art">{% if img %}<img src="{{ img | image_url: width: 400 }}" srcset="{{ img | image_url: width: 240 }} 240w, {{ img | image_url: width: 400 }} 400w" sizes="160px" alt="" loading="lazy" width="{{ img.width }}" height="{{ img.height }}">{% endif %}</span>
-          </button>
-        </div>
-        {%- capture name_cell -%}<div><a href="{{ p.url }}" tabindex="-1"><div class="ps-n">{{ p.title | escape }}</div></a><div class="ps-p">{{ p.price | money_without_trailing_zeros }}{% if p.compare_at_price > p.price %}<s>{{ p.compare_at_price | money_without_trailing_zeros }}</s>{% endif %}</div></div>{%- endcapture -%}
-        {%- assign names = names | append: name_cell -%}
-        {%- assign row_n = row_n | plus: 1 -%}
-        {%- assign m2 = row_n | modulo: 4 -%}
-        {%- if m2 == 0 or row_n == ids.size -%}
-          </div>
-          <div class="ps-shelf" aria-hidden="true"><i></i><i></i><i></i></div>
-          <div class="ps-names">{{ names }}</div>
-          </section>
-        {%- endif -%}
-      {%- endfor -%}
-    {%- endfor -%}
-
+    {%- assign list = collection.products -%}
+    {%- render 'nalea-shelf-items', list: list, other_label: section.settings.other_label -%}
     {%- if paginate.pages > 1 -%}
       <nav class="ps-more" aria-label="More products">
         {%- if paginate.previous -%}<a href="{{ paginate.previous.url }}">Previous</a>{%- endif -%}
@@ -165,23 +183,9 @@
       </nav>
     {%- endif -%}
 
-    <script type="application/json" class="ps-data">{
-      {%- for p in collection.products -%}
-        {%- assign rv = p.metafields.custom.reviews.value -%}
-        {%- assign rsum = 0 -%}{%- assign rcount = 0 -%}{%- if rv.first -%}{%- for r in rv -%}{%- assign rr = r.rating | default: 0 | plus: 0 -%}{%- assign rsum = rsum | plus: rr -%}{%- assign rcount = rcount | plus: 1 -%}{%- endfor -%}{%- endif -%}
-        {{ p.id | json }}: {
-          "t": {{ p.title | json }}, "type": {{ p.type | json }}, "url": {{ p.url | json }}, "handle": {{ p.handle | json }},
-          "desc": {{ p.description | json }},
-          "perso": {% if p.template_suffix contains 'custom' %}true{% else %}false{% endif %},
-          "ship": {{ p.metafields.custom.shipping_timeline.value | default: '' | json }},
-          "rc": {{ rcount }}, "rs": {{ rsum }},
-          "opt": {{ p.options | json }},
-          "v": [{%- for v in p.variants -%}{"id": {{ v.id }}, "t": {{ v.title | json }}, "p": {{ v.price }}, "c": {{ v.compare_at_price | default: 0 | plus: 0 }}, "a": {{ v.available | json }}}{% unless forloop.last %},{% endunless %}{%- endfor -%}],
-          "img": [{%- for im in p.images limit: 8 -%}{{ im | image_url: width: 1200 | json }}{% unless forloop.last %},{% endunless %}{%- endfor -%}]
-        }{% unless forloop.last %},{% endunless %}
-      {%- endfor -%}
-    }</script>
   {%- endpaginate -%}
+  {%- endif -%}
+    <script type="application/json" class="ps-data">{}</script>
   </main>
 
   <div class="ps-page" role="dialog" aria-modal="true" hidden>
@@ -452,7 +456,8 @@
   "name": "Product shelf",
   "settings": [
     { "type": "text", "id": "other_label", "label": "Heading for products without a type", "default": "More to love" },
-    { "type": "checkbox", "id": "everywhere", "label": "Show on every collection (not only All products)", "default": false }
+    { "type": "text", "id": "all_title", "label": "Title on All products", "default": "Shop everything" },
+    { "type": "checkbox", "id": "everywhere", "label": "Show on every collection (not only All products)", "default": true }
   ],
   "presets": [{ "name": "Product shelf" }]
 }

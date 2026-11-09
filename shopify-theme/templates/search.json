@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "shelf": {
+      "type": "nalea-product-shelf",
+      "settings": {}
+    }
+  },
+  "order": [
+    "shelf"
+  ]
+}

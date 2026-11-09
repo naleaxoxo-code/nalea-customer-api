@@ -1,0 +1,37 @@
+{%- comment -%} Shelf rows grouped by product type. Params: list (products or search results), other_label. {%- endcomment -%}
+{%- assign shown = 0 -%}
+    {%- assign types = list | map: "type" | uniq | sort_natural -%}
+    {%- assign groups = types | join: '|~|' | append: '|~|__none__' | split: '|~|' -%}
+    {%- for t in groups -%}
+      {%- capture items -%}
+        {%- for p in list -%}{%- if p.object_type and p.object_type != "product" -%}{%- continue -%}{%- endif -%}
+          {%- if t == '__none__' -%}{%- if p.type != blank -%}{%- continue -%}{%- endif -%}{%- elsif p.type != t -%}{%- continue -%}{%- endif -%}
+          {{ p.id }},
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- assign ids = items | strip | split: ',' -%}
+      {%- if ids.size == 0 -%}{%- continue -%}{%- endif -%}
+      <h2 class="ps-cat">{% if t == '__none__' %}{{ other_label }}{% else %}{{ t | escape }}{% endif %}</h2>
+      {%- assign row_n = 0 -%}
+      {%- for p in list -%}{%- if p.object_type and p.object_type != "product" -%}{%- continue -%}{%- endif -%}
+        {%- if t == '__none__' -%}{%- if p.type != blank -%}{%- continue -%}{%- endif -%}{%- elsif p.type != t -%}{%- continue -%}{%- endif -%}
+        {%- assign m = row_n | modulo: 4 -%}
+        {%- if m == 0 -%}<section class="ps-row" aria-label="{{ t | escape }}"><div class="ps-grid">{%- capture names -%}{%- endcapture -%}{%- endif -%}
+        {%- assign img = p.featured_media.preview_image | default: p.featured_image -%}
+        <div class="ps-cell">
+          <button type="button" class="ps-item" data-pid="{{ p.id }}" data-url="{{ p.url }}" data-perso="{% if p.template_suffix contains 'custom' %}true{% else %}false{% endif %}" data-ship="{{ p.metafields.custom.shipping_timeline.value }}" aria-label="{{ p.title | escape }}, {{ p.price | money_without_trailing_zeros | strip_html }}">
+            <span class="ps-art">{% if img %}<img src="{{ img | image_url: width: 400 }}" srcset="{{ img | image_url: width: 240 }} 240w, {{ img | image_url: width: 400 }} 400w" sizes="160px" alt="" loading="lazy" width="{{ img.width }}" height="{{ img.height }}">{% endif %}</span>
+          </button>
+        </div>
+        {%- capture name_cell -%}<div><a href="{{ p.url }}" tabindex="-1"><div class="ps-n">{{ p.title | escape }}</div></a><div class="ps-p">{{ p.price | money_without_trailing_zeros }}{% if p.compare_at_price > p.price %}<s>{{ p.compare_at_price | money_without_trailing_zeros }}</s>{% endif %}</div></div>{%- endcapture -%}
+        {%- assign names = names | append: name_cell -%}
+        {%- assign row_n = row_n | plus: 1 -%}
+        {%- assign m2 = row_n | modulo: 4 -%}
+        {%- if m2 == 0 or row_n == ids.size -%}
+          </div>
+          <div class="ps-shelf" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="ps-names">{{ names }}</div>
+          </section>
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endfor -%}
