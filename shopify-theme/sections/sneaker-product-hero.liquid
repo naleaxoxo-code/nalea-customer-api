@@ -24,7 +24,23 @@
 .snp-eyebrow{margin:0;font-size:max(12px,1.5cqw);color:var(--color-muted-foreground)}
 .snp-title{margin:2cqw 0 0;font-size:max(22px,2.4cqw);line-height:1.18;font-weight:600;letter-spacing:-.01em;max-width:17cqw;text-wrap:balance;color:inherit}
 .snp-desc{margin:3.6cqw 0 0;max-width:19cqw;font-size:max(11px,1.05cqw);line-height:1.45;font-style:italic;color:var(--color-muted-foreground)}
-.snp-thumbs{display:flex;align-items:center;gap:2.4cqw;margin-top:9cqw}
+.snp-desc{max-height:calc(1.45em * var(--snp-lines,7));overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:color-mix(in oklab,var(--color-muted-foreground) 35%,transparent) transparent;padding-right:.8cqw;outline:none;
+  --fade:2.2em;-webkit-mask-image:linear-gradient(to bottom,#000 0,#000 100%);mask-image:linear-gradient(to bottom,#000 0,#000 100%);transition:-webkit-mask-image .2s}
+.snp-desc[data-fade="bottom"]{-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - var(--fade)),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - var(--fade)),transparent)}
+.snp-desc[data-fade="both"]{-webkit-mask-image:linear-gradient(to bottom,transparent,#000 var(--fade),#000 calc(100% - var(--fade)),transparent);mask-image:linear-gradient(to bottom,transparent,#000 var(--fade),#000 calc(100% - var(--fade)),transparent)}
+.snp-desc[data-fade="top"]{-webkit-mask-image:linear-gradient(to bottom,transparent,#000 var(--fade));mask-image:linear-gradient(to bottom,transparent,#000 var(--fade))}
+.snp-desc::-webkit-scrollbar{width:3px}.snp-desc::-webkit-scrollbar-thumb{background:color-mix(in oklab,var(--color-muted-foreground) 35%,transparent);border-radius:3px}
+.snp-desc:focus-visible{outline:1px solid color-mix(in oklab,var(--color-foreground) 30%,transparent);outline-offset:6px}
+.snp-desc>*{margin:0 0 .7em}.snp-desc>*:last-child{margin-bottom:0}
+.snp-desc :is(h1,h2,h3,h4,h5,h6){font-size:1em;font-weight:600;font-style:normal;color:var(--color-foreground);letter-spacing:0;line-height:1.45;margin:1em 0 .3em}
+.snp-desc>:first-child{margin-top:0}
+.snp-desc :is(strong,b){color:var(--color-foreground);font-weight:600}
+.snp-desc :is(ul,ol){padding-left:1.2em}.snp-desc li{margin:.2em 0}
+.snp-desc a{color:var(--color-foreground);text-underline-offset:2px}
+.snp-desc :is(img,iframe,video,table){display:none}
+.snp-desc *{font-size:inherit!important;font-family:inherit!important;color:inherit;background:none!important}
+.snp-desc :is(strong,b,h1,h2,h3,h4,h5,h6,a){color:var(--color-foreground)}
+.snp-thumbs{display:flex;align-items:center;gap:2.4cqw;margin-top:5cqw}
 .snp-thumbset{display:flex;align-items:center;gap:inherit}
 .snp-thumb{flex:none;width:4.6cqw;height:3cqw;overflow:hidden;border-radius:4px;outline-offset:3px;transition:transform .25s}
 .snp-thumb:hover{transform:translateY(-2px)}
@@ -142,7 +158,7 @@
 .snp-rail button[aria-current="true"]{opacity:1;box-shadow:0 0 0 2px var(--color-foreground)!important}
 @container (max-width:760px){
   .snp-body{grid-template-columns:1fr;grid-template-rows:auto auto auto;padding:24px 20px 72px;row-gap:8px;align-items:start}
-  .snp-desc{max-width:none;margin-top:12px}
+  .snp-desc{max-width:none;margin-top:12px;--snp-lines:8}
   .snp-thumbs{margin-top:16px;gap:16px}
   .snp-thumb{width:56px;height:36px}
   .snp-more{width:36px;height:36px}
@@ -177,7 +193,7 @@
     <div class="snp-info">
       <p class="snp-eyebrow">{{ section.settings.eyebrow | default: p.type | default: p.vendor | escape }}</p>
       <h2 class="snp-title">{{ p.title | escape }}</h2>
-      <div class="snp-desc">{{ p.description | strip_html | truncatewords: section.settings.desc_words }}</div>
+      <div class="snp-desc" tabindex="0" role="region" aria-label="Product description" data-fade="none">{{ p.description }}</div>
       <div class="snp-thumbs"><span class="snp-thumbset"></span><button type="button" class="snp-more" hidden></button></div>
     </div>
 
@@ -673,6 +689,16 @@
     else if (e.key === "Tab") closeMenu(false);
   });
   document.addEventListener("click", function (e) { if (menuOpen && !menu.contains(e.target)) closeMenu(false); });
+
+  var desc = $(".snp-desc");
+  function descFade() {
+    var more = desc.scrollHeight - desc.clientHeight > 2, top = desc.scrollTop > 2, end = desc.scrollTop + desc.clientHeight >= desc.scrollHeight - 2;
+    desc.dataset.fade = !more ? "none" : top && !end ? "both" : top ? "top" : "bottom";
+    if (!more) desc.removeAttribute("tabindex");
+  }
+  desc.addEventListener("scroll", descFade, { passive: true });
+  if (window.ResizeObserver) new ResizeObserver(descFade).observe(desc);
+  descFade();
 
   var BARS = [2,1,3,1,1,2,1,3,2,1,1,2];
   $(".snp-bars").innerHTML = BARS.map(function (b) { return '<i style="width:' + (b === 1 ? 1.5 : b === 2 ? 2.2 : 3) + 'px;height:' + (40 + b * 20) + '%"></i>'; }).join("");
