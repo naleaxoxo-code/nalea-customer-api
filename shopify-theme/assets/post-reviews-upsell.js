@@ -126,6 +126,12 @@
   /* Product photos sit on white; cut the white away (flood fill from the edges)
      and trim to the piece, so it hangs like the cut-outs in the original. */
   var cutCache = {};
+  /* Shopify also serves every store image from the shop's own domain (/cdn/shop/...),
+     which lets the page read the pixels without needing the CDN to allow it. */
+  function sameOrigin(src) {
+    var m = String(src).match(/^(?:https?:)?\/\/cdn\.shopify\.com\/s\/files\/\d+\/\d+\/\d+\/\d+\/(files|products)\/(.+)$/);
+    return m ? "/cdn/shop/" + m[1] + "/" + m[2] : src;
+  }
   function cutout(src) {
     if (cutCache[src]) return cutCache[src];
     cutCache[src] = new Promise(function (res) {
@@ -157,7 +163,7 @@
         } catch (err) { res({ src: src, cut: false }); }
       };
       img.onerror = function () { res({ src: src, cut: false }); };
-      img.src = src;
+      img.src = sameOrigin(src);
     });
     return cutCache[src];
   }
@@ -719,7 +725,7 @@
         var f = el("div", "npx-fig", '<img alt="' + esc(p.title) + '" draggable="false"><i></i><button type="button" class="npx-hit" aria-label="' + esc(p.title) + '"></button>');
         var img = f.querySelector("img"), src = sized(p.featured_image, 700);
         img.src = src;
-        cutout(src).then(function (r) { img.src = r.src; f.classList.toggle("is-cut", r.cut); });
+        cutout(src).then(function (r) { img.src = r.src; f.classList.toggle("is-cut", r.cut); size(); });
         f.querySelector(".npx-hit").onclick = function () { bring(i); };
         figWrap.appendChild(f); return f;
       });
@@ -807,7 +813,8 @@
       W = figWrap.clientWidth; H = figWrap.clientHeight; RH = rail.clientHeight || H;
       var base = pose(0, W, H, n).base * (sec.hasAttribute("data-narrow") ? 0.8 : 1);
       figs.forEach(function (f) {
-        f.firstChild.style.height = base + "px"; f.firstChild.style.width = base * 0.62 + "px";
+        var cut = f.classList.contains("is-cut");
+        f.firstChild.style.height = (cut ? base : base * 0.62) + "px"; f.firstChild.style.width = base * 0.62 + "px";
         f.children[1].style.width = base * 0.36 + "px"; f.children[1].style.height = base * 0.035 + "px";
         f.children[2].style.height = base + "px"; f.children[2].style.width = base * 0.62 + "px";
       });
@@ -963,7 +970,7 @@
       ".npx-figs{position:absolute;inset:0}" +
       ".npx-fig{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0;will-change:transform,filter,opacity}" +
       ".npx-fig>img{position:absolute;bottom:0;left:0;max-width:none;object-fit:contain;object-position:50% 100%;transform:translateX(-50%);pointer-events:none;user-select:none}" +
-      ".npx-fig:not(.is-cut)>img{object-fit:cover;object-position:50% 30%;border-radius:12px;height:62%!important;box-shadow:0 18px 30px -18px rgba(0,0,0,.55)}" +
+      ".npx-fig:not(.is-cut)>img{object-fit:cover;object-position:50% 30%;border-radius:12px;box-shadow:0 18px 30px -18px rgba(0,0,0,.55)}" +
       ".npx-fig.is-cut>img{filter:drop-shadow(0 14px 18px rgba(0,0,0,.28))}" +
       ".npx-fig>i{position:absolute;left:0;bottom:-1px;transform:translate(-50%,50%);border-radius:50%;background:radial-gradient(closest-side,color-mix(in oklab,#000 40%,transparent),transparent);opacity:.6;pointer-events:none}" +
       ".npx-hit{position:absolute;bottom:0;left:0;transform:translateX(-50%);padding:0!important;border:0!important;background:none!important;cursor:pointer;box-shadow:none!important}" +
