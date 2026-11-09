@@ -774,10 +774,10 @@
       ".npx-dlg-act{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:4px}" +
       "@media (max-width:700px){.npx-rdlg[open]{grid-template-columns:1fr;max-height:92svh;overflow:auto;padding:36px 18px 22px;gap:16px}.npx-dfig{height:min(44svh,360px)}.npx-dwire{display:none}.npx-dinfo{text-align:center;align-items:center}}" +
       /* orbit */
-      ".npx-orbit{container-type:inline-size;touch-action:pan-y;overflow:hidden;border-radius:18px;font-family:'Outfit',ui-sans-serif,system-ui,sans-serif}@media (max-width:639px){.npx-orbit{height:auto;min-height:0}}" +
-      ".npx-bd{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;pointer-events:none}" +
-      ".npx-dim{position:absolute;inset:0;background:var(--background,#fff);mix-blend-mode:multiply;opacity:.55;pointer-events:none}" +
-      ".npx-wash{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,var(--npx-bg) 0%,color-mix(in oklab,var(--npx-bg) 38%,transparent) 18%,color-mix(in oklab,var(--npx-bg) 38%,transparent) 82%,var(--npx-bg) 100%)}" +
+      ".npx-orbit{container-type:inline-size;touch-action:pan-y;overflow:hidden;font-family:'Outfit',ui-sans-serif,system-ui,sans-serif}@media (max-width:639px){.npx-orbit{height:auto;min-height:0}}" +
+      ".npx-bd{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;object-position:50% 92%;pointer-events:none}" +
+      ".npx-dim{position:absolute;inset:0;background:var(--background,#fff);mix-blend-mode:multiply;opacity:.5;pointer-events:none}" +
+      ".npx-wash{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,var(--npx-bg) 0%,color-mix(in oklab,var(--npx-bg) 30%,transparent) 16%,color-mix(in oklab,var(--npx-bg) 12%,transparent) 70%,color-mix(in oklab,var(--npx-bg) 30%,transparent) 93%,var(--npx-bg) 100%)}" +
       ".npx-oc{position:absolute;left:50%;top:50%;width:960px;height:520px;transform:translate(-50%,-50%) scale(var(--s,1))}" +
       ".npx-arc{position:absolute;inset:0;width:960px;height:520px;overflow:visible;pointer-events:none}" +
       ".npx-ico{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.npx-fill{fill:currentColor;stroke:none}" +
@@ -813,7 +813,7 @@
       ".npx-signin{padding:0!important;border:0!important;background:none!important;color:inherit!important;font:inherit;text-decoration:underline;cursor:pointer}" +
       ".npx-stars{display:inline-flex;gap:2px}.npx-stars i{width:14px;height:14px;display:block}.npx-stars svg{width:100%;height:100%;fill:color-mix(in oklab,currentColor 22%,transparent)}.npx-stars .on svg{fill:#f5b942}.npx-stars .half svg{fill:url(#none);fill:#f5b942;opacity:.55}" +
       ".npx-react{display:flex;align-items:center;gap:10px;margin-top:16px}" +
-      ".npx-like{display:flex;align-items:center;gap:8px;height:34px;padding:0 14px 0 10px!important;border:0!important;border-radius:99px!important;font:inherit;font-size:10.5px;color:inherit!important;cursor:pointer;background:color-mix(in oklab,var(--foreground,#111) 7%,transparent)!important;transition:background .25s;box-shadow:none!important}" +
+      ".npx-like{display:flex;align-items:center;gap:8px;height:34px;padding:0 14px 0 10px!important;border:0!important;border-radius:99px!important;font:inherit;font-size:10.5px;white-space:nowrap;color:inherit!important;cursor:pointer;background:color-mix(in oklab,var(--foreground,#111) 7%,transparent)!important;transition:background .25s;box-shadow:none!important}" +
       ".npx-like .npx-ico{width:16px;height:16px}.npx-like[aria-pressed=true] .npx-ico{fill:currentColor}.npx-like[aria-pressed=true]{background:color-mix(in oklab,var(--foreground,#111) 14%,transparent)!important}" +
       ".npx-heads{display:flex;align-items:center}.npx-head{position:relative;width:24px;height:24px;margin-left:-7px;padding:0!important;border-radius:50%!important;border:2px solid color-mix(in oklab,var(--background,#fff) 90%,transparent)!important;overflow:hidden;background:color-mix(in oklab,var(--foreground,#111) 18%,transparent)!important;cursor:pointer;box-shadow:none!important}" +
       ".npx-head:first-child{margin-left:0}.npx-head img{width:100%;height:100%;object-fit:cover;display:block}.npx-blank{cursor:default}" +
