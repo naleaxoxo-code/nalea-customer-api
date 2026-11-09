@@ -6,6 +6,31 @@
 -%}
 
 {%- if p != blank -%}
+{%- liquid
+  assign rt_title = p.title | downcase
+  assign rt_type = p.type | downcase
+  assign rt = 'ok'
+  if p.tags contains 'non-returnable' or p.tags contains 'final-sale' or p.tags contains 'final sale'
+    assign rt = 'final'
+  elsif p.gift_card?
+    assign rt = 'gift'
+  elsif rt_title contains 'personali' or rt_title contains 'custom' or rt_title contains 'engraved' or rt_title contains 'monogram'
+    assign rt = 'personal'
+  else
+    assign beauty_words = 'beauty,makeup,make-up,cosmetic,nail,lip gloss,lip liner,lip pencil,lip balm,lipstick,eyelash,lash adhesive,eyebrow,brow ,skin care,skincare,facial,sheet mask,face mask,serum,body lotion,fragrance,perfume,razor,dental,floss,hair tie,scrunchie,bonnet,makeup brush,hairbrush,hair brush,thong,bralette, bra ,bra set,underwear'
+    assign beauty_list = beauty_words | split: ','
+    for w in beauty_list
+      if rt_type contains w or rt_title contains w
+        assign rt = 'hygiene'
+        break
+      endif
+    endfor
+  endif
+  if p.tags contains 'returnable'
+    assign rt = 'ok'
+  endif
+  assign policy_url = shop.refund_policy.url | default: '/policies/refund-policy'
+-%}
 <section
   id="snp-{{ section.id }}"
   class="snp-root"
@@ -135,6 +160,8 @@
 .snp-trust-btn:hover,.snp-trust-btn:focus-visible{color:var(--color-foreground)!important}
 .snp-trust-btn svg{width:max(13px,1.1cqw);height:max(13px,1.1cqw);flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .snp-trust-btn b{color:var(--color-foreground);font-weight:600}
+.snp-trust-btn[data-tone="no"] svg{color:var(--color-muted-foreground)}
+.snp-tip a{color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px;pointer-events:auto}
 .snp-pay{display:flex;flex-wrap:wrap;gap:.6cqw}
 .snp-pay span{display:grid;place-items:center;height:max(20px,1.8cqw);min-width:max(32px,2.9cqw);padding:0 .45cqw;border-radius:4px;background:#fff;font:700 max(9px,.75cqw)/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:0;white-space:nowrap}
 .snp-pay svg{height:62%;width:auto;display:block}
@@ -271,6 +298,13 @@
           <span role="listitem" aria-label="Yoco" style="color:#000;font-weight:800;text-transform:lowercase">yoco</span>
         </div>
         <span class="snp-tip" id="snp-tip-{{ section.id }}" role="tooltip">{{ section.settings.pay_tip | escape }}</span>
+        {%- if section.settings.show_returns -%}
+        <button type="button" class="snp-trust-btn snp-ret" data-rt="{{ rt }}" data-tone="{% if rt == 'ok' %}ok{% else %}no{% endif %}" aria-describedby="snp-rtip-{{ section.id }}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4v4h4"/></svg>
+          <span class="snp-ret-text"></span>
+        </button>
+        <span class="snp-tip snp-rtip" id="snp-rtip-{{ section.id }}" role="tooltip"><span class="snp-rtip-text"></span> <a href="{{ policy_url }}" target="_blank" rel="noopener">Read the full policy</a></span>
+        {%- endif -%}
       </div>
     </div>
 
@@ -302,6 +336,7 @@
             "id": {{ v.id }},
             "options": {{ v.options | json }},
             "price": {{ v.price }},
+            "compare": {{ v.compare_at_price | default: 0 }},
             "sku": {{ v.sku | json }},
             "available": {{ v.available | json }},
             "qty": {{ v.inventory_quantity | default: 0 }},
@@ -321,7 +356,8 @@
       "currency": {{ cart.currency.symbol | default: 'R' | json }},
       "lowStock": {{ section.settings.low_stock }},
       "colours": {{ section.settings.colours | json }},
-      "defaultTint": {{ section.settings.default_tint | json }}
+      "defaultTint": {{ section.settings.default_tint | json }},
+      "returnDays": {{ section.settings.return_days }}
     }
   </script>
 </section>
@@ -475,6 +511,7 @@
     var cta = $(".snp-cta"); cta.disabled = here.soldOut; cta.dataset.state = cart;
     $(".snp-cta-idle").textContent = here.soldOut ? "SOLD OUT" : "ADD TO CART";
     rollPrice(priceOf());
+    if (typeof renderReturns === "function") renderReturns();
     var cv = variantFor(active, size) || startV, skuEl = $(".snp-sku");
     skuEl.hidden = !cv.sku; $(".snp-sku-val").textContent = cv.sku || ""; skuEl.dataset.sku = cv.sku || "";
     skuEl.setAttribute("aria-label", "SKU " + (cv.sku || "") + ", click to copy");
@@ -727,20 +764,49 @@
   if (window.ResizeObserver) new ResizeObserver(descFade).observe(desc);
   descFade();
 
-  var trustBtn = $(".snp-trust-btn"), tip = $(".snp-tip"), tipOn = false, tipTimer;
-  gsap.set(tip, { autoAlpha: 0 });
-  function showTip(on) {
-    if (on === tipOn) return; tipOn = on; clearTimeout(tipTimer);
-    if (on) gsap.fromTo(tip, { autoAlpha: 0, y: 6, scale: 0.96 }, { autoAlpha: 1, y: 0, scale: 1, duration: reduced() ? 0 : 0.3, ease: "back.out(2)" });
-    else gsap.to(tip, { autoAlpha: 0, y: 4, duration: reduced() ? 0 : 0.18, ease: "power2.in" });
+  // ---- Trust lines (secure checkout + returns) with info bubbles ----
+  var RT = {
+    ok: ["<b>" + D.returnDays + "-day returns</b>", "Return unused items in their original packaging, with proof of purchase, within " + D.returnDays + " days of delivery. Return shipping is paid by you."],
+    personal: ["Made just for you, so it can't be returned", "Personalised items can't be returned. If it arrives damaged or wrong, contact us and we'll make it right."],
+    hygiene: ["Hygiene item, so it can't be returned", "For hygiene reasons, beauty and personal-care items can't be returned. If it arrives damaged or wrong, contact us and we'll make it right."],
+    gift: ["Gift cards can't be returned", "Gift cards are non-refundable."],
+    final: ["Final sale, so it can't be returned", "This item is final sale. If it arrives damaged or wrong, contact us and we'll make it right."],
+    sale: ["Sale item, so it can't be returned", "Sale items can't be returned. If it arrives damaged or wrong, contact us and we'll make it right."]
+  };
+  var retBtn = $(".snp-ret");
+  function renderReturns() {
+    if (!retBtn) return;
+    var v = variantFor(active, size) || startV, k = retBtn.dataset.rt;
+    if (k === "ok" && v.compare > v.price) k = "sale";
+    $(".snp-ret-text").innerHTML = RT[k][0];
+    $(".snp-rtip-text").textContent = RT[k][1];
+    retBtn.dataset.tone = k === "ok" ? "ok" : "no";
   }
-  trustBtn.addEventListener("pointerenter", function (e) { if (e.pointerType !== "touch") showTip(true); });
-  trustBtn.addEventListener("pointerleave", function (e) { if (e.pointerType !== "touch") showTip(false); });
-  trustBtn.addEventListener("focus", function () { showTip(true); });
-  trustBtn.addEventListener("blur", function () { showTip(false); });
-  trustBtn.addEventListener("click", function (e) { e.stopPropagation(); showTip(!tipOn); if (tipOn) tipTimer = setTimeout(function () { showTip(false); }, 4000); });
-  document.addEventListener("click", function () { showTip(false); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") showTip(false); });
+  var tips = [];
+  Array.prototype.forEach.call(root.querySelectorAll(".snp-trust-btn"), function (btn) {
+    var tip = document.getElementById(btn.getAttribute("aria-describedby")), t = { on: false, timer: 0 };
+    if (!tip) return;
+    gsap.set(tip, { autoAlpha: 0 });
+    var place = function () { tip.style.bottom = "auto"; tip.style.top = (btn.offsetTop - tip.offsetHeight - 8) + "px"; };
+    t.show = function (on) {
+      if (on === t.on) return; t.on = on; clearTimeout(t.timer);
+      if (on) { tips.forEach(function (o) { if (o !== t) o.show(false); }); place(); gsap.fromTo(tip, { autoAlpha: 0, y: 6, scale: 0.96 }, { autoAlpha: 1, y: 0, scale: 1, duration: reduced() ? 0 : 0.3, ease: "back.out(2)" }); tip.style.pointerEvents = "auto"; }
+      else { gsap.to(tip, { autoAlpha: 0, y: 4, duration: reduced() ? 0 : 0.18, ease: "power2.in" }); tip.style.pointerEvents = "none"; }
+    };
+    var leaveT;
+    btn.addEventListener("pointerenter", function (e) { if (e.pointerType !== "touch") { clearTimeout(leaveT); t.show(true); } });
+    btn.addEventListener("pointerleave", function (e) { if (e.pointerType !== "touch") leaveT = setTimeout(function () { t.show(false); }, 250); });
+    tip.addEventListener("pointerenter", function () { clearTimeout(leaveT); });
+    tip.addEventListener("pointerleave", function (e) { if (e.pointerType !== "touch") leaveT = setTimeout(function () { t.show(false); }, 250); });
+    btn.addEventListener("focus", function () { t.show(true); });
+    btn.addEventListener("blur", function (e) { if (!tip.contains(e.relatedTarget)) t.show(false); });
+    btn.addEventListener("click", function (e) { e.stopPropagation(); t.show(!t.on); if (t.on) t.timer = setTimeout(function () { t.show(false); }, 5000); });
+    tip.addEventListener("click", function (e) { e.stopPropagation(); });
+    tips.push(t);
+  });
+  document.addEventListener("click", function () { tips.forEach(function (t) { t.show(false); }); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") tips.forEach(function (t) { t.show(false); }); });
+  renderReturns();
 
   var BARS = [2,1,3,1,1,2,1,3,2,1,1,2];
   $(".snp-bars").innerHTML = BARS.map(function (b) { return '<i style="width:' + (b === 1 ? 1.5 : b === 2 ? 2.2 : 3) + 'px;height:' + (40 + b * 20) + '%"></i>'; }).join("");
@@ -783,6 +849,8 @@
     { "type": "range", "id": "low_stock", "label": "Show 'Only N left' at or below", "min": 1, "max": 20, "step": 1, "default": 3 },
     { "type": "text", "id": "pay_line", "label": "Secure checkout line", "default": "Secure Payments via Yoco" },
     { "type": "text", "id": "pay_tip", "label": "Secure checkout bubble", "default": "Your payment goes through Yoco's encrypted checkout. Your card details never touch our site." },
+    { "type": "checkbox", "id": "show_returns", "label": "Show returns line", "default": true },
+    { "type": "range", "id": "return_days", "label": "Return window (days)", "min": 7, "max": 60, "step": 1, "default": 30, "info": "Must match your refund policy. Tag a product 'non-returnable' or 'returnable' to override the automatic check." },
     { "type": "text", "id": "toast", "label": "Add to cart message", "default": "Shopping Cart Updated" },
     { "type": "color", "id": "like_color", "label": "Heart colour", "default": "#e11d48" },
     { "type": "color", "id": "foreground", "label": "Text colour", "default": "#ffffff" },
