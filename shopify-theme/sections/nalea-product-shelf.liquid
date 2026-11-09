@@ -302,9 +302,27 @@
     if (reduced()) { page.hidden = true; document.documentElement.style.overflow = ""; btn.dataset.away = "false"; }
     open = null; if (opener) opener.focus({ preventScroll: true });
   }
+  // Click: the product lifts off the shelf, glides to the centre while the wall fades
+  // to the product page's dark brown, then the real product page opens.
+  function goToProduct(b) {
+    var url = b.dataset.url, im = b.querySelector("img");
+    if (reduced() || !im) { location.href = url; return; }
+    var from = rectOf(im), H = Math.min(innerHeight * 0.55, 520), W = H * (from.w / from.h || 0.66);
+    var to = { x: (innerWidth - W) / 2, y: (innerHeight - H) / 2, w: W, h: H };
+    var veil = document.createElement("div");
+    veil.style.cssText = "position:fixed;inset:0;z-index:57;background:radial-gradient(48% 62% at 50% 52%,#5a3b2b,#241b17 72%);opacity:0;pointer-events:none";
+    document.body.appendChild(veil);
+    veil.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 520, easing: SPRING, fill: "forwards" });
+    b.dataset.away = "true";
+    var nav = false, go = function () { if (!nav) { nav = true; location.href = url; } };
+    fly(from, to, im.currentSrc || im.src, go);
+    setTimeout(go, 900);
+    // coming back with the browser Back button: put the product back on the shelf
+    addEventListener("pageshow", function (ev) { if (ev.persisted) { b.dataset.away = "false"; veil.remove(); document.querySelectorAll(".ps-flyer").forEach(function (f) { f.remove(); }); } }, { once: true });
+  }
   root.addEventListener("click", function (e) {
     var b = e.target.closest(".ps-item"); if (!b) return;
-    try { openProduct(b); } catch (err) { console.error("[shelf]", err); location.href = b.dataset.url; }
+    try { goToProduct(b); } catch (err) { location.href = b.dataset.url; }
   });
   $(".ps-back").addEventListener("click", closeProduct);
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && open) closeProduct(); });
