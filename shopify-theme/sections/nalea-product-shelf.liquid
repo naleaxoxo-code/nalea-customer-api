@@ -1,0 +1,428 @@
+{%- comment -%}
+  Product Shelf — Liquid/vanilla-JS port of the 21st.dev "Skincare Product Shelf"
+  (design by Aakash Mehra). Store wall of floating white shelves, four products per
+  shelf, grouped by product type. Click a product and it glides from its spot to the
+  left of a product page; drag it to turn through its photos. Add to Bag uses the real
+  Shopify cart. Only renders on /collections/all and hides the regular collection
+  section there; every other collection keeps its normal page.
+{%- endcomment -%}
+{%- if collection.handle == 'all' or section.settings.everywhere -%}
+<style>
+  /* hide the theme's regular collection section on this page */
+  [id^="shopify-section-"][id$="__main"]:not(:has(.pshelf)) { display: none !important; }
+</style>
+<div class="pshelf" id="pshelf-{{ section.id }}">
+<style>
+.pshelf{position:relative;width:100%;min-height:100dvh;overflow-x:hidden;background:#f3f1ed;color:#111;font-family:inherit;-webkit-font-smoothing:antialiased;padding-top:var(--header-height,60px)}
+.pshelf *,.pshelf *::before,.pshelf *::after{box-sizing:border-box}
+.pshelf button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;letter-spacing:inherit;text-transform:none;box-shadow:none;min-height:0}
+.ps-word{position:absolute;top:calc(var(--header-height,60px) + 16px);left:20px;z-index:3;height:44px;display:flex;align-items:center;font-size:15px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;pointer-events:none}
+.ps-bag{position:fixed;top:calc(var(--header-height,60px) + 16px);right:16px;z-index:60;display:grid!important;place-items:center;width:44px;height:44px;border-radius:12px!important;background:rgba(255,255,255,.8)!important;color:#111!important;box-shadow:0 2px 12px rgba(0,0,0,.08),0 0 0 1px rgba(0,0,0,.06)!important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);transition:transform .1s,background-color .1s;text-decoration:none}
+.ps-bag:hover{background:#fff!important}.ps-bag:active{transform:scale(.94)}
+.ps-bag svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ps-bag b{position:absolute;top:-6px;right:-6px;display:grid;place-items:center;height:18px;min-width:18px;padding:0 4px;border-radius:9px;background:#111;color:#fff;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
+.ps-bag b[hidden]{display:none}
+.ps-main{margin:0 auto;width:100%;max-width:1080px;padding:64px 20px 48px}
+.ps-cat{margin:0 0 18px;padding:0 12px;font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#6f6a64}
+@media(min-width:640px){.ps-cat{padding:0 32px}}
+.ps-row{position:relative;margin-bottom:56px}
+.ps-grid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(4,1fr);align-items:end;gap:12px;padding:0 12px}
+@media(min-width:640px){.ps-grid{gap:32px;padding:0 32px}}
+.ps-cell{display:flex;flex-direction:column;align-items:center}
+.ps-item{position:relative;display:block;width:100%;max-width:160px;aspect-ratio:2/3;border-radius:12px!important;outline:none;cursor:pointer}
+.ps-item:focus-visible{box-shadow:0 0 0 2px #111!important}
+.ps-item[data-away="true"]{visibility:hidden}
+.ps-art{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center}
+.ps-art img{display:block;max-width:100%;max-height:96%;width:auto;height:auto;object-fit:contain;mix-blend-mode:multiply;transform-origin:50% 100%;transition:transform .35s cubic-bezier(.2,.8,.2,1);filter:contrast(1.02)}
+.ps-item:hover .ps-art img{transform:translateY(-3px)}
+.ps-art::after{content:"";position:absolute;left:12%;right:12%;bottom:-3px;height:8px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.28),transparent);pointer-events:none}
+.ps-shelf{position:relative;margin-top:-6px;height:16px}
+.ps-shelf i{position:absolute;left:0;right:0}
+.ps-shelf i:nth-child(1){top:0;height:8px;background:linear-gradient(to bottom,#e6e6ea,#fbfbfd)}
+.ps-shelf i:nth-child(2){top:8px;height:8px;background:linear-gradient(to bottom,#fff,#ececf0);box-shadow:0 1px 0 rgba(0,0,0,.04)}
+.ps-shelf i:nth-child(3){left:2%;right:2%;top:16px;height:34px;background:radial-gradient(50% 100% at 50% 0%,rgba(0,0,0,.13),transparent)}
+.ps-names{margin-top:20px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:0 12px}
+@media(min-width:640px){.ps-names{gap:32px;padding:0 32px}}
+.ps-names div{text-align:center;min-width:0}
+.ps-names a{color:inherit;text-decoration:none}
+.ps-n{font-size:13px;line-height:1.25;font-weight:500;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ps-p{margin-top:2px;font-size:12px;color:#6f6a64;font-variant-numeric:tabular-nums}
+.ps-p s{margin-left:4px;color:#a49e97}
+@media(min-width:640px){.ps-n{font-size:14px}.ps-p{font-size:13px}}
+.ps-more{display:flex;justify-content:center;gap:12px;margin-top:8px}
+.ps-more a{display:inline-flex;align-items:center;height:44px;padding:0 22px;border-radius:10px;background:#111;color:#fff;font-size:15px;font-weight:500;text-decoration:none}
+
+/* product page */
+.ps-page{position:fixed;inset:0;z-index:55;overflow-y:auto;overscroll-behavior:contain;color:#111}
+.ps-page[hidden]{display:none}
+.ps-page-bg{position:fixed;inset:0;background:#f3f1ed;opacity:0}
+.ps-page-in{position:relative;margin:0 auto;display:grid;grid-template-columns:1fr;align-items:center;gap:32px;min-height:100%;max-width:1080px;padding:calc(var(--header-height,60px) + 80px) 20px 48px}
+@media(min-width:768px){.ps-page-in{grid-template-columns:1.05fr 1fr;gap:56px}}
+.ps-stage{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center}
+@media(min-width:768px){.ps-stage{height:calc(100dvh - 7rem - var(--header-height,60px))}}
+.ps-hero{position:relative;z-index:1;aspect-ratio:2/3;height:44vh;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;perspective:900px}
+.ps-hero:active{cursor:grabbing}
+@media(min-width:768px){.ps-hero{height:62vh}}
+.ps-hero .ps-art img{max-height:100%;pointer-events:none;-webkit-user-drag:none}
+.ps-hero .ps-art::after{bottom:-6px;height:12px}
+.ps-surface{position:relative;margin-top:-1.5%;width:86%;height:18px;border-radius:3px;background:linear-gradient(to bottom,#fff,#ececf0);box-shadow:0 18px 40px -12px rgba(0,0,0,.18);opacity:0}
+.ps-hint{margin-top:24px;font-size:12px;color:#8f8982}
+.ps-dots{display:flex;gap:6px;margin-top:10px}.ps-dots span{width:5px;height:5px;border-radius:50%;background:#d9d4cd;transition:background .2s}.ps-dots span[data-on="true"]{background:#111}
+.ps-info{position:relative;z-index:2;opacity:0}
+.ps-back{display:inline-flex!important;align-items:center;gap:2px;margin:0 0 24px -6px!important;padding:4px 6px!important;border-radius:6px!important;font-size:15px!important;color:#111!important;text-underline-offset:4px}
+.ps-back:hover{text-decoration:underline}.ps-back svg{width:16px;height:16px}
+.ps-type{font-size:14px;color:#6f6a64}
+.ps-title{margin:4px 0 0;font-size:clamp(30px,4vw,40px);line-height:1.08;font-weight:600;letter-spacing:-.022em;color:#111}
+.ps-tag{margin:8px 0 0;font-size:19px;line-height:1.35;color:#6f6a64}
+.ps-rate{margin-top:12px;display:flex;align-items:center;gap:6px;font-size:14px;color:#6f6a64}
+.ps-rate span{display:flex;color:#111}.ps-rate svg{width:14px;height:14px}
+.ps-price{margin-top:24px;display:flex;align-items:baseline;gap:10px;font-variant-numeric:tabular-nums}
+.ps-price b{font-size:24px;font-weight:600;letter-spacing:-.01em}.ps-price s{font-size:17px;color:#8f8982}
+.ps-desc{margin:16px 0 0;max-width:54ch;font-size:17px;line-height:1.47;letter-spacing:-.01em;color:rgba(17,17,17,.85)}
+.ps-sizes{margin:28px 0 0;padding:0;border:0}
+.ps-sizes legend{margin-bottom:10px;padding:0;font-size:17px;font-weight:600;letter-spacing:-.01em}
+.ps-size-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.ps-size{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 16px;border-radius:12px;border:1px solid #d9d4cd;background:#fff;font-size:15px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.ps-size:hover{border-color:#8f8982}
+.ps-size[data-on="true"]{border-color:#111;box-shadow:0 0 0 1px #111}
+.ps-size[data-out="true"]{opacity:.45;cursor:not-allowed}
+.ps-size input{position:absolute;opacity:0;pointer-events:none}
+.ps-size:has(input:focus-visible){outline:2px solid #111}
+.ps-size span:first-of-type{font-weight:500}.ps-size span:last-child{color:#6f6a64;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ps-buy{margin-top:28px;display:flex;align-items:stretch;gap:12px}
+.ps-qty{display:flex;align-items:center;border-radius:12px;border:1px solid #d9d4cd;background:#fff}
+.ps-qty button{display:grid!important;place-items:center;width:44px;height:100%;color:#111!important}
+.ps-qty button:disabled{color:#d9d4cd!important;cursor:default}
+.ps-qty button svg{width:16px;height:16px}
+.ps-qty output{width:28px;text-align:center;font-size:17px;font-variant-numeric:tabular-nums}
+.ps-add{flex:1;height:48px;border-radius:10px!important;background:#111!important;color:#fff!important;font-size:16px!important;font-weight:500!important;letter-spacing:-.01em!important;display:grid!important;place-items:center;text-decoration:none;transition:background-color .1s,transform .1s}
+.ps-add:hover{background:#000!important}.ps-add:active{transform:scale(.98)}.ps-add:disabled{opacity:.45;cursor:not-allowed}
+.ps-dl{margin:24px 0 0;display:grid;gap:4px;font-size:14px;line-height:1.35}
+.ps-dl div{display:flex;gap:8px}.ps-dl dt{font-weight:600}.ps-dl dd{margin:0;color:#6f6a64}
+.ps-acc{margin-top:32px;border-top:1px solid #d9d4cd}
+.ps-acc>div{border-bottom:1px solid #d9d4cd}
+.ps-acc button{display:flex!important;width:100%;align-items:center;justify-content:space-between;padding:16px 0!important;text-align:left;font-size:17px!important;font-weight:600!important;letter-spacing:-.01em!important}
+.ps-acc button svg{width:18px;height:18px;color:#6f6a64;transition:transform .3s}
+.ps-acc button[aria-expanded="true"] svg{transform:rotate(180deg)}
+.ps-acc-b{overflow:hidden;height:0}
+.ps-acc-b>div{padding-bottom:20px;font-size:15px;line-height:1.6;color:rgba(17,17,17,.8)}
+.ps-acc-b>div :is(img,iframe,video){max-width:100%;height:auto}
+.ps-acc-b>div ul{padding-left:20px}
+.ps-acc-b a{color:#111}
+.ps-flyer{position:fixed;z-index:58;pointer-events:none;margin:0}
+@media (prefers-reduced-motion:reduce){.pshelf *{transition:none!important}}
+</style>
+
+  <div class="ps-word">{{ shop.name }}</div>
+  <a class="ps-bag" href="{{ routes.cart_url }}" aria-label="Bag, {{ cart.item_count }} items">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+    <b{% if cart.item_count == 0 %} hidden{% endif %}>{{ cart.item_count }}</b>
+  </a>
+
+  <main class="ps-main">
+  {%- paginate collection.products by 250 -%}
+    {%- assign shown = 0 -%}
+    {%- assign types = collection.all_types | sort_natural -%}
+    {%- assign groups = types | join: '|~|' | append: '|~|__none__' | split: '|~|' -%}
+    {%- for t in groups -%}
+      {%- capture items -%}
+        {%- for p in collection.products -%}
+          {%- if t == '__none__' -%}{%- if p.type != blank -%}{%- continue -%}{%- endif -%}{%- elsif p.type != t -%}{%- continue -%}{%- endif -%}
+          {{ p.id }},
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- assign ids = items | strip | split: ',' -%}
+      {%- if ids.size == 0 -%}{%- continue -%}{%- endif -%}
+      <h2 class="ps-cat">{% if t == '__none__' %}{{ section.settings.other_label }}{% else %}{{ t | escape }}{% endif %}</h2>
+      {%- assign row_n = 0 -%}
+      {%- for p in collection.products -%}
+        {%- if t == '__none__' -%}{%- if p.type != blank -%}{%- continue -%}{%- endif -%}{%- elsif p.type != t -%}{%- continue -%}{%- endif -%}
+        {%- assign m = row_n | modulo: 4 -%}
+        {%- if m == 0 -%}<section class="ps-row" aria-label="{{ t | escape }}"><div class="ps-grid">{%- capture names -%}{%- endcapture -%}{%- endif -%}
+        {%- assign img = p.featured_media.preview_image | default: p.featured_image -%}
+        <div class="ps-cell">
+          <button type="button" class="ps-item" data-pid="{{ p.id }}" aria-label="{{ p.title | escape }}, {{ p.price | money_without_trailing_zeros | strip_html }}">
+            <span class="ps-art">{% if img %}<img src="{{ img | image_url: width: 400 }}" srcset="{{ img | image_url: width: 240 }} 240w, {{ img | image_url: width: 400 }} 400w" sizes="160px" alt="" loading="lazy" width="{{ img.width }}" height="{{ img.height }}">{% endif %}</span>
+          </button>
+        </div>
+        {%- capture name_cell -%}<div><a href="{{ p.url }}" tabindex="-1"><div class="ps-n">{{ p.title | escape }}</div></a><div class="ps-p">{{ p.price | money_without_trailing_zeros }}{% if p.compare_at_price > p.price %}<s>{{ p.compare_at_price | money_without_trailing_zeros }}</s>{% endif %}</div></div>{%- endcapture -%}
+        {%- assign names = names | append: name_cell -%}
+        {%- assign row_n = row_n | plus: 1 -%}
+        {%- assign m2 = row_n | modulo: 4 -%}
+        {%- if m2 == 0 or row_n == ids.size -%}
+          </div>
+          <div class="ps-shelf" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="ps-names">{{ names }}</div>
+          </section>
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endfor -%}
+
+    {%- if paginate.pages > 1 -%}
+      <nav class="ps-more" aria-label="More products">
+        {%- if paginate.previous -%}<a href="{{ paginate.previous.url }}">Previous</a>{%- endif -%}
+        {%- if paginate.next -%}<a href="{{ paginate.next.url }}">Show more</a>{%- endif -%}
+      </nav>
+    {%- endif -%}
+
+    <script type="application/json" class="ps-data">{
+      {%- for p in collection.products -%}
+        {%- assign rv = p.metafields.custom.reviews.value -%}
+        {%- assign rsum = 0 -%}{%- for r in rv -%}{%- assign rsum = rsum | plus: r.rating -%}{%- endfor -%}
+        {{ p.id | json }}: {
+          "t": {{ p.title | json }}, "type": {{ p.type | json }}, "url": {{ p.url | json }}, "handle": {{ p.handle | json }},
+          "desc": {{ p.description | json }},
+          "perso": {% if p.template_suffix contains 'custom' %}true{% else %}false{% endif %},
+          "ship": {{ p.metafields.custom.shipping_timeline.value | json }},
+          "rc": {% if rv %}{{ rv.size }}{% else %}0{% endif %}, "rs": {{ rsum }},
+          "opt": {{ p.options | json }},
+          "v": [{%- for v in p.variants -%}{"id": {{ v.id }}, "t": {{ v.title | json }}, "p": {{ v.price }}, "c": {{ v.compare_at_price | default: 0 }}, "a": {{ v.available | json }}}{% unless forloop.last %},{% endunless %}{%- endfor -%}],
+          "img": [{%- for m in p.media limit: 8 -%}{%- if m.preview_image -%}{{ m.preview_image | image_url: width: 1200 | json }}{% unless forloop.last %},{% endunless %}{%- endif -%}{%- endfor -%}]
+        }{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    }</script>
+  {%- endpaginate -%}
+  </main>
+
+  <div class="ps-page" role="dialog" aria-modal="true" hidden>
+    <div class="ps-page-bg"></div>
+    <div class="ps-page-in">
+      <div class="ps-stage">
+        <div class="ps-hero"><span class="ps-art"><img alt="" draggable="false"></span></div>
+        <div class="ps-surface" aria-hidden="true"></div>
+        <p class="ps-hint">Drag to turn</p>
+        <div class="ps-dots" aria-hidden="true"></div>
+      </div>
+      <div class="ps-info">
+        <button type="button" class="ps-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Shelf</button>
+        <div class="ps-type"></div>
+        <h2 class="ps-title"></h2>
+        <p class="ps-tag"></p>
+        <div class="ps-rate" hidden></div>
+        <div class="ps-price"><b></b><s hidden></s></div>
+        <fieldset class="ps-sizes" hidden><legend></legend><div class="ps-size-grid"></div></fieldset>
+        <div class="ps-buy">
+          <div class="ps-qty">
+            <button type="button" class="ps-dec" aria-label="Decrease quantity"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+            <output aria-live="polite">1</output>
+            <button type="button" class="ps-inc" aria-label="Increase quantity"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          </div>
+          <button type="button" class="ps-add"><span aria-live="polite">Add to Bag</span></button>
+        </div>
+        <dl class="ps-dl"></dl>
+        <div class="ps-acc"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  var root = document.getElementById("pshelf-{{ section.id }}");
+  if (!root || root.dataset.ready) return; root.dataset.ready = "1";
+  var D = JSON.parse(root.querySelector(".ps-data").textContent);
+  var $ = function (s, el) { return (el || root).querySelector(s); };
+  var page = $(".ps-page"), bg = $(".ps-page-bg"), hero = $(".ps-hero"), heroImg = $(".ps-hero img"), info = $(".ps-info"), surface = $(".ps-surface");
+  var reduced = function () { return matchMedia("(prefers-reduced-motion: reduce)").matches; };
+  var SPRING = "cubic-bezier(.22,1,.36,1)", DUR = 550;
+  var CUR = {{ cart.currency.symbol | default: 'R' | json }};
+  var money = function (c) { var r = c / 100; return CUR + (r % 1 ? r.toFixed(2) : r.toFixed(0)); };
+  var esc = function (t) { var d = document.createElement("div"); d.textContent = t == null ? "" : String(t); return d.innerHTML; };
+  var ICON = {
+    star: '<path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>',
+    down: '<path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+  };
+
+  // ---- bag ----
+  var bag = $(".ps-bag"), bagN = $(".ps-bag b");
+  function setBag(n, bump) {
+    bagN.textContent = n; bagN.hidden = !n; bag.setAttribute("aria-label", "Bag, " + n + " " + (n === 1 ? "item" : "items"));
+    document.querySelectorAll(".cart-count-bubble span[aria-hidden], [data-cart-count]").forEach(function (el) { el.textContent = n; });
+    if (bump && !reduced()) {
+      bag.animate([{ transform: "scale(1)" }, { transform: "scale(1.18)" }, { transform: "scale(1)" }], { duration: 320, easing: "ease-out" });
+      bagN.animate([{ transform: "scale(.6)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 400, easing: SPRING });
+    }
+  }
+
+  // ---- open / close with a shared-element glide ----
+  var open = null, source = null, imgs = [], idx = 0, opener = null;
+  function rectOf(el) { var r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; }
+  function fly(from, to, src, done) {
+    if (reduced()) { done(); return; }
+    var f = document.createElement("img"); f.className = "ps-flyer"; f.src = src; f.alt = "";
+    f.style.cssText = "left:0;top:0;width:" + from.w + "px;height:" + from.h + "px;object-fit:contain;object-position:50% 100%;mix-blend-mode:multiply";
+    document.body.appendChild(f);
+    var a = f.animate([
+      { transform: "translate(" + from.x + "px," + from.y + "px)", width: from.w + "px", height: from.h + "px" },
+      { transform: "translate(" + to.x + "px," + to.y + "px)", width: to.w + "px", height: to.h + "px" }
+    ], { duration: DUR, easing: SPRING, fill: "forwards" });
+    a.onfinish = function () { done(); f.remove(); };
+  }
+  function fade(el, on, delay, dx) {
+    var k = [{ opacity: on ? 0 : 1, transform: "translateX(" + (on ? dx || 0 : 0) + "px)" }, { opacity: on ? 1 : 0, transform: "translateX(" + (on ? 0 : dx || 0) + "px)" }];
+    return el.animate(k, { duration: reduced() ? 1 : on ? 450 : 260, delay: reduced() ? 0 : delay || 0, easing: SPRING, fill: "forwards" });
+  }
+
+  function openProduct(btn) {
+    var p = D[btn.dataset.pid]; if (!p) return;
+    open = p; source = btn; opener = document.activeElement; idx = 0;
+    imgs = p.img.length ? p.img : [btn.querySelector("img") ? btn.querySelector("img").src : ""];
+    fill(p);
+    var from = rectOf(btn.querySelector("img") || btn);
+    page.hidden = false; page.scrollTop = 0; document.documentElement.style.overflow = "hidden";
+    heroImg.src = imgs[0]; heroImg.style.visibility = "hidden";
+    fade(bg, true, 0); fade(surface, true, 0); fade(info, true, 50, 24);
+    btn.dataset.away = "true";
+    requestAnimationFrame(function () {
+      var to = rectOf(hero);
+      fly(from, to, btn.querySelector("img") ? btn.querySelector("img").currentSrc || btn.querySelector("img").src : imgs[0], function () {
+        heroImg.style.visibility = "visible";
+        // one turn as it arrives
+        if (!reduced()) hero.animate([{ transform: "rotateY(0deg)" }, { transform: "rotateY(360deg)" }], { duration: 1100, easing: "cubic-bezier(.25,.1,.25,1)" });
+      });
+      $(".ps-back").focus({ preventScroll: true });
+    });
+  }
+  function closeProduct() {
+    if (!open) return;
+    var btn = source, to = btn.querySelector("img") ? rectOf(btn.querySelector("img")) : rectOf(btn), from = rectOf(hero);
+    fade(info, false, 0, 24); fade(surface, false, 0); var b = fade(bg, false, 60);
+    heroImg.style.visibility = "hidden";
+    fly(from, to, imgs[0], function () { btn.dataset.away = "false"; });
+    b.onfinish = function () { page.hidden = true; document.documentElement.style.overflow = ""; };
+    if (reduced()) { page.hidden = true; document.documentElement.style.overflow = ""; btn.dataset.away = "false"; }
+    open = null; if (opener) opener.focus({ preventScroll: true });
+  }
+  root.addEventListener("click", function (e) { var b = e.target.closest(".ps-item"); if (b) openProduct(b); });
+  $(".ps-back").addEventListener("click", closeProduct);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && open) closeProduct(); });
+
+  // ---- fill the page ----
+  var vSel = null, qty = 1;
+  function fill(p) {
+    page.setAttribute("aria-label", p.t);
+    $(".ps-type").textContent = p.type || "";
+    $(".ps-title").textContent = p.t;
+    var plain = (p.desc || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    var first = (plain.match(/^.{20,140}?[.!?](\s|$)/) || [plain.slice(0, 120)])[0].trim();
+    $(".ps-tag").textContent = first;
+    $(".ps-desc") && $(".ps-desc").remove();
+    var rate = $(".ps-rate");
+    if (p.rc) {
+      var avg = p.rs / p.rc, st = "";
+      for (var i = 0; i < 5; i++) st += '<svg viewBox="0 0 24 24" aria-hidden="true" fill="' + (i < Math.round(avg) ? "#111" : "transparent") + '">' + ICON.star + "</svg>";
+      rate.innerHTML = '<span aria-label="Rated ' + avg.toFixed(1) + ' out of 5">' + st + "</span>" + avg.toFixed(1) + " · " + p.rc + " " + (p.rc === 1 ? "rating" : "ratings");
+      rate.hidden = false;
+    } else rate.hidden = true;
+    // sizes / variants
+    var fs = $(".ps-sizes"), grid = $(".ps-size-grid");
+    grid.innerHTML = "";
+    var multi = p.v.length > 1;
+    fs.hidden = !multi;
+    $("legend", fs).textContent = multi ? (p.opt && p.opt.length === 1 ? p.opt[0] : "Options") : "";
+    vSel = p.v.filter(function (v) { return v.a; })[0] || p.v[0];
+    p.v.forEach(function (v) {
+      var l = document.createElement("label"); l.className = "ps-size"; l.dataset.out = String(!v.a);
+      l.innerHTML = '<input type="radio" name="ps-size-{{ section.id }}"' + (v.a ? "" : " disabled") + '><span>' + esc(v.t) + "</span><span>" + (v.a ? money(v.p) : "Sold out") + "</span>";
+      l.querySelector("input").addEventListener("change", function () { vSel = v; paint(); });
+      grid.appendChild(l); v._el = l;
+    });
+    qty = 1;
+    // delivery
+    var dl = $(".ps-dl"), ship = { same_day: "Same or next day", "7_days": "Ships in 5–7 business days", "14_days": "Made for you, ships in 10–14 business days" }[p.ship];
+    dl.innerHTML = (ship ? '<div><dt>Delivery:</dt><dd>' + ship + "</dd></div>" : "") + '<div><dt>Full details:</dt><dd><a href="' + p.url + '" style="color:inherit">View product page</a></dd></div>';
+    // sections
+    var acc = $(".ps-acc"); acc.innerHTML = "";
+    [["Details", p.desc || "<p>" + esc(first) + "</p>"]].forEach(function (s, k) {
+      var d = document.createElement("div");
+      d.innerHTML = '<button type="button" aria-expanded="false">' + s[0] + '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICON.down + '</svg></button><div class="ps-acc-b"><div></div></div>';
+      d.querySelector(".ps-acc-b > div").innerHTML = s[1];
+      var btn = d.querySelector("button"), body = d.querySelector(".ps-acc-b");
+      btn.addEventListener("click", function () {
+        var on = btn.getAttribute("aria-expanded") !== "true"; btn.setAttribute("aria-expanded", String(on));
+        var h = body.firstElementChild.offsetHeight;
+        body.animate([{ height: (on ? 0 : h) + "px", opacity: on ? 0 : 1 }, { height: (on ? h : 0) + "px", opacity: on ? 1 : 0 }], { duration: reduced() ? 1 : 450, easing: SPRING });
+        body.style.height = on ? "auto" : "0";
+      });
+      if (k === 0) { btn.setAttribute("aria-expanded", "true"); body.style.height = "auto"; }
+      acc.appendChild(d);
+    });
+    // dots for photos
+    var dots = $(".ps-dots"); dots.innerHTML = imgs.length > 1 ? imgs.map(function () { return "<span></span>"; }).join("") : "";
+    $(".ps-hint").textContent = imgs.length > 1 ? "Drag to turn" : "";
+    paint();
+  }
+  function paint() {
+    var p = open; if (!p) return;
+    p.v.forEach(function (v) { v._el.dataset.on = String(v === vSel); v._el.querySelector("input").checked = v === vSel; });
+    var pb = $(".ps-price b"), ps = $(".ps-price s");
+    pb.textContent = money(vSel.p);
+    ps.hidden = !(vSel.c > vSel.p); ps.textContent = vSel.c > vSel.p ? money(vSel.c) : "";
+    $(".ps-qty output").textContent = qty; $(".ps-dec").disabled = qty === 1;
+    var add = $(".ps-add");
+    add.disabled = !vSel.a && !p.perso;
+    $("span", add).textContent = p.perso ? "Personalise it" : vSel.a ? "Add to Bag" : "Sold out";
+    $(".ps-qty").style.display = p.perso ? "none" : "";
+    Array.prototype.forEach.call($(".ps-dots").children, function (d, k) { d.dataset.on = String(k === idx); });
+  }
+  $(".ps-dec").addEventListener("click", function () { qty = Math.max(1, qty - 1); paint(); });
+  $(".ps-inc").addEventListener("click", function () { qty = Math.min(9, qty + 1); paint(); });
+  $(".ps-add").addEventListener("click", function () {
+    var p = open, btn = this, lab = $("span", btn); if (!p) return;
+    if (p.perso) { location.href = p.url + (p.v.length > 1 ? "?variant=" + vSel.id : ""); return; }
+    btn.disabled = true;
+    fetch((window.Shopify && Shopify.routes ? Shopify.routes.root : "/") + "cart/add.js", {
+      method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ items: [{ id: vSel.id, quantity: qty }] })
+    }).then(function (r) { if (!r.ok) throw r; return fetch("/cart.js"); }).then(function (r) { return r.json(); }).then(function (c) {
+      setBag(c.item_count, true); lab.textContent = "Added to Bag";
+      document.dispatchEvent(new CustomEvent("cart:refresh", { bubbles: true }));
+      setTimeout(function () { lab.textContent = "Add to Bag"; btn.disabled = false; }, 1800);
+    }).catch(function () { lab.textContent = "Couldn't add, try again"; setTimeout(function () { lab.textContent = "Add to Bag"; btn.disabled = false; }, 1800); });
+  });
+
+  // ---- drag to turn through the photos, with momentum that settles on one ----
+  var drag = null, spin = 0, raf = 0;
+  function showSpin(v) {
+    if (imgs.length < 2) return;
+    var n = imgs.length, i = ((Math.round(v) % n) + n) % n;
+    var frac = v - Math.round(v);
+    hero.style.transform = "rotateY(" + (frac * -70).toFixed(1) + "deg)";
+    if (i !== idx) { idx = i; heroImg.src = imgs[i]; paint(); }
+  }
+  hero.addEventListener("pointerdown", function (e) {
+    if (imgs.length < 2) return;
+    hero.setPointerCapture(e.pointerId); cancelAnimationFrame(raf);
+    drag = { x: e.clientX, v: spin, s: [{ x: e.clientX, t: e.timeStamp }] };
+  });
+  hero.addEventListener("pointermove", function (e) {
+    if (!drag) return;
+    spin = drag.v - (e.clientX - drag.x) / 160; showSpin(spin);
+    drag.s.push({ x: e.clientX, t: e.timeStamp }); if (drag.s.length > 5) drag.s.shift();
+  });
+  function release() {
+    if (!drag) return;
+    var a = drag.s[0], b = drag.s[drag.s.length - 1]; drag = null;
+    var vel = b.t > a.t ? -((b.x - a.x) / (b.t - a.t)) * 1000 / 160 : 0; // photos per second
+    var target = Math.round(spin + vel * 0.35), start = spin, t0 = performance.now(), d = reduced() ? 1 : 700;
+    (function step(now) {
+      var t = Math.min(1, (now - t0) / d), e2 = 1 - Math.pow(1 - t, 3);
+      spin = start + (target - start) * e2; showSpin(spin);
+      if (t < 1) raf = requestAnimationFrame(step); else { spin = target; hero.style.transform = ""; showSpin(spin); }
+    })(t0);
+  }
+  hero.addEventListener("pointerup", release); hero.addEventListener("pointercancel", release);
+})();
+</script>
+</div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Product shelf",
+  "settings": [
+    { "type": "text", "id": "other_label", "label": "Heading for products without a type", "default": "More to love" },
+    { "type": "checkbox", "id": "everywhere", "label": "Show on every collection (not only All products)", "default": false }
+  ],
+  "presets": [{ "name": "Product shelf" }]
+}
+{% endschema %}

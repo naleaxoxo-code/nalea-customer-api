@@ -1,0 +1,16 @@
+{
+  "sections": {
+    "shelf": {
+      "type": "nalea-product-shelf",
+      "settings": {}
+    },
+    "main": {
+      "type": "nalea-collection",
+      "settings": {}
+    }
+  },
+  "order": [
+    "shelf",
+    "main"
+  ]
+}
