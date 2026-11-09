@@ -170,44 +170,43 @@
 .snp-trust-btn b{color:var(--color-foreground);font-weight:600}
 .snp-trust-btn[data-tone="no"] svg{color:var(--color-foreground)}
 .snp-tip a{color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px;pointer-events:auto}
-.snp-sheet,.snp-sheet *{box-sizing:border-box}
-.snp-live{position:absolute;left:50%;top:50%;z-index:2;translate:-50% -40%;width:72%;text-align:center;pointer-events:none;opacity:0;visibility:hidden}
-.snp-live-t{display:block;font-family:"Great Vibes","Allura","Brush Script MT",cursive;font-size:clamp(28px,4.6cqw,72px);line-height:1.1;font-weight:400;letter-spacing:.01em;
-  background:linear-gradient(100deg,#9a7327 0%,#e8cb82 28%,#fff4cf 46%,#c9a84c 62%,#8b6a00 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 2px 6px rgba(0,0,0,.45));overflow-wrap:anywhere;animation:snp-gold 4s linear infinite}
-.snp-live-t+.snp-live-t{font-size:clamp(18px,2.4cqw,38px);margin-top:.2em}
-@keyframes snp-gold{to{background-position:-220% 0}}
-.snp-live-n{display:inline-block;margin-top:1cqw;padding:.35em .9em;border-radius:999px;background:color-mix(in oklab,var(--color-background) 70%,transparent);color:var(--color-muted-foreground);font-size:max(10px,.8cqw);letter-spacing:.06em}
-@media (max-width:760px){.snp-sheet-box{max-height:58vh}}
-.snp-sheet{position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:flex-end;padding:3vh 4vw;color:var(--color-foreground)}
-.snp-sheet[hidden]{display:none}
-.snp-sheet-scrim{position:absolute;inset:0;background:color-mix(in oklab,var(--color-background) 18%,transparent)!important;border:0!important;padding:0!important;cursor:default}
-.snp-sheet-box{position:relative;width:min(420px,100%);max-height:88vh;overflow:auto;overscroll-behavior:contain;border-radius:18px;background:color-mix(in oklab,var(--color-foreground) 6%,var(--color-background));box-shadow:0 30px 80px -20px rgba(0,0,0,.6),0 0 0 1px color-mix(in oklab,var(--color-foreground) 12%,transparent);padding:22px}
-.snp-sheet-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
-.snp-sheet-hd h3{margin:0;font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--color-foreground)}
-.snp-sheet-sub{margin:0 0 16px;font-size:13px;color:var(--color-muted-foreground)}
-.snp-sheet-x{width:32px!important;height:32px!important;border-radius:50%!important;display:grid!important;place-items:center!important;background:transparent!important;border:0!important;color:var(--color-foreground)!important;padding:0!important}
-.snp-sheet-x svg{width:16px;height:16px}
-.snp-board{margin-bottom:16px}
-.snp-board-t{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-muted-foreground)}
-.snp-board-t em{font-style:normal;color:var(--snp-like)}
-.snp-field{display:block;width:100%;border-radius:10px;border:1px solid color-mix(in oklab,var(--color-foreground) 18%,transparent)!important;background:color-mix(in oklab,var(--color-background) 70%,transparent)!important;color:var(--color-foreground)!important;padding:11px 13px!important;font:inherit;font-size:15px!important;outline:none;box-shadow:none!important;transition:border-color .2s}
-.snp-field:focus{border-color:var(--color-foreground)!important}
-textarea.snp-field{min-height:96px;resize:vertical}
-.snp-board-l{display:block;margin:0 0 6px;font-size:13px;color:var(--color-foreground)}
-.snp-board-h{margin-top:6px;font-size:12px;color:var(--color-muted-foreground)}
-.snp-count-c{margin-top:4px;text-align:right;font-size:11px;color:var(--color-muted-foreground);font-variant-numeric:tabular-nums}
-.snp-drop{position:relative;display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;border:1px dashed color-mix(in oklab,var(--color-foreground) 28%,transparent);cursor:pointer;transition:border-color .2s,background .2s}
-.snp-drop:hover,.snp-drop[data-over="true"]{border-color:var(--color-foreground);background:color-mix(in oklab,var(--color-foreground) 5%,transparent)}
-.snp-drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
-.snp-drop svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.snp-drop b{display:block;font-size:14px;font-weight:600}.snp-drop span{display:block;font-size:12px;color:var(--color-muted-foreground)}
-.snp-drop img{width:52px;height:52px;object-fit:cover;border-radius:8px;flex:none;margin-left:auto}
-.snp-board[data-bad="true"] .snp-field,.snp-board[data-bad="true"] .snp-drop{border-color:#f87171!important}
-.snp-board-e{display:none;margin-top:6px;font-size:12px;color:#fca5a5}.snp-board[data-bad="true"] .snp-board-e{display:block}
-.snp-sheet-go{width:100%;height:48px;margin-top:6px;background:var(--color-foreground)!important;color:var(--color-background)!important;border:0!important;border-radius:0!important;font-weight:600!important;font-size:13px!important;letter-spacing:.06em!important;cursor:pointer}
-.snp-sheet-go:disabled{opacity:.55;cursor:wait}
-@media (max-width:760px){.snp-sheet{padding:0;justify-content:center}.snp-sheet-box{width:100%;max-height:86vh;border-radius:18px 18px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom))}}
+.snp-eng{position:relative;margin-top:2.4cqw;padding:1.4cqw 1.5cqw 1.1cqw;border-radius:14px;
+  background:linear-gradient(160deg,color-mix(in oklab,#c9a84c 14%,transparent),color-mix(in oklab,var(--color-foreground) 3%,transparent) 60%);
+  box-shadow:inset 0 0 0 1px color-mix(in oklab,#c9a84c 38%,transparent);transition:box-shadow .3s}
+.snp-eng[data-bad="true"]{box-shadow:inset 0 0 0 1px #f87171}
+.snp-eng-hd{display:flex;align-items:center;justify-content:space-between;gap:.8cqw}
+.snp-eng-hd .snp-label{display:flex;align-items:baseline;gap:.5em;white-space:nowrap}
+.snp-eng-hd .snp-label i{font-style:normal;color:#e8cb82;font-size:.75em;letter-spacing:.06em}
+.snp-eng-nav{display:flex;align-items:center;gap:.4cqw}
+.snp-eng-nav button{display:grid!important;place-items:center!important;width:max(24px,2cqw)!important;height:max(24px,2cqw)!important;padding:0!important;border:0!important;border-radius:50%!important;background:transparent!important;color:var(--color-muted-foreground)!important;box-shadow:none!important}
+.snp-eng-nav button:hover:not(:disabled){color:var(--color-foreground)!important}
+.snp-eng-nav button:disabled{opacity:.3}
+.snp-eng-nav svg{width:60%;height:60%}
+.snp-eng-dots{display:none;gap:4px}.snp-eng-dots span{width:5px;height:5px;border-radius:50%;background:color-mix(in oklab,var(--color-muted-foreground) 40%,transparent);transition:background .2s,transform .2s}
+.snp-eng-dots span[data-done="true"]{background:var(--color-muted-foreground)}
+.snp-eng-dots span[data-on="true"]{background:#e8cb82;transform:scale(1.3)}
+.snp-board{display:none}.snp-board[data-on="true"]{display:block}
+.snp-plate{display:block;width:100%;margin:.6cqw 0 0;padding:.2em 0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;outline:none;text-align:center;
+  font-family:"Great Vibes","Allura","Brush Script MT",cursive!important;font-size:max(30px,2.9cqw)!important;line-height:1.25!important;font-weight:400!important;letter-spacing:.01em!important;
+  color:#e8cb82!important;caret-color:#e8cb82;text-shadow:0 1px 0 rgba(0,0,0,.35),0 0 18px color-mix(in oklab,#c9a84c 35%,transparent)}
+.snp-plate::placeholder{color:color-mix(in oklab,#e8cb82 38%,transparent)!important;opacity:1}
+textarea.snp-plate{min-height:2.6em;resize:none;font-size:max(22px,2.1cqw)!important;line-height:1.3!important}
+.snp-rule{height:1px;margin:.2cqw 8% .7cqw;background:linear-gradient(90deg,transparent,color-mix(in oklab,#c9a84c 70%,transparent),transparent);transition:transform .3s}
+.snp-board:focus-within .snp-rule{transform:scaleX(1.08)}
+.snp-eng-ft{display:flex;align-items:center;justify-content:space-between;gap:1cqw;font-size:max(11px,.9cqw);color:var(--color-muted-foreground)}
+.snp-eng-ft em{font-style:normal}
+.snp-eng-cc{font-variant-numeric:tabular-nums}
+.snp-eng-err{display:none;margin-top:.4cqw;font-size:max(11px,.9cqw);color:#fca5a5}.snp-eng[data-bad="true"] .snp-eng-err{display:block}
+.snp-drop{position:relative;display:flex;align-items:center;justify-content:center;gap:1cqw;min-height:max(78px,6.6cqw);margin:.6cqw 0 .7cqw;border-radius:10px;border:1px dashed color-mix(in oklab,#c9a84c 60%,transparent);color:#e8cb82;cursor:pointer;transition:background .2s}
+.snp-drop:hover,.snp-drop[data-over="true"]{background:color-mix(in oklab,#c9a84c 10%,transparent)}
+.snp-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.snp-drop svg{width:max(20px,1.7cqw);height:max(20px,1.7cqw);fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.snp-drop b{font-size:max(12px,1cqw);font-weight:500}
+.snp-drop img{width:max(52px,4.4cqw);height:max(52px,4.4cqw);object-fit:cover;border-radius:8px}
+.snp-eng-note{margin:.5cqw 0 0;font-size:max(10px,.8cqw);color:color-mix(in oklab,var(--color-muted-foreground) 80%,transparent)}
+@keyframes snp-shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.snp-eng[data-shake="true"]{animation:snp-shake .4s}
+
 .snp-pay{display:flex;flex-wrap:wrap;gap:.6cqw}
 .snp-pay span{display:grid;place-items:center;height:max(20px,1.8cqw);min-width:max(32px,2.9cqw);padding:0 .45cqw;border-radius:4px;background:#fff;font:700 max(9px,.75cqw)/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:0;white-space:nowrap}
 .snp-pay svg{height:62%;width:auto;display:block}
@@ -261,6 +260,9 @@ textarea.snp-field{min-height:96px;resize:vertical}
   .snp-swatches{margin-top:12px;gap:16px}
   .snp-actions{margin-top:22px;gap:20px}
   .snp-trust{margin-top:18px;gap:8px}
+  .snp-eng{margin-top:18px;padding:14px 16px 12px}
+  .snp-eng-nav{gap:4px}
+  .snp-eng-ft{gap:10px}
   .snp-pay{gap:6px}
   .snp-cta{flex:1}
   .snp-stock{margin-top:8px;gap:6px}
@@ -287,7 +289,6 @@ textarea.snp-field{min-height:96px;resize:vertical}
       <div class="snp-reflects" aria-hidden="true"></div>
       <div class="snp-float"><div class="snp-tilt"><span class="snp-shoe snp-sheen" aria-hidden="true"></span></div></div>
       <span class="snp-loupe" aria-hidden="true"><span></span></span>
-      <div class="snp-live" aria-hidden="true"><span class="snp-live-t"></span><span class="snp-live-n">Preview only. Final placement and lettering are crafted by hand.</span></div>
       <span class="snp-hint" data-seen="false" aria-hidden="true"><span class="snp-hint-fine">Hold to zoom</span><span class="snp-hint-touch">Tap to view</span></span>
     </div>
 
@@ -314,6 +315,49 @@ textarea.snp-field{min-height:96px;resize:vertical}
         <span class="snp-label snp-colour">COLOUR</span>
         <div class="snp-swatches" role="group" aria-label="Colour"></div>
       </div>
+      {%- if board_count > 0 -%}
+      <div class="snp-eng" role="group" aria-labelledby="snp-eh-{{ section.id }}" data-bad="false">
+        <div class="snp-eng-hd">
+          <span class="snp-label" id="snp-eh-{{ section.id }}">PERSONALISE{% if board_count > 1 %} <i class="snp-eng-step">1/{{ board_count }}</i>{% endif %}</span>
+          {%- if board_count > 1 -%}
+          <span class="snp-eng-nav">
+            <button type="button" class="snp-eng-prev" aria-label="Previous field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <span class="snp-eng-dots" aria-hidden="true">{% for i in (1..board_count) %}<span></span>{% endfor %}</span>
+            <button type="button" class="snp-eng-next" aria-label="Next field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+          </span>
+          {%- endif -%}
+        </div>
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'personalization_board' -%}
+            {%- assign bt = block.settings.title | default: 'Personalisation' -%}
+            {%- assign bl = block.settings.field_label | default: bt -%}
+            {%- if block.settings.type == 'photo' and bl == 'Your Name' -%}{%- assign bl = 'Your photo' -%}{%- endif -%}
+            <div class="snp-board" data-type="{{ block.settings.type }}" data-req="{{ block.settings.required }}" data-key="{{ bt | escape }}" data-label="{{ bt | escape }}" {{ block.shopify_attributes }}>
+              {%- case block.settings.type -%}
+                {%- when 'photo' -%}
+                  <label class="snp-drop">
+                    <input type="file" accept="image/*" aria-label="{{ bl | escape }}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l2-2.5h6L17 7h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                    <b class="snp-drop-t">Add your photo</b>
+                    <img alt="" hidden>
+                  </label>
+                  <div class="snp-eng-ft"><em>{{ bt | escape }}{% unless block.settings.required %} · optional{% endunless %}</em><span>JPG or PNG · 10MB</span></div>
+                {%- when 'message' -%}
+                  <textarea class="snp-plate" rows="2" maxlength="200" aria-label="{{ bl | escape }}" placeholder="{{ block.settings.field_placeholder | default: 'Your message' | escape }}"></textarea>
+                  <div class="snp-rule" aria-hidden="true"></div>
+                  <div class="snp-eng-ft"><em>{{ bt | escape }}{% unless block.settings.required %} · optional{% endunless %}</em><span class="snp-eng-cc">0/200</span></div>
+                {%- else -%}
+                  <input class="snp-plate" type="text" maxlength="30" autocomplete="off" spellcheck="false" aria-label="{{ bl | escape }}" placeholder="{% if block.settings.field_placeholder == blank or block.settings.field_placeholder == 'Enter here...' %}Your name{% else %}{{ block.settings.field_placeholder | escape }}{% endif %}">
+                  <div class="snp-rule" aria-hidden="true"></div>
+                  <div class="snp-eng-ft"><em>{{ bt | escape }}{% unless block.settings.required %} · optional{% endunless %}</em><span class="snp-eng-cc">0/30</span></div>
+              {%- endcase -%}
+              {%- if block.settings.hint != blank -%}<p class="snp-eng-note">{{ block.settings.hint | escape }}</p>{%- endif -%}
+            </div>
+          {%- endif -%}
+        {%- endfor -%}
+        <div class="snp-eng-err" role="alert"></div>
+      </div>
+      {%- endif -%}
       <div class="snp-actions">
         <button type="button" class="snp-cta" data-state="idle" aria-live="polite">
           <span class="snp-cta-idle">ADD TO CART</span>
@@ -377,47 +421,6 @@ textarea.snp-field{min-height:96px;resize:vertical}
     <div class="snp-toast" role="status" aria-live="polite"><i aria-hidden="true"></i><span>{{ section.settings.toast | escape }}</span><small></small></div>
   </div>
 
-  {%- if board_count > 0 -%}
-  <div class="snp-sheet" role="dialog" aria-modal="true" aria-labelledby="snp-sh-{{ section.id }}" hidden>
-    <button type="button" class="snp-sheet-scrim" aria-label="Close" tabindex="-1"></button>
-    <form class="snp-sheet-box" novalidate>
-      <div class="snp-sheet-hd">
-        <h3 id="snp-sh-{{ section.id }}">Personalise your item</h3>
-        <button type="button" class="snp-sheet-x" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-      </div>
-      <p class="snp-sheet-sub">Tell us how to make it yours. We'll add these details to your order.</p>
-      {%- for block in section.blocks -%}
-        {%- if block.type == 'personalization_board' -%}
-          {%- assign bt = block.settings.title | default: 'Personalisation' -%}
-          <div class="snp-board" data-type="{{ block.settings.type }}" data-req="{{ block.settings.required }}" data-key="{{ bt | escape }}" {{ block.shopify_attributes }}>
-            <div class="snp-board-t"><span>{{ bt | escape }}</span>{% if block.settings.required %}<em>Required</em>{% endif %}</div>
-            {%- case block.settings.type -%}
-              {%- when 'photo' -%}
-                <label class="snp-board-l" for="snp-f-{{ block.id }}">{{ block.settings.field_label | default: 'Your photo' | escape }}</label>
-                <div class="snp-drop">
-                  <input type="file" id="snp-f-{{ block.id }}" accept="image/*">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l2-2.5h6L17 7h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-                  <div><b class="snp-drop-t">Tap to upload your photo</b><span>JPG or PNG, up to 10MB</span></div>
-                  <img alt="" hidden>
-                </div>
-              {%- when 'message' -%}
-                <label class="snp-board-l" for="snp-f-{{ block.id }}">{{ block.settings.field_label | default: 'Your message' | escape }}</label>
-                <textarea class="snp-field" id="snp-f-{{ block.id }}" maxlength="500" placeholder="{{ block.settings.field_placeholder | default: 'Write your message here...' | escape }}"></textarea>
-                <div class="snp-count-c"><span>0</span>/500</div>
-              {%- else -%}
-                <label class="snp-board-l" for="snp-f-{{ block.id }}">{{ block.settings.field_label | default: 'Your name' | escape }}</label>
-                <input class="snp-field" type="text" id="snp-f-{{ block.id }}" maxlength="100" autocomplete="off" placeholder="{{ block.settings.field_placeholder | default: 'Enter here...' | escape }}">
-            {%- endcase -%}
-            {%- if block.settings.hint != blank -%}<div class="snp-board-h">{{ block.settings.hint | escape }}</div>{%- endif -%}
-            <div class="snp-board-e">{% if block.settings.type == 'photo' %}Please add a photo.{% else %}Please fill this in.{% endif %}</div>
-          </div>
-        {%- endif -%}
-      {%- endfor -%}
-      <button type="submit" class="snp-sheet-go">ADD TO CART</button>
-    </form>
-  </div>
-  {%- endif -%}
-
   <div class="snp-viewer" role="dialog" aria-modal="true" aria-label="{{ p.title | escape }} photos" hidden>
     <button type="button" class="snp-scrim" aria-label="Close photos" tabindex="-1"></button>
     <div class="snp-box">
@@ -478,7 +481,7 @@ textarea.snp-field{min-height:96px;resize:vertical}
   root.dataset.ready = "1";
   var gsap = window.gsap;
   var D = JSON.parse(root.querySelector(".snp-data").textContent);
-  window["snpPerso_" + root.id] = !!root.querySelector(".snp-sheet");
+  window["snpPerso_" + root.id] = !!root.querySelector(".snp-eng");
   var $ = function (s, el) { return (el || root).querySelector(s); };
   var STAR = "M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z";
   var HEART = "M12 20.3l-1.4-1.3C5.4 14.3 2 11.2 2 7.4 2 4.4 4.4 2 7.4 2c1.7 0 3.4.8 4.6 2.1C13.2 2.8 14.9 2 16.6 2 19.6 2 22 4.4 22 7.4c0 3.8-3.4 6.9-8.6 11.6z";
@@ -617,7 +620,7 @@ textarea.snp-field{min-height:96px;resize:vertical}
     var st = $(".snp-stock"); st.dataset.tone = tone;
     st.textContent = tone === "out" ? "Sold out" + (ci >= 0 ? " in this colour" : "") : tone === "low" ? "Only " + here.stock + " left" + (size ? " in size " + size : "") : "In stock · ready to ship";
     var cta = $(".snp-cta"); cta.disabled = here.soldOut; cta.dataset.state = cart;
-    $(".snp-cta-idle").textContent = here.soldOut ? "SOLD OUT" : window["snpPerso_" + root.id] ? "PERSONALISE" : "ADD TO CART";
+    $(".snp-cta-idle").textContent = here.soldOut ? "SOLD OUT" : window["snpPerso_" + root.id] ? "ADD TO CART" : "ADD TO CART";
     rollPrice(priceOf());
     if (typeof renderReturns === "function") renderReturns();
     var cv = variantFor(active, size) || startV, skuEl = $(".snp-sku");
@@ -706,8 +709,8 @@ textarea.snp-field{min-height:96px;resize:vertical}
   });
 
   var toast = $(".snp-toast");
-  var sheet = $(".snp-sheet");
-  var PERSO = !!sheet;
+  var eng = $(".snp-eng");
+  var PERSO = !!eng;
   function cartAdd(props) {
     var v = variantFor(active, size);
     if (cart !== "idle" || !v || avail(active, size).soldOut) return Promise.resolve(false);
@@ -732,71 +735,68 @@ textarea.snp-field{min-height:96px;resize:vertical}
     });
   }
   $(".snp-cta").addEventListener("click", function () {
-    if (PERSO) openSheet(); else cartAdd(null);
+    if (PERSO) engSubmit(); else cartAdd(null);
   });
 
-  // ---- Personalisation sheet ----
+  // ---- Inline engraving card ----
+  var engSubmit = function () {};
   if (PERSO) {
-    document.body.appendChild(sheet);
-    ["--color-foreground", "--color-background", "--color-muted-foreground", "--snp-like"].forEach(function (k) { sheet.style.setProperty(k, root.style.getPropertyValue(k)); });
-    var box = $(".snp-sheet-box", sheet), boards = Array.prototype.slice.call(sheet.querySelectorAll(".snp-board")), goBtn = $(".snp-sheet-go", sheet), sheetOpener = null;
-    var openSheet = function () {
-      var v = variantFor(active, size); if (!v || avail(active, size).soldOut) return;
-      sheetOpener = document.activeElement; sheet.hidden = false; document.documentElement.style.overflow = "hidden";
-      if (!reduced()) gsap.fromTo(box, { y: 40, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.45, ease: "power3.out" });
-      var first = sheet.querySelector(".snp-field, .snp-drop input"); if (first) setTimeout(function () { first.focus(); }, 60);
+    var boards = Array.prototype.slice.call(eng.querySelectorAll(".snp-board")), cur = 0;
+    var dots = eng.querySelectorAll(".snp-eng-dots span"), prevB = $(".snp-eng-prev", eng), nextB = $(".snp-eng-next", eng), errEl = $(".snp-eng-err", eng);
+    var filled = function (bd) { var i = bd.querySelector(".snp-plate, input[type=file]"); return i.type === "file" ? !!(i.files && i.files[0]) : !!i.value.trim(); };
+    var show = function (n, dir) {
+      n = Math.max(0, Math.min(boards.length - 1, n));
+      var changed = n !== cur; cur = n;
+      boards.forEach(function (bd, k) { bd.dataset.on = String(k === n); });
+      if ($(".snp-eng-step", eng)) $(".snp-eng-step", eng).textContent = (n + 1) + "/" + boards.length;
+      Array.prototype.forEach.call(dots, function (d, k) { d.dataset.on = String(k === n); d.dataset.done = String(k !== n && filled(boards[k])); });
+      if (prevB) { prevB.disabled = n === 0; nextB.disabled = n === boards.length - 1; }
+      if (dir && changed && !reduced()) gsap.fromTo(boards[n], { x: dir * 18, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.35, ease: "power2.out" });
     };
-    var closeSheet = function () {
-      var done = function () { sheet.hidden = true; document.documentElement.style.overflow = ""; if (sheetOpener) sheetOpener.focus(); };
-      if (reduced()) done(); else gsap.to(box, { y: 30, autoAlpha: 0, duration: 0.25, ease: "power2.in", onComplete: done });
-    };
-    $(".snp-sheet-x", sheet).addEventListener("click", closeSheet);
-    $(".snp-sheet-scrim", sheet).addEventListener("click", closeSheet);
-    sheet.addEventListener("keydown", function (e) { if (e.key === "Escape") { e.stopPropagation(); closeSheet(); } });
-    boards.forEach(function (bd) {
-      var ta = bd.querySelector("textarea"), file = bd.querySelector("input[type=file]"), field = bd.querySelector(".snp-field");
-      if (ta) ta.addEventListener("input", function () { bd.querySelector(".snp-count-c span").textContent = ta.value.length; });
-      if (field) field.addEventListener("input", function () { bd.dataset.bad = "false"; });
+    if (prevB) {
+      prevB.addEventListener("click", function () { show(cur - 1, -1); });
+      nextB.addEventListener("click", function () { show(cur + 1, 1); });
+    }
+    boards.forEach(function (bd, k) {
+      var plate = bd.querySelector(".snp-plate"), file = bd.querySelector("input[type=file]"), cc = bd.querySelector(".snp-eng-cc");
+      if (plate) {
+        plate.addEventListener("input", function () { if (cc) cc.textContent = plate.value.length + "/" + plate.maxLength; eng.dataset.bad = "false"; show(cur); });
+        plate.addEventListener("keydown", function (e) {
+          if (e.key !== "Enter" || plate.tagName !== "INPUT") return;
+          e.preventDefault();
+          if (k < boards.length - 1) { show(k + 1, 1); var nx = boards[k + 1].querySelector(".snp-plate, input"); if (nx) nx.focus(); }
+          else engSubmit();
+        });
+      }
       if (file) {
-        var drop = bd.querySelector(".snp-drop"), img = drop.querySelector("img");
+        var drop = bd.querySelector(".snp-drop"), img = drop.querySelector("img"), t = drop.querySelector(".snp-drop-t");
         file.addEventListener("change", function () {
-          bd.dataset.bad = "false"; var fl = file.files && file.files[0];
-          if (fl && fl.size > 10 * 1024 * 1024) { file.value = ""; drop.querySelector(".snp-drop-t").textContent = "That photo is over 10MB, please pick a smaller one"; img.hidden = true; return; }
-          drop.querySelector(".snp-drop-t").textContent = fl ? fl.name : "Tap to upload your photo";
+          eng.dataset.bad = "false"; var fl = file.files && file.files[0];
+          if (fl && fl.size > 10 * 1024 * 1024) { file.value = ""; t.textContent = "Over 10MB, pick a smaller photo"; img.hidden = true; return; }
+          t.textContent = fl ? "Photo added ✓" : "Add your photo";
           if (fl) { var rd = new FileReader(); rd.onload = function () { img.src = rd.result; img.hidden = false; }; rd.readAsDataURL(fl); } else img.hidden = true;
+          show(cur);
         });
         ["dragenter", "dragover"].forEach(function (ev) { drop.addEventListener(ev, function () { drop.dataset.over = "true"; }); });
         ["dragleave", "drop"].forEach(function (ev) { drop.addEventListener(ev, function () { drop.dataset.over = "false"; }); });
       }
     });
-    var live = $(".snp-live"), liveOn = false;
-    function livePreview() {
-      var lines = boards.filter(function (bd) { return bd.dataset.type !== "photo"; })
-        .map(function (bd) { var i = bd.querySelector(".snp-field"); return i && i.value.trim(); }).filter(Boolean).slice(0, 2);
-      var ts = live.querySelectorAll(".snp-live-t");
-      ts[0].textContent = lines[0] || "";
-      var second = ts[1];
-      if (lines[1]) { if (!second) { second = document.createElement("span"); second.className = "snp-live-t"; ts[0].after(second); } second.textContent = lines[1]; }
-      else if (second) second.remove();
-      var on = lines.length > 0;
-      if (on !== liveOn) { liveOn = on; gsap.to(live, { autoAlpha: on ? 1 : 0, y: on ? 0 : 8, duration: reduced() ? 0 : 0.35, ease: "power2.out" }); }
-    }
-    boards.forEach(function (bd) { var i = bd.querySelector(".snp-field"); if (i) i.addEventListener("input", livePreview); });
-
-    box.addEventListener("submit", function (e) {
-      e.preventDefault();
-      var firstBad = null;
-      boards.forEach(function (bd) {
-        var inp = bd.querySelector(".snp-field, input[type=file]");
-        var empty = inp.type === "file" ? !(inp.files && inp.files[0]) : !inp.value.trim();
-        var bad = bd.dataset.req === "true" && empty; bd.dataset.bad = String(bad);
-        if (bad && !firstBad) firstBad = bd;
-      });
-      if (firstBad) { firstBad.scrollIntoView({ behavior: "smooth", block: "center" }); var fi = firstBad.querySelector(".snp-field, input"); if (fi) fi.focus(); return; }
-      goBtn.disabled = true; goBtn.textContent = "Uploading\u2026";
+    show(0);
+    engSubmit = function () {
+      var bad = -1;
+      boards.forEach(function (bd, k) { if (bad < 0 && bd.dataset.req === "true" && !filled(bd)) bad = k; });
+      if (bad >= 0) {
+        show(bad, bad > cur ? 1 : bad < cur ? -1 : 0); eng.dataset.bad = "true";
+        errEl.textContent = (boards[bad].dataset.type === "photo" ? "Add a photo for " : "Add ") + boards[bad].dataset.label.toLowerCase() + " to continue.";
+        eng.dataset.shake = "false"; void eng.offsetWidth; eng.dataset.shake = "true";
+        var fi = boards[bad].querySelector(".snp-plate, input"); if (fi) fi.focus({ preventScroll: true });
+        eng.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "center" });
+        return;
+      }
+      if (cart !== "idle") return;
       var props = {}, ups = [];
       boards.forEach(function (bd) {
-        var key = bd.dataset.key, inp = bd.querySelector(".snp-field, input[type=file]");
+        var key = bd.dataset.key, inp = bd.querySelector(".snp-plate, input[type=file]");
         if (inp.type === "file") {
           var fl = inp.files && inp.files[0]; if (!fl) return;
           var fd = new FormData(); fd.append("photo", fl);
@@ -805,17 +805,11 @@ textarea.snp-field{min-height:96px;resize:vertical}
             .then(function (d) { if (d && d.success && d.url) props[key] = d.url; else throw new Error("upload"); }));
         } else if (inp.value.trim()) props[key] = inp.value.trim();
       });
-      Promise.all(ups).then(function () {
-        goBtn.textContent = "Adding\u2026";
-        return cartAdd(props);
-      }).then(function (ok) {
-        goBtn.disabled = false; goBtn.textContent = "ADD TO CART";
-        if (ok) closeSheet();
-      }).catch(function () {
-        goBtn.disabled = false; goBtn.textContent = "ADD TO CART";
-        showToast("Photo upload failed, please try again");
-      });
-    });
+      if (ups.length) { cart = "busy"; render(); }
+      Promise.all(ups)
+        .then(function () { cart = "idle"; return cartAdd(props); })
+        .catch(function () { cart = "idle"; render(); showToast("Photo upload failed, please try again"); });
+    };
   }
 
   function showToast(note) {
