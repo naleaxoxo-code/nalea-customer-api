@@ -1304,7 +1304,7 @@ app.post('/reviews', async (req, res) => {
   const customerId = req.query.logged_in_customer_id;
   if (!customerId) return res.status(401).json({ error: 'Please log in to write a review.' });
 
-  const { product_id, rating, title, body } = req.body || {};
+  const { product_id, rating, title, body, city } = req.body || {};
   const r = parseInt(rating);
   if (!product_id || !r || r < 1 || r > 5) return res.status(400).json({ error: 'Please provide a star rating.' });
 
@@ -1339,6 +1339,7 @@ app.post('/reviews', async (req, res) => {
       rating:   r,
       title:    (title || '').toString().slice(0, 80),
       body:     (body  || '').toString().slice(0, 600),
+      city:     (city  || '').toString().replace(/[^\p{L} '-]/gu, '').slice(0, 40),
       verified: true,
       date:     new Date().toLocaleDateString('en-ZA', { year: 'numeric', month: 'short', day: 'numeric' })
     });
