@@ -362,6 +362,9 @@
   .om-root[data-phase="exit"] .om-cast { transform: none; }
   .om-ring-key { transition: opacity 0.6s ease 0.4s; }
 }
+/* Nalea: figures keyed in canvas (iPhone Safari cannot mask HTML with an SVG <mask>). */
+.om-root .om-fig.om-keyed img { filter: none !important; }
+.om-root .om-fig.om-keyed .om-duo { display: none !important; }
 /* Nalea: the stage closes the product page, above the footer. */
 .om-root.nalea-om { display: block; margin: 0; }
 `;
@@ -607,6 +610,18 @@
         var ct = sv("feComponentTransfer", null, filt);
         ["feFuncR", "feFuncG", "feFuncB"].forEach(function (fn) { sv(fn, { type: "linear", slope: tr.slope, intercept: tr.intercept }, ct); });
         if (!(box.w > 0)) return;
+        if (keyed[f.src]) {
+          var kfront = (f.depth == null ? 1 : f.depth) >= P.wordDepth;
+          var kfig = el("div", "om-fig om-keyed", { "data-index": i, "data-flip": f.flip ? "true" : "false", "data-near": "false" }, kfront ? tiltFront : tiltBack);
+          kfig.style.left = box.left + "px"; kfig.style.top = box.top + "px"; kfig.style.width = box.w + "px"; kfig.style.height = box.h + "px";
+          kfig.style.setProperty("--i", i); kfig.style.setProperty("--om-depth", f.depth == null ? 1 : f.depth); kfig.style.zIndex = Math.round((f.depth == null ? 1 : f.depth) * 100);
+          el("div", "om-fig-shadow", null, kfig);
+          var kin = el("div", "om-fig-in", null, kfig);
+          var kimg = el("img", null, { src: keyed[f.src], alt: f.alt || "", draggable: "false" }, kin);
+          kimg.style.maxWidth = "none";
+          figEls.push(kfig);
+          return;
+        }
         var mask = sv("mask", { id: uid + "-m" + i, maskUnits: "userSpaceOnUse", maskContentUnits: "userSpaceOnUse", x: "0", y: "0", width: box.w, height: box.h }, defsIn);
         mask.style.maskType = "luminance";
         var mi = sv("image", { href: f.src, x: "0", y: "0", width: box.w, height: box.h, preserveAspectRatio: "none", filter: "url(#" + uid + "-k" + i + ")" }, mask);
@@ -631,6 +646,51 @@
       var im = new Image();
       im.onload = function () { if (!naturals[src]) { naturals[src] = { w: im.naturalWidth, h: im.naturalHeight }; layout(); } };
       im.src = src;
+    });
+
+    /* Key each figure off its black ground in a canvas: the same luminance
+       transfer as the SVG mask, then the same two-ink grade (grayscale,
+       contrast 1.12, lighten with the ground, multiply with the highlight).
+       Photos load same-origin so the canvas can be read. */
+    var keyed = {};
+    function sameOrigin(u) {
+      var m = u.match(/\/files\/([^?]+)(\?.*)?$/);
+      return m ? location.origin + "/cdn/shop/files/" + m[1] + (m[2] || "") : u;
+    }
+    function hexRgb(h) { var n = h.replace("#", ""); return [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)]; }
+    var GR = hexRgb(pal.ground), HI = hexRgb(pal.highlight);
+    P.figures.forEach(function (f) {
+      var im = new Image();
+      im.crossOrigin = "anonymous";
+      im.onload = function () {
+        try {
+          var sc = Math.min(1, 1400 / Math.max(im.naturalWidth, im.naturalHeight));
+          var w = Math.max(1, Math.round(im.naturalWidth * sc)), h = Math.max(1, Math.round(im.naturalHeight * sc));
+          var c = document.createElement("canvas"); c.width = w; c.height = h;
+          var x = c.getContext("2d"); x.drawImage(im, 0, 0, w, h);
+          var d = x.getImageData(0, 0, w, h), a = d.data;
+          var tr = omTransfer(f.threshold == null ? (f.subject === "dark" ? 0.72 : 0.2) : f.threshold, f.softness == null ? 0.16 : f.softness, f.subject || "light");
+          for (var q = 0; q < a.length; q += 4) {
+            var lum = (0.2126 * a[q] + 0.7152 * a[q + 1] + 0.0722 * a[q + 2]) / 255;
+            var al = Math.max(0, Math.min(1, tr.slope * lum + tr.intercept));
+            if (isDuotone) {
+              var v = Math.max(0, Math.min(255, ((lum - 0.5) * 1.12 + 0.5) * 255));
+              a[q] = Math.max(v, GR[0]) * HI[0] / 255;
+              a[q + 1] = Math.max(v, GR[1]) * HI[1] / 255;
+              a[q + 2] = Math.max(v, GR[2]) * HI[2] / 255;
+            }
+            a[q + 3] = Math.round(a[q + 3] * al);
+          }
+          x.putImageData(d, 0, 0);
+          c.toBlob(function (b) {
+            if (!b) return;
+            keyed[f.src] = URL.createObjectURL(b);
+            if (!naturals[f.src]) naturals[f.src] = { w: im.naturalWidth, h: im.naturalHeight };
+            layout();
+          }, "image/png");
+        } catch (e) {}
+      };
+      im.src = sameOrigin(f.src);
     });
 
     /* fonts */
