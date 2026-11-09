@@ -130,6 +130,16 @@
 #snp-{{ section.id }} .snp-like[aria-pressed="true"]>svg path{fill:var(--snp-like)!important;stroke:var(--snp-like)!important}
 #snp-{{ section.id }} .snp-share>svg{fill:none!important;stroke:currentColor!important}
 #snp-{{ section.id }} .snp-like:focus-visible,#snp-{{ section.id }} .snp-share:focus-visible{outline:2px solid var(--color-foreground)!important;outline-offset:3px}
+.snp-trust{position:relative;margin-top:2.6cqw;display:flex;flex-direction:column;gap:1cqw}
+.snp-trust-btn{display:inline-flex!important;align-items:center!important;gap:.7cqw!important;width:max-content;padding:0!important;background:none!important;border:0!important;box-shadow:none!important;color:var(--color-muted-foreground)!important;font-size:max(11px,1cqw)!important;letter-spacing:.02em!important;text-transform:none!important;cursor:help!important;transition:color .2s}
+.snp-trust-btn:hover,.snp-trust-btn:focus-visible{color:var(--color-foreground)!important}
+.snp-trust-btn svg{width:max(13px,1.1cqw);height:max(13px,1.1cqw);flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.snp-trust-btn b{color:var(--color-foreground);font-weight:600}
+.snp-pay{display:flex;flex-wrap:wrap;gap:.6cqw}
+.snp-pay span{display:grid;place-items:center;height:max(20px,1.8cqw);min-width:max(32px,2.9cqw);padding:0 .45cqw;border-radius:4px;background:#fff;font:700 max(9px,.75cqw)/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:0;white-space:nowrap}
+.snp-pay svg{height:62%;width:auto;display:block}
+.snp-pay .snp-ap{background:#000;color:#fff}
+.snp-tip{position:absolute;left:0;bottom:calc(100% + 1cqw);z-index:4;max-width:max(230px,19cqw);padding:.8cqw 1.2cqw;border-radius:12px;background:var(--color-foreground);color:var(--color-background);font-size:max(11px,.95cqw);line-height:1.4;font-weight:500;box-shadow:0 18px 44px -12px rgba(0,0,0,.45);visibility:hidden;opacity:0;pointer-events:none}
 .snp-burst{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none}
 .snp-burst svg{position:absolute;left:-6px;top:-6px;width:12px;height:12px;color:var(--snp-like);opacity:0}
 .snp-pill{position:absolute;right:-.4cqw;bottom:calc(100% + 1cqw);padding:.6cqw 1.2cqw;border-radius:999px;white-space:nowrap;background:var(--color-foreground);color:var(--color-background);font-size:max(10px,.95cqw);font-weight:500;visibility:hidden;opacity:0;pointer-events:none}
@@ -177,6 +187,8 @@
   .snp-rating{gap:6px}
   .snp-swatches{margin-top:12px;gap:16px}
   .snp-actions{margin-top:22px;gap:20px}
+  .snp-trust{margin-top:18px;gap:8px}
+  .snp-pay{gap:6px}
   .snp-cta{flex:1}
   .snp-stock{margin-top:8px;gap:6px}
   .snp-hint{bottom:2%}
@@ -244,6 +256,21 @@
         <div class="snp-menu" role="menu" aria-label="Share this"></div>
         <span class="nxs" aria-hidden="true" style="display:none"></span>
         <span class="snp-pill" role="status" aria-live="polite"></span>
+      </div>
+      <div class="snp-trust">
+        <button type="button" class="snp-trust-btn" aria-describedby="snp-tip-{{ section.id }}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+          <span><b>100% Secure Checkout</b> · {{ section.settings.pay_line | escape }}</span>
+        </button>
+        <div class="snp-pay" aria-label="Accepted payment methods" role="list">
+          <span role="listitem" aria-label="Visa" style="color:#1a1f71;font-style:italic;font-weight:900;letter-spacing:.02em">VISA</span>
+          <span role="listitem" aria-label="Mastercard"><svg viewBox="0 0 38 24" aria-hidden="true"><circle cx="14" cy="12" r="9" fill="#eb001b"/><circle cx="24" cy="12" r="9" fill="#f79e1b"/><path d="M19 4.6a9 9 0 0 1 0 14.8 9 9 0 0 1 0-14.8z" fill="#ff5f00"/></svg></span>
+          <span role="listitem" aria-label="Apple Pay" class="snp-ap"><svg viewBox="0 0 48 20" aria-hidden="true"><path fill="#fff" d="M8.6 4.3c.5-.6.9-1.5.8-2.3-.8 0-1.7.5-2.2 1.1-.5.5-.9 1.4-.8 2.2.9.1 1.7-.4 2.2-1zm.8 1.2c-1.2-.1-2.2.7-2.8.7-.6 0-1.4-.6-2.4-.6-1.2 0-2.4.7-3 1.9-1.3 2.2-.3 5.5.9 7.3.6.9 1.3 1.8 2.3 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.8.7-1 1-2 1-2.1 0 0-1.9-.7-1.9-2.9 0-1.8 1.5-2.7 1.6-2.7-.9-1.3-2.2-1.4-2.5-1.6z"/><text x="15" y="15" fill="#fff" font-family="system-ui,-apple-system,sans-serif" font-size="12.5" font-weight="600">Pay</text></svg></span>
+          <span role="listitem" aria-label="Google Pay"><svg viewBox="0 0 50 20" aria-hidden="true"><text x="0" y="15" font-family="system-ui,Arial,sans-serif" font-size="14" font-weight="700"><tspan fill="#4285f4">G</tspan><tspan fill="#5f6368" dx="2">Pay</tspan></text></svg></span>
+          <span role="listitem" aria-label="Ozow" style="color:#00c8a0;font-weight:800;text-transform:lowercase;letter-spacing:.01em">ozow</span>
+          <span role="listitem" aria-label="Yoco" style="color:#000;font-weight:800;text-transform:lowercase">yoco</span>
+        </div>
+        <span class="snp-tip" id="snp-tip-{{ section.id }}" role="tooltip">{{ section.settings.pay_tip | escape }}</span>
       </div>
     </div>
 
@@ -700,6 +727,21 @@
   if (window.ResizeObserver) new ResizeObserver(descFade).observe(desc);
   descFade();
 
+  var trustBtn = $(".snp-trust-btn"), tip = $(".snp-tip"), tipOn = false, tipTimer;
+  gsap.set(tip, { autoAlpha: 0 });
+  function showTip(on) {
+    if (on === tipOn) return; tipOn = on; clearTimeout(tipTimer);
+    if (on) gsap.fromTo(tip, { autoAlpha: 0, y: 6, scale: 0.96 }, { autoAlpha: 1, y: 0, scale: 1, duration: reduced() ? 0 : 0.3, ease: "back.out(2)" });
+    else gsap.to(tip, { autoAlpha: 0, y: 4, duration: reduced() ? 0 : 0.18, ease: "power2.in" });
+  }
+  trustBtn.addEventListener("pointerenter", function (e) { if (e.pointerType !== "touch") showTip(true); });
+  trustBtn.addEventListener("pointerleave", function (e) { if (e.pointerType !== "touch") showTip(false); });
+  trustBtn.addEventListener("focus", function () { showTip(true); });
+  trustBtn.addEventListener("blur", function () { showTip(false); });
+  trustBtn.addEventListener("click", function (e) { e.stopPropagation(); showTip(!tipOn); if (tipOn) tipTimer = setTimeout(function () { showTip(false); }, 4000); });
+  document.addEventListener("click", function () { showTip(false); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") showTip(false); });
+
   var BARS = [2,1,3,1,1,2,1,3,2,1,1,2];
   $(".snp-bars").innerHTML = BARS.map(function (b) { return '<i style="width:' + (b === 1 ? 1.5 : b === 2 ? 2.2 : 3) + 'px;height:' + (40 + b * 20) + '%"></i>'; }).join("");
   var skuIc = $(".snp-sku-ic"), COPY = skuIc.innerHTML, TICK = '<path d="M4 10.5l4 4 8-9"/>', skuTimer;
@@ -739,6 +781,8 @@
     { "type": "text", "id": "rating", "label": "Fallback rating (if no review app)", "default": "4.5" },
     { "type": "text", "id": "reviews", "label": "Fallback review count", "default": "120" },
     { "type": "range", "id": "low_stock", "label": "Show 'Only N left' at or below", "min": 1, "max": 20, "step": 1, "default": 3 },
+    { "type": "text", "id": "pay_line", "label": "Secure checkout line", "default": "Secure Payments via Yoco" },
+    { "type": "text", "id": "pay_tip", "label": "Secure checkout bubble", "default": "Your payment goes through Yoco's encrypted checkout. Your card details never touch our site." },
     { "type": "text", "id": "toast", "label": "Add to cart message", "default": "Shopping Cart Updated" },
     { "type": "color", "id": "like_color", "label": "Heart colour", "default": "#e11d48" },
     { "type": "color", "id": "foreground", "label": "Text colour", "default": "#ffffff" },
