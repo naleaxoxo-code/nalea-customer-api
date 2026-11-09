@@ -24,16 +24,16 @@
 <section id="tg-{{ section.id }}" class="tg-root" data-layout="stacked" aria-labelledby="tg-h-{{ section.id }}"
   style="--background:{{ section.settings.background }};--foreground:{{ section.settings.foreground }};--muted-foreground:{{ section.settings.muted }};--card:{{ section.settings.card }};--border:color-mix(in oklab,{{ section.settings.foreground }} 14%,transparent);--muted:color-mix(in oklab,{{ section.settings.foreground }} 8%,{{ section.settings.background }});--primary:{{ section.settings.foreground }};--primary-foreground:{{ section.settings.background }};--chart-1:#e8c46a;--chart-2:#f2a7a0;--chart-3:#7fd8bd;--chart-4:#f5b942;--chart-5:#9fb4d8;">
 <style>
-#tg-{{ section.id }}{position:relative;isolation:isolate;width:100%;overflow:hidden;background:var(--background);color:var(--foreground);font-family:inherit}
+#tg-{{ section.id }}{position:relative;isolation:isolate;width:100%;overflow:hidden;margin-top:-1px;background:color-mix(in oklab,var(--snp-tint,transparent) 15%,color-mix(in oklab,var(--foreground) 4%,var(--background)));transition:background-color .8s ease;color:var(--foreground);font-family:inherit}
 .tg-root *,.tg-root *::before,.tg-root *::after{box-sizing:border-box}
 .tg-root button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;min-height:0;box-shadow:none;letter-spacing:normal;text-transform:none}
 .tg-glow{pointer-events:none;position:absolute;inset:0;z-index:-1;background:radial-gradient(70% 38% at 50% 48%,color-mix(in oklab,var(--foreground) 6%,transparent),transparent 72%)}
-.tg-root[data-layout="wide"] .tg-glow{background:radial-gradient(42% 60% at 28% 50%,color-mix(in oklab,var(--foreground) 6%,transparent),transparent 72%)}
-.tg-stage{position:relative;margin:0 auto;width:100%;max-width:1200px;display:flex;flex-direction:column;align-items:center;gap:16px;padding-block:20px}
-.tg-root[data-layout="wide"] .tg-stage{display:grid;align-items:center;row-gap:24px;padding-block:40px;justify-content:center}
+.tg-root[data-layout="wide"] .tg-glow{background:radial-gradient(42% 60% at 28% 50%,color-mix(in oklab,var(--snp-tint,var(--foreground)) 14%,transparent),transparent 72%)}
+.tg-stage{position:relative;margin:0 auto;width:100%;max-width:1200px;display:flex;flex-direction:column;align-items:center;gap:16px;padding-block:4px 32px}
+.tg-root[data-layout="wide"] .tg-stage{display:grid;align-items:center;row-gap:24px;padding-block:8px 48px;justify-content:center}
 .tg-head{display:flex;min-width:0;flex-direction:column;width:100%;align-items:center;text-align:center}
 .tg-root[data-layout="wide"] .tg-head{grid-column:2;grid-row:1;align-items:flex-start;align-self:end;text-align:left}
-.tg-eyebrow{margin:0;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.18em;color:var(--muted-foreground)}
+.tg-eyebrow{margin:0;font-size:max(12px,1.1vw);font-weight:400;text-transform:uppercase;letter-spacing:.02em;color:var(--muted-foreground)}
 .tg-h{margin:8px 0 0;text-wrap:balance;font-weight:600;letter-spacing:-.025em;color:var(--foreground);font-size:1.5rem;line-height:1.25}
 .tg-cap{margin:12px 0 0;max-width:65ch;font-size:14px;color:var(--muted-foreground)}
 .tg-stats{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;margin-top:12px;justify-content:center}
@@ -41,8 +41,8 @@
 .tg-dl{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;font-size:14px;color:var(--muted-foreground)}
 .tg-dl>div{display:flex;align-items:baseline;gap:4px}.tg-dl dt{order:2}.tg-dl dd{order:1;margin:0;font-weight:600;font-variant-numeric:tabular-nums;color:var(--foreground);display:inline-flex;align-items:center;gap:4px}
 .tg-sep{height:12px;width:1px;background:var(--border)}
-.tg-cta{display:inline-flex;height:36px;align-items:center;gap:6px;border-radius:999px!important;background:var(--primary)!important;color:var(--primary-foreground)!important;padding:0 16px!important;font-size:14px!important;font-weight:500;transition:opacity .2s}
-.tg-cta:hover{opacity:.9}.tg-cta svg{width:14px;height:14px}
+.tg-cta{display:inline-flex;height:40px;align-items:center;gap:8px;border-radius:0!important;background:var(--foreground)!important;color:var(--background)!important;padding:0 18px!important;font-size:13px!important;font-weight:600!important;letter-spacing:.02em!important;text-transform:uppercase!important;transition:transform .15s,opacity .2s}
+.tg-cta:hover{opacity:.9}.tg-cta:active{transform:scale(.96)}.tg-cta svg{width:14px;height:14px}
 .tg-globe{position:relative;flex-shrink:0;touch-action:pan-y;user-select:none}
 .tg-root[data-layout="wide"] .tg-globe{grid-column:1;grid-row:1/span 2;align-self:center}
 .tg-stars{pointer-events:none;position:absolute;inset:0}
@@ -62,9 +62,9 @@
 img.tg-av{display:block}
 .tg-cardwrap{position:relative;width:100%;min-width:0;max-width:28rem}
 .tg-root[data-layout="wide"] .tg-cardwrap{grid-column:2;grid-row:2;align-self:start;max-width:none}
-.tg-shadow{pointer-events:none;position:absolute;left:32px;right:32px;bottom:-16px;z-index:-1;height:40px;border-radius:100%;background:#000;opacity:.7;filter:blur(40px)}
+.tg-shadow{display:none}
 .tg-region{display:grid;touch-action:pan-y}
-.tg-card{position:relative;grid-column:1;grid-row:1;margin:0;display:flex;min-width:0;flex-direction:column;overflow:hidden;border-radius:16px;border:1px solid var(--border);background:var(--card);color:var(--foreground);padding:14px 16px}
+.tg-card{position:relative;grid-column:1;grid-row:1;margin:0;display:flex;min-width:0;flex-direction:column;overflow:hidden;border-radius:16px;border:1px solid color-mix(in oklab,var(--foreground) 10%,transparent);background:color-mix(in oklab,var(--foreground) 5%,transparent);color:var(--foreground);padding:14px 16px}
 .tg-root[data-roomy] .tg-card{padding:24px}
 .tg-card[data-sizer]{visibility:hidden}.tg-card[data-leaving]{pointer-events:none}
 .tg-ctop{position:relative;display:flex;align-items:center;gap:12px;height:24px;padding-right:112px}
@@ -178,6 +178,14 @@ img.tg-av{display:block}
   </script>
 </section>
 
+<script>
+(function(){
+  var r = document.getElementById("tg-{{ section.id }}"); if (!r) return;
+  function sync(){ var h = document.querySelector(".snp-root"); if (!h) return; var t = h.style.getPropertyValue("--snp-tint"); if (t) r.style.setProperty("--snp-tint", t); var bg = h.style.getPropertyValue("--color-background"); if (bg) r.style.setProperty("--background", bg); }
+  sync(); var h = document.querySelector(".snp-root");
+  if (h) new MutationObserver(sync).observe(h, { attributes: true, attributeFilter: ["style"] });
+})();
+</script>
 <script type="module">
 import createGlobe from "https://cdn.jsdelivr.net/npm/cobe@0.6.3/+esm";
 const root = document.getElementById("tg-{{ section.id }}");
