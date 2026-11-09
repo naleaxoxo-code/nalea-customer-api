@@ -170,12 +170,12 @@
 .snp-trust-btn b{color:var(--color-foreground);font-weight:600}
 .snp-trust-btn[data-tone="no"] svg{color:var(--color-foreground)}
 .snp-tip a{color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px;pointer-events:auto}
-.snp-eng{position:relative;margin-top:2.4cqw;padding:1.4cqw 1.5cqw 1.1cqw;border-radius:14px;
+.snp-eng{position:relative;margin-top:1.8cqw;padding:.8cqw 1.1cqw .7cqw;border-radius:10px;
   background:linear-gradient(160deg,color-mix(in oklab,#c9a84c 14%,transparent),color-mix(in oklab,var(--color-foreground) 3%,transparent) 60%);
   box-shadow:inset 0 0 0 1px color-mix(in oklab,#c9a84c 38%,transparent);transition:box-shadow .3s}
 .snp-eng[data-bad="true"]{box-shadow:inset 0 0 0 1px #f87171}
 .snp-eng-hd{display:flex;align-items:center;justify-content:space-between;gap:.8cqw}
-.snp-eng-hd .snp-label{display:flex;align-items:baseline;gap:.5em;white-space:nowrap}
+.snp-eng-hd .snp-label{display:flex;align-items:baseline;gap:.5em;white-space:nowrap;font-size:max(10px,.9cqw);letter-spacing:.12em}
 .snp-eng-hd .snp-label i{font-style:normal;color:#e8cb82;font-size:.75em;letter-spacing:.06em}
 .snp-eng-nav{display:flex;align-items:center;gap:.4cqw}
 .snp-eng-nav button{display:grid!important;place-items:center!important;width:max(24px,2cqw)!important;height:max(24px,2cqw)!important;padding:0!important;border:0!important;border-radius:50%!important;background:transparent!important;color:var(--color-muted-foreground)!important;box-shadow:none!important}
@@ -186,23 +186,23 @@
 .snp-eng-dots span[data-done="true"]{background:var(--color-muted-foreground)}
 .snp-eng-dots span[data-on="true"]{background:#e8cb82;transform:scale(1.3)}
 .snp-board{display:none}.snp-board[data-on="true"]{display:block}
-.snp-plate{display:block;width:100%;margin:.6cqw 0 0;padding:.2em 0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;outline:none;text-align:center;
-  font-family:"Great Vibes","Allura","Brush Script MT",cursive!important;font-size:max(30px,2.9cqw)!important;line-height:1.25!important;font-weight:400!important;letter-spacing:.01em!important;
+.snp-plate{display:block;width:100%;margin:.2cqw 0 0;padding:.05em 0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;outline:none;text-align:center;
+  font-family:"Great Vibes","Allura","Brush Script MT",cursive!important;font-size:max(22px,1.9cqw)!important;line-height:1.2!important;font-weight:400!important;letter-spacing:.01em!important;
   color:#e8cb82!important;caret-color:#e8cb82;text-shadow:0 1px 0 rgba(0,0,0,.35),0 0 18px color-mix(in oklab,#c9a84c 35%,transparent)}
 .snp-plate::placeholder{color:color-mix(in oklab,#e8cb82 38%,transparent)!important;opacity:1}
-textarea.snp-plate{min-height:2.6em;resize:none;font-size:max(22px,2.1cqw)!important;line-height:1.3!important}
-.snp-rule{height:1px;margin:.2cqw 8% .7cqw;background:linear-gradient(90deg,transparent,color-mix(in oklab,#c9a84c 70%,transparent),transparent);transition:transform .3s}
+textarea.snp-plate{min-height:2.4em;resize:none;font-size:max(18px,1.5cqw)!important;line-height:1.3!important}
+.snp-rule{height:1px;margin:0 10% .4cqw;background:linear-gradient(90deg,transparent,color-mix(in oklab,#c9a84c 70%,transparent),transparent);transition:transform .3s}
 .snp-board:focus-within .snp-rule{transform:scaleX(1.08)}
-.snp-eng-ft{display:flex;align-items:center;justify-content:space-between;gap:1cqw;font-size:max(11px,.9cqw);color:var(--color-muted-foreground)}
+.snp-eng-ft{display:flex;align-items:center;justify-content:space-between;gap:1cqw;font-size:max(10px,.8cqw);color:var(--color-muted-foreground)}
 .snp-eng-ft em{font-style:normal}
 .snp-eng-cc{font-variant-numeric:tabular-nums}
 .snp-eng-err{display:none;margin-top:.4cqw;font-size:max(11px,.9cqw);color:#fca5a5}.snp-eng[data-bad="true"] .snp-eng-err{display:block}
-.snp-drop{position:relative;display:flex;align-items:center;justify-content:center;gap:1cqw;min-height:max(78px,6.6cqw);margin:.6cqw 0 .7cqw;border-radius:10px;border:1px dashed color-mix(in oklab,#c9a84c 60%,transparent);color:#e8cb82;cursor:pointer;transition:background .2s}
+.snp-drop{position:relative;display:flex;align-items:center;justify-content:center;gap:1cqw;min-height:max(54px,4.4cqw);margin:.4cqw 0 .5cqw;border-radius:10px;border:1px dashed color-mix(in oklab,#c9a84c 60%,transparent);color:#e8cb82;cursor:pointer;transition:background .2s}
 .snp-drop:hover,.snp-drop[data-over="true"]{background:color-mix(in oklab,#c9a84c 10%,transparent)}
 .snp-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 .snp-drop svg{width:max(20px,1.7cqw);height:max(20px,1.7cqw);fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .snp-drop b{font-size:max(12px,1cqw);font-weight:500}
-.snp-drop img{width:max(52px,4.4cqw);height:max(52px,4.4cqw);object-fit:cover;border-radius:8px}
+.snp-drop img{width:max(38px,3cqw);height:max(38px,3cqw);object-fit:cover;border-radius:8px}
 .snp-eng-note{margin:.5cqw 0 0;font-size:max(10px,.8cqw);color:color-mix(in oklab,var(--color-muted-foreground) 80%,transparent)}
 @keyframes snp-shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
 .snp-eng[data-shake="true"]{animation:snp-shake .4s}
@@ -260,7 +260,7 @@ textarea.snp-plate{min-height:2.6em;resize:none;font-size:max(22px,2.1cqw)!impor
   .snp-swatches{margin-top:12px;gap:16px}
   .snp-actions{margin-top:22px;gap:20px}
   .snp-trust{margin-top:18px;gap:8px}
-  .snp-eng{margin-top:18px;padding:14px 16px 12px}
+  .snp-eng{margin-top:14px;padding:10px 14px 8px}
   .snp-eng-nav{gap:4px}
   .snp-eng-ft{gap:10px}
   .snp-pay{gap:6px}
