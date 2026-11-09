@@ -365,6 +365,9 @@
 /* Nalea: figures keyed in canvas (iPhone Safari cannot mask HTML with an SVG <mask>). */
 .om-root .om-fig.om-keyed img { filter: none !important; }
 .om-root .om-fig.om-keyed .om-duo { display: none !important; }
+.om-root .om-fig.om-screen { mix-blend-mode: screen; }
+.om-root[data-screen="true"] .om-cast { mix-blend-mode: screen; }
+.om-root .om-fig.om-screen .om-duo { display: none !important; }
 /* Nalea: the stage closes the product page, above the footer. */
 .om-root.nalea-om { display: block; margin: 0; }
 `;
@@ -597,6 +600,7 @@
       back.style.width = bb.w ? bb.w + "px" : "100%"; back.style.height = bb.h ? bb.h + "px" : "100%";
 
       /* the cast */
+      root.removeAttribute("data-unkeyed"); root.removeAttribute("data-screen");
       while (defsIn.firstChild) defsIn.removeChild(defsIn.firstChild);
       tiltBack.innerHTML = ""; tiltFront.innerHTML = ""; figEls = [];
       var list = cast();
@@ -622,6 +626,7 @@
           figEls.push(kfig);
           return;
         }
+        root.setAttribute("data-unkeyed", "true");
         var mask = sv("mask", { id: uid + "-m" + i, maskUnits: "userSpaceOnUse", maskContentUnits: "userSpaceOnUse", x: "0", y: "0", width: box.w, height: box.h }, defsIn);
         mask.style.maskType = "luminance";
         var mi = sv("image", { href: f.src, x: "0", y: "0", width: box.w, height: box.h, preserveAspectRatio: "none", filter: "url(#" + uid + "-k" + i + ")" }, mask);
@@ -632,7 +637,8 @@
         fig.style.setProperty("--i", i); fig.style.setProperty("--om-depth", f.depth == null ? 1 : f.depth); fig.style.zIndex = Math.round((f.depth == null ? 1 : f.depth) * 100);
         el("div", "om-fig-shadow", null, fig);
         var fin = el("div", "om-fig-in", null, fig);
-        fin.style.webkitMask = "url(#" + uid + "-m" + i + ")"; fin.style.mask = "url(#" + uid + "-m" + i + ")";
+        if (!/iP(hone|ad|od)|Safari/.test(navigator.userAgent) || /Chrome|CriOS|Android/.test(navigator.userAgent)) { fin.style.webkitMask = "url(#" + uid + "-m" + i + ")"; fin.style.mask = "url(#" + uid + "-m" + i + ")"; }
+        else { fig.className += " om-screen"; root.setAttribute("data-screen", "true"); }
         var img = el("img", null, { src: f.src, alt: f.alt || "", draggable: "false", decoding: "async" }, fin);
         img.style.maxWidth = "none";
         el("div", "om-duo om-duo-a", null, fin); el("div", "om-duo om-duo-b", null, fin);
@@ -660,9 +666,23 @@
     function hexRgb(h) { var n = h.replace("#", ""); return [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)]; }
     var GR = hexRgb(pal.ground), HI = hexRgb(pal.highlight);
     P.figures.forEach(function (f) {
-      var im = new Image();
-      im.crossOrigin = "anonymous";
-      im.onload = function () {
+      /* fetch as a blob first: a blob URL never taints the canvas, whatever
+         host or redirect the photo came from. */
+      var srcs = [sameOrigin(f.src), f.src], si = 0;
+      function next() {
+        if (si >= srcs.length) return;
+        var u = srcs[si++];
+        fetch(u, { mode: "cors", credentials: "omit" }).then(function (r) {
+          if (!r.ok) throw 0;
+          return r.blob();
+        }).then(function (b) {
+          var im = new Image();
+          im.onload = function () { key(im); };
+          im.onerror = next;
+          im.src = URL.createObjectURL(b);
+        }).catch(next);
+      }
+      function key(im) {
         try {
           var sc = Math.min(1, 1400 / Math.max(im.naturalWidth, im.naturalHeight));
           var w = Math.max(1, Math.round(im.naturalWidth * sc)), h = Math.max(1, Math.round(im.naturalHeight * sc));
@@ -688,9 +708,9 @@
             if (!naturals[f.src]) naturals[f.src] = { w: im.naturalWidth, h: im.naturalHeight };
             layout();
           }, "image/png");
-        } catch (e) {}
-      };
-      im.src = sameOrigin(f.src);
+        } catch (e) { next(); }
+      }
+      next();
     });
 
     /* fonts */
