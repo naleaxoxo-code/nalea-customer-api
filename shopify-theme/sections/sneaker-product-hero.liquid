@@ -44,6 +44,7 @@
   style="min-height:{{ section.settings.height }};--snp-like:{{ section.settings.like_color }};--color-foreground:{{ section.settings.foreground }};--color-background:{{ section.settings.background }};--color-muted-foreground:{{ section.settings.muted }};"
   aria-label="{{ p.title | escape }}"
 >
+{%- if board_count > 0 -%}<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap">{%- endif -%}
 <style>
 #snp-{{ section.id }}.snp-root{position:relative;display:flex;flex-direction:column;width:100%;container-type:inline-size;overflow:hidden;isolation:isolate;color:var(--color-foreground);background:color-mix(in oklab,var(--color-foreground) 4%,var(--color-background));font-family:inherit;-webkit-font-smoothing:antialiased}
 :where(.snp-root) :where(*,*::before,*::after){box-sizing:border-box}
@@ -170,9 +171,17 @@
 .snp-trust-btn[data-tone="no"] svg{color:var(--color-foreground)}
 .snp-tip a{color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px;pointer-events:auto}
 .snp-sheet,.snp-sheet *{box-sizing:border-box}
+.snp-live{position:absolute;left:50%;top:50%;z-index:2;translate:-50% -40%;width:72%;text-align:center;pointer-events:none;opacity:0;visibility:hidden}
+.snp-live-t{display:block;font-family:"Great Vibes","Allura","Brush Script MT",cursive;font-size:clamp(28px,4.6cqw,72px);line-height:1.1;font-weight:400;letter-spacing:.01em;
+  background:linear-gradient(100deg,#9a7327 0%,#e8cb82 28%,#fff4cf 46%,#c9a84c 62%,#8b6a00 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.45));overflow-wrap:anywhere;animation:snp-gold 4s linear infinite}
+.snp-live-t+.snp-live-t{font-size:clamp(18px,2.4cqw,38px);margin-top:.2em}
+@keyframes snp-gold{to{background-position:-220% 0}}
+.snp-live-n{display:inline-block;margin-top:1cqw;padding:.35em .9em;border-radius:999px;background:color-mix(in oklab,var(--color-background) 70%,transparent);color:var(--color-muted-foreground);font-size:max(10px,.8cqw);letter-spacing:.06em}
+@media (max-width:760px){.snp-sheet-box{max-height:58vh}}
 .snp-sheet{position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:flex-end;padding:3vh 4vw;color:var(--color-foreground)}
 .snp-sheet[hidden]{display:none}
-.snp-sheet-scrim{position:absolute;inset:0;background:color-mix(in oklab,var(--color-background) 60%,transparent)!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:0!important;padding:0!important;cursor:default}
+.snp-sheet-scrim{position:absolute;inset:0;background:color-mix(in oklab,var(--color-background) 18%,transparent)!important;border:0!important;padding:0!important;cursor:default}
 .snp-sheet-box{position:relative;width:min(420px,100%);max-height:88vh;overflow:auto;overscroll-behavior:contain;border-radius:18px;background:color-mix(in oklab,var(--color-foreground) 6%,var(--color-background));box-shadow:0 30px 80px -20px rgba(0,0,0,.6),0 0 0 1px color-mix(in oklab,var(--color-foreground) 12%,transparent);padding:22px}
 .snp-sheet-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
 .snp-sheet-hd h3{margin:0;font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--color-foreground)}
@@ -278,6 +287,7 @@ textarea.snp-field{min-height:96px;resize:vertical}
       <div class="snp-reflects" aria-hidden="true"></div>
       <div class="snp-float"><div class="snp-tilt"><span class="snp-shoe snp-sheen" aria-hidden="true"></span></div></div>
       <span class="snp-loupe" aria-hidden="true"><span></span></span>
+      <div class="snp-live" aria-hidden="true"><span class="snp-live-t"></span><span class="snp-live-n">Preview only. Final placement and lettering are crafted by hand.</span></div>
       <span class="snp-hint" data-seen="false" aria-hidden="true"><span class="snp-hint-fine">Hold to zoom</span><span class="snp-hint-touch">Tap to view</span></span>
     </div>
 
@@ -607,7 +617,7 @@ textarea.snp-field{min-height:96px;resize:vertical}
     var st = $(".snp-stock"); st.dataset.tone = tone;
     st.textContent = tone === "out" ? "Sold out" + (ci >= 0 ? " in this colour" : "") : tone === "low" ? "Only " + here.stock + " left" + (size ? " in size " + size : "") : "In stock · ready to ship";
     var cta = $(".snp-cta"); cta.disabled = here.soldOut; cta.dataset.state = cart;
-    $(".snp-cta-idle").textContent = here.soldOut ? "SOLD OUT" : window["snpPerso_" + root.id] ? "PERSONALISE & ADD" : "ADD TO CART";
+    $(".snp-cta-idle").textContent = here.soldOut ? "SOLD OUT" : window["snpPerso_" + root.id] ? "PERSONALISE" : "ADD TO CART";
     rollPrice(priceOf());
     if (typeof renderReturns === "function") renderReturns();
     var cv = variantFor(active, size) || startV, skuEl = $(".snp-sku");
@@ -759,6 +769,20 @@ textarea.snp-field{min-height:96px;resize:vertical}
         ["dragleave", "drop"].forEach(function (ev) { drop.addEventListener(ev, function () { drop.dataset.over = "false"; }); });
       }
     });
+    var live = $(".snp-live"), liveOn = false;
+    function livePreview() {
+      var lines = boards.filter(function (bd) { return bd.dataset.type !== "photo"; })
+        .map(function (bd) { var i = bd.querySelector(".snp-field"); return i && i.value.trim(); }).filter(Boolean).slice(0, 2);
+      var ts = live.querySelectorAll(".snp-live-t");
+      ts[0].textContent = lines[0] || "";
+      var second = ts[1];
+      if (lines[1]) { if (!second) { second = document.createElement("span"); second.className = "snp-live-t"; ts[0].after(second); } second.textContent = lines[1]; }
+      else if (second) second.remove();
+      var on = lines.length > 0;
+      if (on !== liveOn) { liveOn = on; gsap.to(live, { autoAlpha: on ? 1 : 0, y: on ? 0 : 8, duration: reduced() ? 0 : 0.35, ease: "power2.out" }); }
+    }
+    boards.forEach(function (bd) { var i = bd.querySelector(".snp-field"); if (i) i.addEventListener("input", livePreview); });
+
     box.addEventListener("submit", function (e) {
       e.preventDefault();
       var firstBad = null;
