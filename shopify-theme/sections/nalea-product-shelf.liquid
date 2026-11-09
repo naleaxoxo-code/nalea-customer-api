@@ -141,7 +141,7 @@
         {%- if m == 0 -%}<section class="ps-row" aria-label="{{ t | escape }}"><div class="ps-grid">{%- capture names -%}{%- endcapture -%}{%- endif -%}
         {%- assign img = p.featured_media.preview_image | default: p.featured_image -%}
         <div class="ps-cell">
-          <button type="button" class="ps-item" data-pid="{{ p.id }}" aria-label="{{ p.title | escape }}, {{ p.price | money_without_trailing_zeros | strip_html }}">
+          <button type="button" class="ps-item" data-pid="{{ p.id }}" data-url="{{ p.url }}" data-perso="{% if p.template_suffix contains 'custom' %}true{% else %}false{% endif %}" data-ship="{{ p.metafields.custom.shipping_timeline.value }}" aria-label="{{ p.title | escape }}, {{ p.price | money_without_trailing_zeros | strip_html }}">
             <span class="ps-art">{% if img %}<img src="{{ img | image_url: width: 400 }}" srcset="{{ img | image_url: width: 240 }} 240w, {{ img | image_url: width: 400 }} 400w" sizes="160px" alt="" loading="lazy" width="{{ img.width }}" height="{{ img.height }}">{% endif %}</span>
           </button>
         </div>
@@ -168,16 +168,16 @@
     <script type="application/json" class="ps-data">{
       {%- for p in collection.products -%}
         {%- assign rv = p.metafields.custom.reviews.value -%}
-        {%- assign rsum = 0 -%}{%- for r in rv -%}{%- assign rsum = rsum | plus: r.rating -%}{%- endfor -%}
+        {%- assign rsum = 0 -%}{%- assign rcount = 0 -%}{%- if rv.first -%}{%- for r in rv -%}{%- assign rr = r.rating | default: 0 | plus: 0 -%}{%- assign rsum = rsum | plus: rr -%}{%- assign rcount = rcount | plus: 1 -%}{%- endfor -%}{%- endif -%}
         {{ p.id | json }}: {
           "t": {{ p.title | json }}, "type": {{ p.type | json }}, "url": {{ p.url | json }}, "handle": {{ p.handle | json }},
           "desc": {{ p.description | json }},
           "perso": {% if p.template_suffix contains 'custom' %}true{% else %}false{% endif %},
-          "ship": {{ p.metafields.custom.shipping_timeline.value | json }},
-          "rc": {% if rv %}{{ rv.size }}{% else %}0{% endif %}, "rs": {{ rsum }},
+          "ship": {{ p.metafields.custom.shipping_timeline.value | default: '' | json }},
+          "rc": {{ rcount }}, "rs": {{ rsum }},
           "opt": {{ p.options | json }},
-          "v": [{%- for v in p.variants -%}{"id": {{ v.id }}, "t": {{ v.title | json }}, "p": {{ v.price }}, "c": {{ v.compare_at_price | default: 0 }}, "a": {{ v.available | json }}}{% unless forloop.last %},{% endunless %}{%- endfor -%}],
-          "img": [{%- for m in p.media limit: 8 -%}{%- if m.preview_image -%}{{ m.preview_image | image_url: width: 1200 | json }}{% unless forloop.last %},{% endunless %}{%- endif -%}{%- endfor -%}]
+          "v": [{%- for v in p.variants -%}{"id": {{ v.id }}, "t": {{ v.title | json }}, "p": {{ v.price }}, "c": {{ v.compare_at_price | default: 0 | plus: 0 }}, "a": {{ v.available | json }}}{% unless forloop.last %},{% endunless %}{%- endfor -%}],
+          "img": [{%- for im in p.images limit: 8 -%}{{ im | image_url: width: 1200 | json }}{% unless forloop.last %},{% endunless %}{%- endfor -%}]
         }{% unless forloop.last %},{% endunless %}
       {%- endfor -%}
     }</script>
@@ -219,7 +219,8 @@
 (function () {
   var root = document.getElementById("pshelf-{{ section.id }}");
   if (!root || root.dataset.ready) return; root.dataset.ready = "1";
-  var D = JSON.parse(root.querySelector(".ps-data").textContent);
+  var D = {};
+  try { D = JSON.parse(root.querySelector(".ps-data").textContent); } catch (err) { console.warn("[shelf] product data unreadable, loading per product", err); }
   var $ = function (s, el) { return (el || root).querySelector(s); };
   var page = $(".ps-page"), bg = $(".ps-page-bg"), hero = $(".ps-hero"), heroImg = $(".ps-hero img"), info = $(".ps-info"), surface = $(".ps-surface");
   var reduced = function () { return matchMedia("(prefers-reduced-motion: reduce)").matches; };
@@ -262,8 +263,17 @@
     return el.animate(k, { duration: reduced() ? 1 : on ? 450 : 260, delay: reduced() ? 0 : delay || 0, easing: SPRING, fill: "forwards" });
   }
 
+  function fromStorefront(btn) {
+    return fetch(btn.dataset.url + ".js").then(function (r) { return r.json(); }).then(function (j) {
+      return { t: j.title, type: j.type, url: j.url, handle: j.handle, desc: j.description, perso: btn.dataset.perso === "true", ship: btn.dataset.ship || "",
+        rc: 0, rs: 0, opt: (j.options || []).map(function (o) { return o.name || o; }),
+        v: j.variants.map(function (v) { return { id: v.id, t: v.title, p: v.price, c: v.compare_at_price || 0, a: v.available }; }),
+        img: (j.images || []).slice(0, 8).map(function (u) { return (u.indexOf("//") === 0 ? "https:" : "") + u; }) };
+    });
+  }
   function openProduct(btn) {
-    var p = D[btn.dataset.pid]; if (!p) return;
+    var p = D[btn.dataset.pid];
+    if (!p) { fromStorefront(btn).then(function (q) { D[btn.dataset.pid] = q; openProduct(btn); }).catch(function () { location.href = btn.dataset.url; }); return; }
     open = p; source = btn; opener = document.activeElement; idx = 0;
     imgs = p.img.length ? p.img : [btn.querySelector("img") ? btn.querySelector("img").src : ""];
     fill(p);
@@ -292,7 +302,10 @@
     if (reduced()) { page.hidden = true; document.documentElement.style.overflow = ""; btn.dataset.away = "false"; }
     open = null; if (opener) opener.focus({ preventScroll: true });
   }
-  root.addEventListener("click", function (e) { var b = e.target.closest(".ps-item"); if (b) openProduct(b); });
+  root.addEventListener("click", function (e) {
+    var b = e.target.closest(".ps-item"); if (!b) return;
+    try { openProduct(b); } catch (err) { console.error("[shelf]", err); location.href = b.dataset.url; }
+  });
   $(".ps-back").addEventListener("click", closeProduct);
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && open) closeProduct(); });
 
