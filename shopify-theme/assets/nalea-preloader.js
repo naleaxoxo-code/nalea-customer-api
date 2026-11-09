@@ -1,16 +1,12 @@
-/* Nalea preloader: a vanilla port of the 21st.dev "Old Masters Preloader"
+/* Nalea statue stage: a vanilla port of the 21st.dev "Old Masters Preloader"
    (Classical Statue Portfolio Preloader). The design, CSS, timings and motion
-   are the original's; only the words are Nalea's. It plays over the product
-   page once per browser session and lifts off on a scroll, a swipe, Escape,
-   or the call to action. */
+   are the original's; only the words are Nalea's. It sits at the very end of
+   the product page, after the last upsell and just above the footer, and
+   plays its load and unveil when it scrolls into view. */
 (function () {
   "use strict";
   if (window.__naleaPreloader) return;
   window.__naleaPreloader = true;
-  try {
-    if (sessionStorage.getItem("nalea_om_seen") === "1") return;
-    sessionStorage.setItem("nalea_om_seen", "1");
-  } catch (e) {}
 
   var CDN = "https://cdn.shopify.com/s/files/1/0789/2166/2696/files/";
   var IMG = (window.__NALEA_OM_IMG) || {
@@ -61,7 +57,7 @@
     loadingLabel: "Loading",
     cta: { label: "Shop all products xoxo", href: "/collections/all" },
     holdMs: 0,
-    scrollToEnter: true,
+    scrollToEnter: false,
     tone: "carmine"
   };
 
@@ -366,9 +362,8 @@
   .om-root[data-phase="exit"] .om-cast { transform: none; }
   .om-ring-key { transition: opacity 0.6s ease 0.4s; }
 }
-/* Nalea: the stage sits over the product page and lifts off it. */
-.om-root.nalea-om { position: fixed !important; inset: 0; z-index: 2147483000; background: transparent; }
-.om-root.nalea-om[data-phase="exit"] { pointer-events: none; }
+/* Nalea: the stage closes the product page, above the footer. */
+.om-root.nalea-om { display: block; margin: 0; }
 `;
 
   var STAR_PATH = "M12 0C12.6 6.8 17.2 11.4 24 12C17.2 12.6 12.6 17.2 12 24C11.4 17.2 6.8 12.6 0 12C6.8 11.4 11.4 6.8 12 0Z";
@@ -410,7 +405,7 @@
     }
 
     /* ---- the DOM, as the original renders it ---- */
-    var root = el("div", "om-root nalea-om", { "data-phase": "load", "data-tone": P.tone, "data-face": P.face, "data-up": "false", "data-pills": "0", "data-duotone": isDuotone ? "true" : "false", "data-instant": "false", "data-gate": "true", "data-narrow": "false", tabindex: "0", "aria-busy": "true", role: "dialog", "aria-label": "Nalea xoxo" });
+    var root = el("div", "om-root nalea-om", { "data-phase": "load", "data-tone": P.tone, "data-face": P.face, "data-up": "false", "data-pills": "0", "data-duotone": isDuotone ? "true" : "false", "data-instant": "false", "data-gate": "false", "data-narrow": "false", tabindex: "0", "aria-busy": "true", role: "region", "aria-label": "Nalea xoxo" });
     var defs = sv("svg", { "class": "om-defs", "aria-hidden": "true", focusable: "false" }, root);
     var defsIn = sv("defs", null, defs);
     var stage = el("div", "om-stage", null, root);
@@ -529,9 +524,12 @@
     for (var v in vars) root.style.setProperty(v, vars[v]);
     root.style.height = "100svh";
 
-    var prevOverflow = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-    document.body.appendChild(root);
+    var main = document.getElementById("MainContent") || document.querySelector("main") || document.body;
+    main.appendChild(root);
+    /* stay the last thing in the page, even when the upsells arrive later */
+    new MutationObserver(function () {
+      if (phase !== "done" && main.lastElementChild !== root) main.appendChild(root);
+    }).observe(main, { childList: true });
 
     /* ---- state ---- */
     var phase = "load", pct = 0, size = { w: 0, h: 0 }, naturals = {}, fs = 120, metrics = { base: 0.16, cap: 0.7 };
@@ -555,7 +553,6 @@
     function done() {
       phase = "done";
       cancelAnimationFrame(raf); cancelAnimationFrame(lraf);
-      document.documentElement.style.overflow = prevOverflow;
       window.removeEventListener("resize", onResize);
       root.remove(); style.remove();
     }
@@ -647,11 +644,14 @@
     function onResize() { clearTimeout(rt); rt = setTimeout(layout, 60); }
     window.addEventListener("resize", onResize);
 
-    /* curtain up */
-    setTimeout(function () { root.setAttribute("data-up", "true"); }, 60);
-
-    /* the load, parallax and nearest figure, one frame loop */
+    /* the load, parallax and nearest figure, one frame loop.
+       It starts when the stage scrolls into view, so the show is seen. */
     var raf = 0, last = performance.now(), t0 = last, loadDone = false;
+    function begin() {
+      last = t0 = performance.now();
+      setTimeout(function () { root.setAttribute("data-up", "true"); }, 60);
+      raf = requestAnimationFrame(tick);
+    }
     function tick(now) {
       var dt = Math.min(64, now - last); last = now;
       if (!loadDone) {
@@ -691,7 +691,12 @@
       }
       raf = requestAnimationFrame(tick);
     }
-    raf = requestAnimationFrame(tick);
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (es) {
+        if (es.some(function (e) { return e.isIntersecting; })) { io.disconnect(); begin(); }
+      }, { threshold: 0.35 });
+      io.observe(root);
+    } else begin();
 
     /* the light: shafts and dust */
     var lraf = 0;
@@ -747,7 +752,6 @@
     skip.addEventListener("click", rush);
     root.addEventListener("keydown", function (e) {
       if (phase === "load" && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); rush(); }
-      if (e.key === "Escape") { if (phase === "load") rush(); else lift(); }
     });
     root.addEventListener("pointermove", function (e) {
       var r = stage.getBoundingClientRect();
@@ -756,13 +760,7 @@
       pt.inside = true;
     });
     root.addEventListener("pointerleave", function () { pt.tx = 0; pt.ty = 0; pt.inside = false; });
-    var y0 = -1;
-    root.addEventListener("wheel", function (e) { if (P.scrollToEnter && e.deltaY > 12) lift(); }, { passive: true });
-    root.addEventListener("touchstart", function (e) { y0 = e.touches[0] ? e.touches[0].clientY : -1; }, { passive: true });
-    root.addEventListener("touchmove", function (e) { var y = e.touches[0] && e.touches[0].clientY; if (P.scrollToEnter && y0 >= 0 && y != null && y0 - y > 40) lift(); }, { passive: true });
-
     layout();
-    root.focus({ preventScroll: true });
   }
 
   if (document.body) start();
