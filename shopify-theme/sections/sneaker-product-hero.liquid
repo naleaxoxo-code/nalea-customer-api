@@ -99,6 +99,15 @@
 .snp-like>svg{width:80%;height:80%;overflow:visible}
 .snp-like>svg path{fill:none;stroke:currentColor;stroke-width:1.8;transition:fill .3s,stroke .3s}
 .snp-like[aria-pressed="true"]>svg path{fill:var(--snp-like);stroke:var(--snp-like)}
+.snp-share{position:relative;width:max(24px,2.4cqw);height:max(24px,2.4cqw);display:grid;place-items:center;margin-left:-1.6cqw;transition:transform .2s}
+.snp-share:hover{transform:translateY(-2px)}
+.snp-share>svg{width:76%;height:76%;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.snp-menu{position:absolute;right:-.4cqw;bottom:calc(100% + 1cqw);z-index:4;min-width:max(190px,15cqw);padding:6px;border-radius:14px;background:var(--color-foreground);color:var(--color-background);box-shadow:0 18px 44px -12px rgba(0,0,0,.45);visibility:hidden;opacity:0}
+.snp-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px!important;border-radius:9px!important;font-size:max(12px,1cqw)!important;font-weight:500;text-align:left;color:inherit!important;transition:background .15s}
+.snp-menu button:hover,.snp-menu button:focus-visible{background:color-mix(in oklab,var(--color-background) 10%,transparent)!important;outline:none}
+.snp-menu i{display:grid;place-items:center;width:26px;height:26px;flex:none;border-radius:50%;background:color-mix(in oklab,var(--color-background) 8%,transparent)}
+.snp-menu i svg{width:15px;height:15px}
+.snp-menu .snp-wa i{background:#25d366;color:#fff}
 .snp-burst{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none}
 .snp-burst svg{position:absolute;left:-6px;top:-6px;width:12px;height:12px;color:var(--snp-like);opacity:0}
 .snp-pill{position:absolute;right:-.4cqw;bottom:calc(100% + 1cqw);padding:.6cqw 1.2cqw;border-radius:999px;white-space:nowrap;background:var(--color-foreground);color:var(--color-background);font-size:max(10px,.95cqw);font-weight:500;visibility:hidden;opacity:0;pointer-events:none}
@@ -207,6 +216,11 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path class="snp-heart"/></svg>
           <span class="snp-burst" aria-hidden="true"></span>
         </button>
+        <button type="button" class="snp-share" aria-label="Share this" aria-haspopup="menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+        </button>
+        <div class="snp-menu" role="menu" aria-label="Share this"></div>
+        <span class="nxs" aria-hidden="true" style="display:none"></span>
         <span class="snp-pill" role="status" aria-live="polite"></span>
       </div>
     </div>
@@ -592,6 +606,67 @@
     if (viewer === null) return;
     if (e.key === "Escape") closeViewer(); else if (e.key === "ArrowRight") step(1); else if (e.key === "ArrowLeft") step(-1);
   });
+
+  // ---- Share (replaces the old snippets/nalea-share row on product pages) ----
+  var SHOP = {{ shop.name | json }}, ORIGIN = {{ request.origin | json }}, HANDLE = {{ p.handle | json }};
+  var IC = {
+    wa:'<path d="M12 2a9.9 9.9 0 0 0-8.5 15L2 22l5.2-1.4A9.9 9.9 0 1 0 12 2zm0 2a8 8 0 1 1-4.1 14.8l-.3-.2-2.5.7.7-2.4-.2-.3A8 8 0 0 1 12 4zm-3.3 4c-.2 0-.5.1-.7.4-.2.3-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.7 2.8 4.3 3.8 2.1.8 2.6.7 3 .6.6-.1 1.8-.7 2-1.5.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.3l-2-1c-.3-.1-.5-.1-.7.1l-.9 1.1c-.2.2-.3.2-.6.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.1-.3 0-.4.1-.6l.5-.5.3-.5c.1-.2 0-.4 0-.5l-.8-2c-.2-.5-.4-.4-.6-.5z" fill="currentColor"/>',
+    go:'<path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z" fill="currentColor"/>',
+    cp:'<rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+    fb:'<path d="M14 9h2.5V6H14c-2 0-3.5 1.5-3.5 3.5V11H8v3h2.5v7h3v-7H16l.5-3h-3V9.8c0-.5.4-.8 1-.8z" fill="currentColor"/>',
+    x:'<path d="M4 3h4.4l4 5.6L17 3h3l-6.2 7.6L20.5 21H16l-4.3-6-5 6H3.6l6.7-8.1L4 3z" fill="currentColor"/>',
+    em:'<path d="M3 6h18v12H3z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 7l9 6 9-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'
+  };
+  function shareData() {
+    var v = variantFor(active, size) || startV;
+    var url = ORIGIN + "/products/" + HANDLE + (D.variants.length > 1 ? "?variant=" + v.id : "");
+    var opts = [variants[active].name, size ? "size " + size : ""].filter(Boolean).join(", ");
+    var head = "Look what I found at " + SHOP;
+    var msg = head + " " + String.fromCodePoint(0x2728) + "\n" + title + (opts ? " (" + opts + ")" : "") + " - " + fmt(v.price / 100) + "\n" + url;
+    return { url: url, head: head, msg: msg };
+  }
+  var shareBtn = $(".snp-share"), menu = $(".snp-menu"), menuOpen = false;
+  function closeMenu(focus) {
+    if (!menuOpen) return; menuOpen = false; shareBtn.setAttribute("aria-expanded", "false");
+    gsap.to(menu, { autoAlpha: 0, y: 6, duration: reduced() ? 0 : 0.2, ease: "power2.in" });
+    if (focus) shareBtn.focus();
+  }
+  function shareToast(t) { showToast(""); $("span", toast).textContent = t; setTimeout(function () { $("span", toast).textContent = {{ section.settings.toast | json }}; }, 3400); }
+  var items = [
+    ["snp-wa", "WhatsApp", IC.wa, function (d) { window.open("https://wa.me/?text=" + encodeURIComponent(d.msg), "_blank", "noopener"); }],
+    navigator.share ? ["", "More options", IC.go, function (d) { navigator.share({ title: d.head, text: d.msg, url: d.url }).catch(function () {}); }] : null,
+    ["", "Copy message", IC.cp, function (d) {
+      var ok = function () { shareToast("Message copied"); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(d.msg).then(ok, ok);
+      else { var ta = document.createElement("textarea"); ta.value = d.msg; ta.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (e) {} ta.remove(); ok(); }
+    }],
+    ["", "Facebook", IC.fb, function (d) { window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(d.url), "_blank", "noopener"); }],
+    ["", "X", IC.x, function (d) { window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(d.head) + "&url=" + encodeURIComponent(d.url), "_blank", "noopener"); }],
+    ["", "Email", IC.em, function (d) { location.href = "mailto:?subject=" + encodeURIComponent(d.head) + "&body=" + encodeURIComponent(d.msg); }]
+  ].filter(Boolean);
+  items.forEach(function (it) {
+    var b = document.createElement("button"); b.type = "button"; b.setAttribute("role", "menuitem"); if (it[0]) b.className = it[0];
+    b.innerHTML = '<i><svg viewBox="0 0 24 24" aria-hidden="true">' + it[2] + "</svg></i>" + it[1];
+    b.addEventListener("click", function () { it[3](shareData()); closeMenu(false); });
+    menu.appendChild(b);
+  });
+  gsap.set(menu, { autoAlpha: 0 });
+  shareBtn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    if (menuOpen) return closeMenu(false);
+    menuOpen = true; shareBtn.setAttribute("aria-expanded", "true");
+    gsap.fromTo(menu, { autoAlpha: 0, y: 6, scale: 0.96 }, { autoAlpha: 1, y: 0, scale: 1, duration: reduced() ? 0 : 0.3, ease: "back.out(2)" });
+    gsap.fromTo(shareBtn.firstElementChild, { y: 0 }, { y: -3, duration: 0.15, yoyo: true, repeat: 1 });
+    menu.querySelector("button").focus();
+  });
+  menu.addEventListener("keydown", function (e) {
+    var list = Array.prototype.slice.call(menu.querySelectorAll("button")), i = list.indexOf(document.activeElement);
+    if (e.key === "Escape") { e.preventDefault(); closeMenu(true); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); list[(i + 1) % list.length].focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); list[(i - 1 + list.length) % list.length].focus(); }
+    else if (e.key === "Tab") closeMenu(false);
+  });
+  document.addEventListener("click", function (e) { if (menuOpen && !menu.contains(e.target)) closeMenu(false); });
 
   var BARS = [2,1,3,1,1,2,1,3,2,1,1,2];
   $(".snp-bars").innerHTML = BARS.map(function (b) { return '<i style="width:' + (b === 1 ? 1.5 : b === 2 ? 2.2 : 3) + 'px;height:' + (40 + b * 20) + '%"></i>'; }).join("");
